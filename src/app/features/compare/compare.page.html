@@ -1,0 +1,321 @@
+<header class="page-heading">
+  <span class="eyebrow">02 / COMPARER LES POSITIONS</span>
+  <h1>Accords, écarts<br />et perspectives.</h1>
+  <p>
+    Comparez les votes enregistrés de deux États sur une période. Explorez les résolutions qui les
+    rapprochent et celles qui les distinguent.
+  </p>
+</header>
+<section class="panel filter-panel" aria-label="Paramètres de comparaison">
+  @if (optionsError()) {
+    <div class="status status-error" role="alert">
+      {{ optionsError() }}
+      <button class="button button-ghost" (click)="loadOptions()">Réessayer</button>
+    </div>
+  }
+  <form [formGroup]="form" (ngSubmit)="compare()">
+    <div class="form-grid compare-fields">
+      <div class="field">
+        <label for="compare-a">Premier pays</label
+        ><select id="compare-a" formControlName="countryA">
+          @for (country of countries(); track country.id) {
+            <option [value]="country.id">{{ country.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="compare-b">Second pays</label
+        ><select id="compare-b" formControlName="countryB">
+          @for (country of countries(); track country.id) {
+            <option [value]="country.id">{{ country.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="compare-from">De l’année</label
+        ><input id="compare-from" type="number" min="1946" max="2026" formControlName="from" />
+      </div>
+      <div class="field">
+        <label for="compare-to">À l’année</label
+        ><input id="compare-to" type="number" min="1946" max="2026" formControlName="to" />
+      </div>
+      <button type="submit" class="button button-primary" [disabled]="loading()">
+        {{ loading() ? 'Calcul…' : 'Comparer' }} <span aria-hidden="true">↗</span>
+      </button>
+    </div>
+    @if (submitted() && form.invalid) {
+      <p class="validation-message" role="alert">
+        Choisissez deux pays différents et des années entières entre 1946 et 2026, dans l’ordre
+        chronologique.
+      </p>
+    }
+  </form>
+</section>
+@if (loading()) {
+  <div class="status" role="status">Comparaison des votes communs…</div>
+}
+@if (error()) {
+  <div class="status status-error" role="alert">
+    {{ error() }} <button class="button button-ghost" (click)="compare()">Réessayer</button>
+  </div>
+}
+@if (result(); as comparison) {
+  <section class="result-grid" aria-label="Résultat de la comparaison" aria-live="polite">
+    <div class="agreement-card">
+      <span class="eyebrow">TAUX DE CONCORDANCE DES VOTES ENREGISTRÉS</span>
+      <div class="agreement-value number">
+        @if (comparison.agreementPercent !== null) {
+          {{ comparison.agreementPercent | number: '1.1-1' }}<span>%</span>
+        } @else {
+          —
+        }
+      </div>
+      <p>
+        <strong>{{ comparison.countryA.name }}</strong> <span class="muted">&</span>
+        <strong>{{ comparison.countryB.name }}</strong>
+      </p>
+      <span class="small muted"
+        >{{ comparison.from }} — {{ comparison.to }} · {{ comparison.dataVersion }}</span
+      >
+    </div>
+    <div class="counts-card panel">
+      <span class="eyebrow">LE CHIFFRE DANS SON CONTEXTE</span>
+      <dl>
+        <div>
+          <dt>Votes explicites communs</dt>
+          <dd class="number">{{ comparison.commonVoteCount | number }}</dd>
+        </div>
+        <div>
+          <dt><span class="legend-dot same"></span> Votes identiques</dt>
+          <dd class="number">{{ comparison.matchingVoteCount | number }}</dd>
+        </div>
+        <div>
+          <dt><span class="legend-dot different"></span> Votes différents</dt>
+          <dd class="number">{{ comparison.differingVoteCount | number }}</dd>
+        </div>
+        <div>
+          <dt><span class="legend-dot excluded"></span> Positions non comparables</dt>
+          <dd class="number">{{ comparison.nonComparableCount | number }}</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+  @if (comparison.commonVoteCount === 0) {
+    <div class="status status-empty">
+      Aucun vote explicite commun sur cette période. Le taux de concordance ne peut pas être
+      calculé.
+    </div>
+  } @else if (comparison.commonVoteCount < 20) {
+    <p class="small limited-sample">
+      Interprétation limitée : peu de votes comparables (moins de 20).
+    </p>
+  }
+  <p class="source-note">
+    Une abstention commune compte comme un accord. Les absences et valeurs inconnues sont exclues du
+    pourcentage.
+    @if (comparison.coverage.from) {
+      Votes communs du {{ comparison.coverage.from | date: 'dd/MM/yyyy' }} au
+      {{ comparison.coverage.to | date: 'dd/MM/yyyy' }}.
+    }
+    <a routerLink="/methodologie">Comprendre le calcul ↗</a>
+  </p>
+}
+
+<section class="panel trend-panel" aria-labelledby="trend-title">
+  <div class="panel-heading">
+    <div>
+      <span class="eyebrow">PRENDRE DU RECUL</span>
+      <h2 id="trend-title">La concordance dans le temps</h2>
+      <p class="small muted">Même formule, calculée sur les votes de chaque période.</p>
+    </div>
+    <div class="field">
+      <label for="trend-interval">Regrouper par</label
+      ><select
+        id="trend-interval"
+        #intervalSelect
+        [value]="interval()"
+        (change)="refreshTrend(intervalSelect.value)"
+      >
+        <option value="year">Année</option>
+        <option value="decade">Décennie</option>
+      </select>
+    </div>
+  </div>
+  @if (trendLoading()) {
+    <div class="status" role="status">Chargement de l’évolution…</div>
+  }
+  @if (trendError()) {
+    <div class="status status-error" role="alert">
+      {{ trendError() }}
+      <button class="button button-ghost" (click)="refreshTrend(interval())">Réessayer</button>
+    </div>
+  }
+  @if (trend(); as evolution) {
+    <p class="small muted">
+      {{ evolution.countryA.name }} & {{ evolution.countryB.name }} · {{ evolution.from }}–{{
+        evolution.to
+      }}
+    </p>
+    @if (!hasTrendData()) {
+      <p class="status status-empty">
+        Aucun vote explicite commun sur cette période : aucune courbe ne peut être calculée.
+      </p>
+    }
+    <svg
+      viewBox="0 0 900 250"
+      role="img"
+      aria-labelledby="chart-title chart-desc"
+      class="trend-chart"
+    >
+      <title id="chart-title">Évolution du taux de concordance</title>
+      <desc id="chart-desc">
+        Pourcentage de votes identiques parmi les votes explicites communs. Les périodes sans vote
+        commun interrompent la courbe. Tableau détaillé disponible après le graphique.
+      </desc>
+      <g stroke="#e4ebe5" stroke-dasharray="3 4">
+        <line x1="48" y1="30" x2="868" y2="30" />
+        <line x1="48" y1="120" x2="868" y2="120" />
+        <line x1="48" y1="210" x2="868" y2="210" />
+      </g>
+      <g fill="#687b75" font-size="11">
+        <text x="4" y="34">100 %</text>
+        <text x="12" y="124">50 %</text>
+        <text x="17" y="214">0 %</text>
+        <text x="48" y="242">{{ evolution.from }}</text>
+        <text x="838" y="242">{{ evolution.to }}</text>
+      </g>
+      @for (segment of chartSegments(); track $index) {
+        <polyline
+          [attr.points]="segment"
+          fill="none"
+          stroke="#166d5b"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      }
+      @for (point of plottedPoints(); track point.year) {
+        @if (point.y !== null) {
+          <circle
+            [attr.cx]="point.x"
+            [attr.cy]="point.y"
+            r="3.5"
+            fill="#166d5b"
+            stroke="white"
+            stroke-width="1.5"
+          >
+            <title>
+              {{ point.year }} : {{ point.agreementPercent | number: '1.1-1' }} %,
+              {{ point.commonVoteCount }} votes comparables
+            </title>
+          </circle>
+        }
+      }
+    </svg>
+    <details class="chart-data">
+      <summary>Consulter les chiffres du graphique</summary>
+      <div
+        class="table-wrap"
+        tabindex="0"
+        role="region"
+        aria-label="Tableau des périodes comparées"
+      >
+        <table class="data-table">
+          <caption class="sr-only">
+            Détail des périodes comparées
+          </caption>
+          <thead>
+            <tr>
+              <th>Période</th>
+              <th>Votes comparables</th>
+              <th>Votes identiques</th>
+              <th>Concordance</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (point of evolution.points; track point.year) {
+              <tr>
+                <td>{{ periodLabel(point.year, evolution) }}</td>
+                <td>{{ point.commonVoteCount | number }}</td>
+                <td>{{ point.matchingVoteCount | number }}</td>
+                <td>
+                  @if (point.agreementPercent === null) {
+                    Aucune donnée comparable
+                  } @else {
+                    {{ point.agreementPercent | number: '1.1-1' }} %
+                    @if (point.commonVoteCount < 20) {
+                      <span class="small muted"> · effectif limité</span>
+                    }
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </details>
+  }
+</section>
+@if (result(); as comparison) {
+  <div class="section-heading">
+    <h2>Là où les votes divergent</h2>
+    <span class="small muted">Dernières résolutions · votes explicites</span>
+  </div>
+  <section class="panel divergence-panel">
+    @if (comparison.divergences.length === 0) {
+      <p class="empty-note">Aucune divergence parmi les votes comparables de cette période.</p>
+    } @else {
+      <p class="mobile-table-note small muted">
+        Faites défiler le tableau pour voir les deux votes.
+      </p>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Tableau des votes divergents">
+        <table class="data-table">
+          <caption class="sr-only">
+            Exemples de votes différents et liens vers les résolutions
+          </caption>
+          <thead>
+            <tr>
+              <th>Résolution</th>
+              <th>Date</th>
+              <th>{{ comparison.countryA.name }}</th>
+              <th>{{ comparison.countryB.name }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of comparison.divergences; track item.resolution.id) {
+              <tr>
+                <td>
+                  <a [routerLink]="['/resolutions', item.resolution.id]"
+                    >{{ item.resolution.symbol }} ↗</a
+                  >
+                  <p class="resolution-title">{{ item.resolution.title }}</p>
+                </td>
+                <td class="date-cell">{{ item.resolution.date | date: 'dd/MM/yyyy' }}</td>
+                <td>
+                  <span class="tag" [class]="'tag ' + voteClass(item.choiceA)">{{
+                    voteLabel(item.choiceA)
+                  }}</span>
+                </td>
+                <td>
+                  <span class="tag" [class]="'tag ' + voteClass(item.choiceB)">{{
+                    voteLabel(item.choiceB)
+                  }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+}
+@if (metadata(); as meta) {
+  <p class="source-note">
+    © Nations unies ·
+    <a [href]="meta.sourceUrl" target="_blank" rel="noopener noreferrer"
+      >Jeu officiel {{ meta.version }}</a
+    >, publié le {{ meta.publishedAt | date: 'dd/MM/yyyy' }}. Couverture disponible :
+    {{ meta.coverage.from | date: 'dd/MM/yyyy' }}–{{ meta.coverage.to | date: 'dd/MM/yyyy' }}. Les
+    votes décrivent des positions, pas une alliance.
+  </p>
+}

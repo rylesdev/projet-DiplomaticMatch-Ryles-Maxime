@@ -16,6 +16,7 @@ describe('App', () => {
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent?.trim()).toBe('');
+    expect(compiled.querySelector('nav')?.getAttribute('aria-label')).toBe('Navigation principale');
+    expect(compiled.querySelector('main#main-content')).toBeTruthy();
   });
 });

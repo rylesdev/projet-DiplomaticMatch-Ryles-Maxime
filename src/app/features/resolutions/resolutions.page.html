@@ -1,0 +1,144 @@
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">04 / Les textes</p>
+    <h1>Remonter à la résolution.</h1>
+  </div>
+  <p class="muted">
+    Derrière chaque position, un texte. Recherchez les résolutions et consultez les votes qui leur
+    sont associés.
+  </p>
+</div>
+
+<section class="panel search-panel" aria-label="Recherche de résolutions">
+  <form class="resolution-filters" [formGroup]="form" (ngSubmit)="applySearch()">
+    <div class="search-field">
+      <label class="field" for="resolution-search">Titre ou symbole de résolution</label
+      ><input
+        class="input"
+        id="resolution-search"
+        type="search"
+        formControlName="search"
+        placeholder="Disarmament, Palestine, A/RES/79…"
+        autocomplete="off"
+      /><span class="field-hint muted">Les titres officiels sont en anglais.</span>
+    </div>
+    <div>
+      <label class="field" for="resolutions-from">De</label
+      ><input
+        class="input"
+        id="resolutions-from"
+        type="number"
+        formControlName="from"
+        min="1946"
+        max="2100"
+        required
+      />
+    </div>
+    <div>
+      <label class="field" for="resolutions-to">À</label
+      ><input
+        class="input"
+        id="resolutions-to"
+        type="number"
+        formControlName="to"
+        min="1946"
+        max="2100"
+        required
+      />
+    </div>
+    <button class="button button-primary" type="submit" [disabled]="loading()">
+      Rechercher <span aria-hidden="true">↗</span>
+    </button>
+  </form>
+</section>
+
+<div aria-live="polite">
+  @if (loading()) {
+    <p class="status">Recherche dans les archives des Nations unies…</p>
+  }
+  @if (error()) {
+    <div class="panel status status-error" role="alert">
+      <p>{{ error() }}</p>
+      <button class="button button-ghost" type="button" (click)="applySearch()">Réessayer</button>
+    </div>
+  }
+</div>
+
+@if (result(); as data) {
+  <div class="list-heading">
+    <p>
+      <strong>{{ data.total | number }}</strong> résolution{{ data.total > 1 ? 's' : '' }} trouvée{{
+        data.total > 1 ? 's' : ''
+      }}
+    </p>
+    <span class="muted">Les plus récentes en premier</span>
+  </div>
+  @if (!data.items.length) {
+    <div class="panel empty-state">
+      <p class="eyebrow">Aucun résultat</p>
+      <h2>Les archives gardent encore leur secret.</h2>
+      <p class="muted">
+        Essayez un terme plus court, un mot du titre en anglais ou une période plus large.
+      </p>
+    </div>
+  } @else {
+    <section class="resolution-list" aria-label="Résultats de recherche">
+      @for (resolution of data.items; track resolution.id) {
+        <a class="panel resolution-card" [routerLink]="['/resolutions', resolution.id]">
+          <div class="document-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 36" fill="none">
+              <path d="M7 2h12l7 7v25H7V2Z" stroke="currentColor" stroke-width="1.5" />
+              <path
+                d="M19 2v8h7M11 16h11M11 21h11M11 26h7"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+            </svg>
+          </div>
+          <div class="resolution-body">
+            <div class="resolution-meta">
+              <span class="symbol">{{ resolution.symbol }}</span
+              ><time [attr.datetime]="resolution.date">{{
+                resolution.date | date: 'dd/MM/yyyy'
+              }}</time>
+            </div>
+            <h2>{{ resolution.title }}</h2>
+            <span class="resolution-cta"
+              >Consulter le texte et les votes <span aria-hidden="true">→</span></span
+            >
+          </div>
+          <span class="card-arrow" aria-hidden="true">↗</span>
+        </a>
+      }
+    </section>
+    <nav class="pagination" aria-label="Pages des résolutions">
+      <button
+        class="button button-ghost"
+        type="button"
+        [disabled]="page() <= 1 || loading()"
+        (click)="applySearch(page() - 1)"
+      >
+        ← Précédent</button
+      ><span>Page {{ page() }} / {{ Math.ceil(data.total / data.pageSize) }}</span
+      ><button
+        class="button button-ghost"
+        type="button"
+        [disabled]="page() * data.pageSize >= data.total || loading()"
+        (click)="applySearch(page() + 1)"
+      >
+        Suivant →
+      </button>
+    </nav>
+  }
+}
+
+@if (metadata(); as data) {
+  <p class="source-note muted">
+    Source :
+    <a [href]="data.sourceUrl" target="_blank" rel="noopener noreferrer"
+      >Nations unies · Bibliothèque numérique</a
+    >
+    · {{ data.version }} · publiée le {{ data.publishedAt | date: 'dd/MM/yyyy' }}. Les titres et les
+    dates proviennent de la source officielle.
+  </p>
+}

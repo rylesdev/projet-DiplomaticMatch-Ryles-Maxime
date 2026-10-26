@@ -1,0 +1,147 @@
+<header class="page-heading">
+  <span class="eyebrow">LIRE LES DONNÉES AVEC RECUL</span>
+  <h1>Une méthode ouverte.<br />Des limites explicites.</h1>
+  <p>
+    Diplomatic Match permet d’explorer les comportements de vote à l’Assemblée générale des Nations
+    unies. Le résultat est descriptif, jamais un indice officiel de relations diplomatiques.
+  </p>
+</header>
+<div class="method-grid">
+  <div>
+    <section class="panel">
+      <span class="eyebrow">01 / LE CALCUL</span>
+      <h2>Que veut dire « concorder » ?</h2>
+      <p>
+        Nous comparons les résolutions pour lesquelles les deux pays ont une position explicite :
+        pour, contre ou abstention. Deux positions identiques comptent comme un accord.
+      </p>
+      <div class="formula">Concordance = 100 × votes identiques / votes explicites communs</div>
+      <p>
+        Deux abstentions comptent donc comme un accord dans cette définition. Une abstention face à
+        un vote pour ou contre est un désaccord. Une absence de vote ou une valeur inconnue est
+        exclue du dénominateur, quel que soit le vote de l’autre pays.
+      </p>
+      <p>
+        Sans vote explicite commun, aucun pourcentage n’est calculé : nous affichons un tiret. Les
+        résultats sont arrondis uniquement à l’affichage. Les dates de début et de fin sont
+        incluses.
+      </p>
+      <p>
+        La courbe applique exactement le même calcul à chaque année ou décennie. Les périodes sans
+        vote commun restent vides, sans interpolation. Un effectif inférieur à 20 appelle une
+        interprétation limitée.
+      </p>
+    </section>
+    <section class="panel">
+      <span class="eyebrow">02 / CE QUE L’ON OBSERVE</span>
+      <h2>Une partie de l’activité de l’Assemblée</h2>
+      <ul>
+        <li>
+          Les votes individuels concernent des résolutions adoptées ayant fait l’objet d’un vote
+          enregistré. Ils ne représentent pas la majorité des résolutions adoptées sans vote.
+        </li>
+        <li>
+          Le catalogue des résolutions contient aussi des textes sans vote enregistré : leurs fiches
+          l’indiquent et aucune position individuelle n’y est inventée.
+        </li>
+        <li>
+          Les pays et les codes historiques sont conservés séparément. L’URSS et la Russie, par
+          exemple, ne sont pas fusionnées en une seule série.
+        </li>
+        <li>
+          Un taux élevé ne prouve ni une alliance, ni une proximité politique générale. Le sujet des
+          textes, la période et le nombre de votes restent essentiels.
+        </li>
+      </ul>
+      <a routerLink="/comparer" class="button button-ghost">Revenir à la comparaison →</a>
+    </section>
+  </div>
+  <aside>
+    <section class="panel source-card">
+      <span class="tag">DONNÉES OFFICIELLES · ONU</span>
+      <h2>Une source traçable</h2>
+      @if (loading()) {
+        <p role="status">Chargement du manifeste…</p>
+      }
+      @if (error()) {
+        <div class="status status-error" role="alert">
+          {{ error() }} <button class="button button-ghost" (click)="load()">Réessayer</button>
+        </div>
+      }
+      @if (metadata(); as meta) {
+        <dl>
+          <div>
+            <dt>Version du jeu</dt>
+            <dd>{{ meta.version }} · publiée le {{ meta.publishedAt | date: 'dd/MM/yyyy' }}</dd>
+          </div>
+          <div>
+            <dt>Couverture réellement observée</dt>
+            <dd>
+              {{ meta.coverage.from | date: 'dd/MM/yyyy' }} —
+              {{ meta.coverage.to | date: 'dd/MM/yyyy' }}
+            </dd>
+          </div>
+          <div>
+            <dt>Résolutions / positions</dt>
+            <dd>{{ meta.resolutionCount | number }} / {{ meta.voteCount | number }}</dd>
+          </div>
+          <div>
+            <dt>Acquisition</dt>
+            <dd>{{ meta.downloadedAt | date: 'dd/MM/yyyy' }}</dd>
+          </div>
+          <div>
+            <dt>Périmètre</dt>
+            <dd>{{ meta.scope }}</dd>
+          </div>
+          <div>
+            <dt>Conditions</dt>
+            <dd>{{ meta.license }}</dd>
+          </div>
+        </dl>
+      }
+      <p>
+        La couverture affichée est celle des lignes importées. Le dictionnaire indique un début au
+        11 décembre 1946, mais le CSV comprend aussi des lignes au 26 janvier 1946 ; cette
+        différence est conservée et documentée.
+      </p>
+    </section>
+    <section class="panel">
+      <span class="eyebrow">03 / CONSULTER LES ORIGINAUX</span>
+      <h2>Bibliothèque numérique</h2>
+      <p>
+        <a
+          href="https://digitallibrary.un.org/record/4060887"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Jeu de votes enregistrés ↗</a
+        >
+      </p>
+      <p>
+        <a
+          href="https://digitallibrary.un.org/record/4060945"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Métadonnées des résolutions ↗</a
+        >
+      </p>
+      <p>
+        <a
+          href="https://research.un.org/en/docs/unvoting/undl"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Comprendre les notations Y, N, A et l’absence de vote ↗</a
+        >
+      </p>
+      <p>
+        <a href="https://ask.un.org/faq/432839" target="_blank" rel="noopener noreferrer"
+          >Droits d’utilisation et attribution ↗</a
+        >
+      </p>
+      <p class="small">
+        © Nations unies. Usage pédagogique non commercial avec attribution. L’application utilise
+        une copie locale vérifiable ; les votes ne sont pas présentés comme disponibles en temps
+        réel.
+      </p>
+    </section>
+  </aside>
+</div>

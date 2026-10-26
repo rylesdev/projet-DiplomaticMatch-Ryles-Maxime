@@ -1,0 +1,226 @@
+:host {
+  display: block;
+}
+.country-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.country-directory {
+  padding: 23px;
+}
+.directory-caption {
+  margin: 13px 0 20px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.country-links {
+  max-height: 690px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.country-link {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 6px;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 6px;
+}
+.country-link:hover,
+.country-link.is-selected {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+.country-link > span:last-child {
+  color: var(--muted);
+}
+.country-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 30px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  overflow-wrap: anywhere;
+}
+.country-code.large {
+  width: 68px;
+  height: 68px;
+  font-size: 16px;
+  background: var(--accent-light);
+  border: 0;
+  flex-shrink: 0;
+}
+.country-content {
+  min-width: 0;
+  display: grid;
+  gap: 24px;
+}
+.country-intro {
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px;
+}
+.country-intro h2 {
+  font-size: clamp(28px, 4vw, 42px);
+  max-width: 470px;
+  margin: 5px 0 16px;
+}
+.country-intro > .muted {
+  max-width: 460px;
+  line-height: 1.8;
+}
+.country-intro .button {
+  margin-top: 17px;
+}
+.intro-compass {
+  font-size: 55px;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+.country-summary,
+.history-panel {
+  padding: 28px;
+}
+.country-title {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.country-title h2 {
+  margin: 2px 0 5px;
+  font-size: 30px;
+}
+.country-title p {
+  margin: 0;
+}
+.country-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px 48px;
+  margin: 28px 0;
+  padding-top: 23px;
+  border-top: 1px solid var(--line);
+}
+.country-facts dt {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+.country-facts dd {
+  font-size: 23px;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+.history-heading {
+  display: flex;
+  align-items: end;
+  gap: 24px;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+.history-heading h2 {
+  margin: 7px 0 0;
+}
+.history-heading > p {
+  font-size: 12px;
+  max-width: 180px;
+  line-height: 1.6;
+}
+.history-filters {
+  display: grid;
+  grid-template-columns: minmax(85px, 1fr) minmax(85px, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+  padding: 20px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.results-count {
+  font-size: 12px;
+  margin-top: 24px;
+}
+.date-cell {
+  white-space: nowrap;
+  font-size: 12px;
+}
+.resolution-link {
+  color: var(--accent);
+  font-weight: 650;
+  font-size: 12px;
+  text-underline-offset: 3px;
+}
+.resolution-title {
+  margin: 7px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 460px;
+}
+.source-note {
+  margin-top: 24px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.source-note a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+@media (max-width: 950px) {
+  .country-layout {
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 16px;
+  }
+  .country-directory,
+  .country-summary,
+  .history-panel {
+    padding: 20px;
+  }
+  .history-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+  .history-filters .button {
+    grid-column: 1 / -1;
+  }
+  .history-heading {
+    display: block;
+  }
+  .history-heading > p {
+    max-width: none;
+  }
+}
+@media (max-width: 700px) {
+  .country-layout {
+    grid-template-columns: 1fr;
+  }
+  .country-links {
+    max-height: 230px;
+  }
+  .country-intro {
+    padding: 28px;
+    min-height: 320px;
+  }
+  .country-title h2 {
+    font-size: 25px;
+  }
+  .country-facts {
+    gap: 20px;
+  }
+}

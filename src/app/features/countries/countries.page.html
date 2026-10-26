@@ -1,0 +1,226 @@
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">01 / Les États</p>
+    <h1>Un pays, une histoire de votes.</h1>
+  </div>
+  <p class="muted">
+    Retrouvez les positions enregistrées à l’Assemblée générale, résolution après résolution.
+  </p>
+</div>
+
+<div class="country-layout">
+  <aside class="panel country-directory" aria-label="Recherche de pays">
+    <label class="field" for="country-search">Rechercher un État</label>
+    <input
+      class="input"
+      id="country-search"
+      type="search"
+      [formControl]="search"
+      placeholder="France, Inde, FRA…"
+      autocomplete="off"
+    />
+    <p class="directory-caption muted">Noms actuels et entités historiques du jeu de données.</p>
+    <div aria-live="polite">
+      @if (searchLoading()) {
+        <p class="status">Recherche en cours…</p>
+      }
+      @if (searchError()) {
+        <p class="status status-error" role="alert">{{ searchError() }}</p>
+      }
+      @if (!searchLoading() && !searchError() && !countries().length) {
+        <p class="status">Aucun État trouvé. Essayez un autre nom ou un code.</p>
+      }
+    </div>
+    <div class="country-links" [attr.aria-busy]="searchLoading()">
+      @for (country of countries(); track country.id) {
+        <a
+          class="country-link"
+          [class.is-selected]="selected()?.id === country.id"
+          [attr.aria-current]="selected()?.id === country.id ? 'page' : null"
+          [routerLink]="['/pays', country.id]"
+        >
+          <span class="country-code">{{ country.iso3 || country.id }}</span
+          ><span>{{ country.name }}</span
+          ><span aria-hidden="true">↗</span>
+        </a>
+      }
+    </div>
+  </aside>
+
+  <section class="country-content" aria-label="Fiche pays et historique">
+    @if (countryLoading()) {
+      <div class="panel status" aria-live="polite">Ouverture de la fiche…</div>
+    }
+    @if (countryError()) {
+      <div class="panel status status-error" role="alert">{{ countryError() }}</div>
+    }
+    @if (!selected() && !countryLoading() && !countryError()) {
+      <div class="panel country-intro">
+        <span class="intro-compass" aria-hidden="true">⌖</span>
+        <p class="eyebrow">Commencez l’exploration</p>
+        <h2>Chaque vote laisse une trace.</h2>
+        <p class="muted">
+          Sélectionnez un État pour découvrir sa fiche et parcourir ses votes. Choisissez ensuite
+          une période pour explorer ses positions au fil des résolutions.
+        </p>
+        <a class="button button-primary" routerLink="/pays/FRA"
+          >Explorer la France <span aria-hidden="true">→</span></a
+        >
+      </div>
+    }
+    @if (selected(); as country) {
+      <div class="panel country-summary">
+        <div class="country-title">
+          <span class="country-code large">{{ country.iso3 || country.id }}</span>
+          <div>
+            <p class="eyebrow">Fiche État</p>
+            <h2>{{ country.name }}</h2>
+            <p class="muted">{{ country.nameEn }}</p>
+          </div>
+        </div>
+        <dl class="country-facts">
+          <div>
+            <dt>Votes explicites (pour, contre, abstention)</dt>
+            <dd>{{ country.voteCount | number }}</dd>
+          </div>
+          <div>
+            <dt>Couverture dans le jeu</dt>
+            <dd>{{ country.firstYear }} — {{ country.lastYear }}</dd>
+          </div>
+        </dl>
+        <a
+          class="button button-ghost"
+          routerLink="/comparer"
+          [queryParams]="{ countryA: country.id, countryB: country.id === 'IND' ? 'FRA' : 'IND' }"
+          >Comparer cet État <span aria-hidden="true">↗</span></a
+        >
+      </div>
+
+      <div class="panel history-panel">
+        <div class="history-heading">
+          <div>
+            <p class="eyebrow">Archives</p>
+            <h2>Historique des votes</h2>
+          </div>
+          <p class="muted">Votes enregistrés, abstentions et non-votes.</p>
+        </div>
+        <form class="history-filters" [formGroup]="filters" (ngSubmit)="applyVotes()">
+          <div>
+            <label class="field" for="votes-from">De</label
+            ><input
+              class="input"
+              id="votes-from"
+              type="number"
+              formControlName="from"
+              min="1946"
+              max="2100"
+              required
+            />
+          </div>
+          <div>
+            <label class="field" for="votes-to">À</label
+            ><input
+              class="input"
+              id="votes-to"
+              type="number"
+              formControlName="to"
+              min="1946"
+              max="2100"
+              required
+            />
+          </div>
+          <button class="button button-primary" type="submit" [disabled]="votesLoading()">
+            Appliquer la période
+          </button>
+        </form>
+        <div aria-live="polite">
+          @if (votesLoading()) {
+            <p class="status">Consultation des archives…</p>
+          }
+          @if (votesError()) {
+            <p class="status status-error" role="alert">{{ votesError() }}</p>
+          }
+          @if (votes(); as result) {
+            <p class="results-count muted">
+              {{ result.total | number }} résultat{{ result.total > 1 ? 's' : '' }} pour cette
+              période
+            </p>
+            @if (!result.items.length) {
+              <p class="status">Aucun vote disponible pour cet État sur cette période.</p>
+            }
+          }
+        </div>
+        @if (votes(); as result) {
+          @if (result.items.length) {
+            <div class="table-wrap">
+              <table class="data-table">
+                <caption class="sr-only">
+                  Votes de
+                  {{
+                    country.name
+                  }}
+                  sur la période sélectionnée
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Résolution</th>
+                    <th scope="col">Vote</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (vote of result.items; track vote.resolution.id) {
+                    <tr>
+                      <td class="date-cell">{{ vote.resolution.date | date: 'dd/MM/yyyy' }}</td>
+                      <td>
+                        <a
+                          class="resolution-link"
+                          [routerLink]="['/resolutions', vote.resolution.id]"
+                          >{{ vote.resolution.symbol }}</a
+                        >
+                        <p class="resolution-title">{{ vote.resolution.title }}</p>
+                      </td>
+                      <td>
+                        <span class="tag" [class]="'tag ' + voteClass(vote.choice)">{{
+                          voteLabel(vote.choice)
+                        }}</span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <nav class="pagination" aria-label="Pages de l’historique">
+              <button
+                class="button button-ghost"
+                type="button"
+                [disabled]="page() <= 1 || votesLoading()"
+                (click)="applyVotes(page() - 1)"
+              >
+                ← Précédent</button
+              ><span>Page {{ page() }} / {{ Math.ceil(result.total / result.pageSize) }}</span
+              ><button
+                class="button button-ghost"
+                type="button"
+                [disabled]="page() * result.pageSize >= result.total || votesLoading()"
+                (click)="applyVotes(page() + 1)"
+              >
+                Suivant →
+              </button>
+            </nav>
+          }
+        }
+      </div>
+    }
+  </section>
+</div>
+
+@if (metadata(); as data) {
+  <p class="source-note muted">
+    Source :
+    <a [href]="data.sourceUrl" target="_blank" rel="noopener noreferrer"
+      >Nations unies · Bibliothèque numérique</a
+    >
+    · {{ data.version }} · publiée le {{ data.publishedAt | date: 'dd/MM/yyyy' }}. {{ data.scope }}
+  </p>
+}

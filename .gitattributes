@@ -1,0 +1,3 @@
+* text=auto eol=lf
+# Garder les dictionnaires officiels à l'octet près pour vérifier leurs SHA-256.
+data/source-docs/* -text -whitespace

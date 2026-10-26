@@ -1,0 +1,136 @@
+<a class="back-link" routerLink="/resolutions"
+  ><span aria-hidden="true">←</span> Toutes les résolutions</a
+>
+<div aria-live="polite">
+  @if (loading()) {
+    <div class="panel status">Ouverture du texte et des votes associés…</div>
+  }
+  @if (error()) {
+    <div class="panel status status-error" role="alert">
+      <p>{{ error() }}</p>
+      <button class="button button-ghost" type="button" (click)="reload()">Réessayer</button>
+    </div>
+  }
+</div>
+
+@if (resolution(); as item) {
+  <header class="resolution-heading">
+    <p class="eyebrow">Archives / {{ item.symbol }}</p>
+    <h1>{{ item.title }}</h1>
+    <div class="resolution-subtitle">
+      <span class="tag">{{ item.symbol }}</span
+      ><time [attr.datetime]="item.date">{{ item.date | date: 'dd/MM/yyyy' }}</time
+      ><span>Assemblée générale des Nations unies</span>
+    </div>
+  </header>
+
+  <div class="panel document-source">
+    <div>
+      <h2>Le document à la source</h2>
+      <p class="muted">
+        Consultez la notice officielle, le texte et les documents liés dans la Bibliothèque
+        numérique de l’ONU.
+      </p>
+    </div>
+    <a
+      class="button button-primary"
+      [href]="item.sourceUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      >Notice officielle <span aria-hidden="true">↗</span
+      ><span class="sr-only"> (nouvel onglet)</span></a
+    >
+  </div>
+
+  <section aria-labelledby="vote-distribution-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Lecture du scrutin</p>
+        <h2 id="vote-distribution-heading">La répartition des votes enregistrés</h2>
+      </div>
+      <p class="muted">Les non-votes sont distingués des abstentions.</p>
+    </div>
+    <dl class="vote-totals">
+      <div class="total-yes">
+        <dt>Pour</dt>
+        <dd>{{ item.totals.YES | number }}</dd>
+      </div>
+      <div class="total-no">
+        <dt>Contre</dt>
+        <dd>{{ item.totals.NO | number }}</dd>
+      </div>
+      <div class="total-abstain">
+        <dt>Abstention</dt>
+        <dd>{{ item.totals.ABSTAIN | number }}</dd>
+      </div>
+      <div>
+        <dt>Non-vote</dt>
+        <dd>{{ item.totals.NOT_VOTED | number }}</dd>
+      </div>
+      <div>
+        <dt>Inconnu</dt>
+        <dd>{{ item.totals.UNKNOWN | number }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="panel vote-details" aria-labelledby="country-votes-heading">
+    <div class="details-title">
+      <h2 id="country-votes-heading">État par État</h2>
+      <span class="muted"
+        >{{ item.votes.length | number }} ligne{{ item.votes.length > 1 ? 's' : '' }} de vote</span
+      >
+    </div>
+    @if (!item.votes.length) {
+      <p class="status">
+        Aucun vote individuel disponible pour cette résolution dans le jeu chargé. Cette absence de
+        données ne permet pas de déduire la position d’un État.
+      </p>
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <caption class="sr-only">
+            Votes individuels sur la résolution
+            {{
+              item.symbol
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">État</th>
+              <th scope="col">Code de la source</th>
+              <th scope="col">Vote</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (vote of item.votes; track vote.country.id) {
+              <tr>
+                <td>
+                  <a class="country-link" [routerLink]="['/pays', vote.country.id]"
+                    >{{ vote.country.name }} <span aria-hidden="true">↗</span></a
+                  >
+                </td>
+                <td class="country-id">{{ vote.country.id }}</td>
+                <td>
+                  <span [class]="'tag ' + voteClass(vote.choice)">{{
+                    voteLabel(vote.choice)
+                  }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <p class="source-note muted">
+    © Nations unies ·
+    <a [href]="item.sourceUrl" target="_blank" rel="noopener noreferrer">{{ item.symbol }}</a> ·
+    votes enregistrés le {{ item.date | date: 'dd/MM/yyyy' }}.
+    @if (metadata(); as data) {
+      Jeu {{ data.version }}, publié le {{ data.publishedAt | date: 'dd/MM/yyyy' }}.
+    }
+    Réutilisation non commerciale avec attribution.
+  </p>
+}

@@ -1,0 +1,202 @@
+:host {
+  display: block;
+}
+.compare-fields {
+  grid-template-columns: 1.6fr 1.6fr 0.8fr 0.8fr auto;
+}
+.validation-message {
+  margin: 14px 0 0;
+  color: #9b4a30;
+  font-size: 12px;
+}
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 28px;
+}
+.agreement-card {
+  padding: 30px 34px;
+  border: 1px solid #c8dece;
+  border-radius: 16px;
+  background: #eaf2e8;
+}
+.agreement-card .eyebrow {
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.agreement-value {
+  font-size: 78px;
+  line-height: 1.1;
+  letter-spacing: -4px;
+  font-weight: 500;
+  color: #194e3d;
+  margin: 16px 0;
+}
+.agreement-value > span {
+  font-size: 34px;
+  margin-left: 5px;
+  letter-spacing: -1px;
+}
+.agreement-card p {
+  margin-bottom: 5px;
+  font-size: 17px;
+}
+.counts-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.counts-card .eyebrow {
+  font-size: 9px;
+}
+.counts-card dl {
+  margin: 0;
+}
+.counts-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid #edf1ed;
+}
+.counts-card dl > div:last-child {
+  border-bottom: 0;
+}
+.counts-card dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.counts-card dd {
+  font-size: 20px;
+  margin: 0;
+  font-weight: 600;
+}
+.legend-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  margin-right: 6px;
+}
+.same {
+  background: #3b8668;
+}
+.different {
+  background: #c5825b;
+}
+.excluded {
+  background: #acb7ae;
+}
+.limited-sample {
+  background: #faf1df;
+  padding: 13px 17px;
+  border-radius: 8px;
+  margin-top: 18px;
+  color: #80622b;
+}
+.trend-panel {
+  margin-top: 30px;
+}
+.trend-panel .eyebrow {
+  font-size: 9px;
+}
+.trend-panel .panel-heading {
+  margin-bottom: 10px;
+}
+.trend-panel .panel-heading p {
+  margin: 0;
+}
+.trend-panel .field {
+  min-width: 115px;
+}
+.trend-panel .field label {
+  font-size: 10px;
+}
+.trend-panel .field select {
+  min-height: 38px;
+  font-size: 11px;
+  padding: 6px 10px;
+}
+.trend-chart {
+  display: block;
+  width: 100%;
+  margin: 20px 0 14px;
+  min-height: 145px;
+}
+.chart-data summary {
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+  list-style-position: inside;
+  padding: 10px 0;
+}
+.chart-data .table-wrap {
+  max-height: 340px;
+  overflow: auto;
+  margin-top: 10px;
+}
+.divergence-panel {
+  padding: 8px 15px;
+}
+.resolution-title {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  max-width: 490px;
+  margin: 6px 0 0;
+  line-height: 1.6;
+}
+.date-cell {
+  white-space: nowrap;
+}
+.mobile-table-note {
+  display: none;
+}
+@media (max-width: 900px) {
+  .compare-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+  .compare-fields .button {
+    grid-column: 1/-1;
+  }
+  .agreement-card {
+    padding: 25px;
+  }
+  .agreement-value {
+    font-size: 62px;
+  }
+  .agreement-card p {
+    font-size: 15px;
+  }
+}
+@media (max-width: 600px) {
+  .result-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .agreement-value {
+    font-size: 70px;
+  }
+  .panel-heading {
+    flex-wrap: wrap;
+  }
+  .trend-panel .field {
+    max-width: 160px;
+  }
+  .divergence-panel {
+    padding: 5px;
+  }
+  .divergence-panel .data-table {
+    min-width: 620px;
+  }
+  .mobile-table-note {
+    display: block;
+    padding: 10px 10px 0;
+    margin: 0;
+  }
+  .counts-card {
+    padding: 24px;
+  }
+}

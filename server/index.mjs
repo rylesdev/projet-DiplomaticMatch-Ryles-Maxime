@@ -1,0 +1,29 @@
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { createApiServer } from './api.mjs';
+import { createStore } from './domain.mjs';
+
+const datasetPath = new URL('../data/dataset.json', import.meta.url);
+let dataset;
+try {
+  dataset = JSON.parse(await readFile(datasetPath, 'utf8'));
+} catch (error) {
+  console.error(
+    `Impossible de charger ${fileURLToPath(datasetPath)}. Exécutez npm run data:download puis npm run data:import si les données ne sont pas présentes.`,
+  );
+  throw error;
+}
+const port = Number(process.env['API_PORT'] ?? 3001);
+if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('API_PORT invalide.');
+const server = createApiServer(createStore(dataset));
+server.listen(port, '127.0.0.1', () =>
+  console.log(
+    `API Diplomatic Match : http://127.0.0.1:${port}/api/health — ${dataset.metadata.version}`,
+  ),
+);
+server.on('error', (error) => {
+  console.error(error.message);
+  process.exitCode = 1;
+});
+for (const signal of ['SIGINT', 'SIGTERM'])
+  process.on(signal, () => server.close(() => process.exit(0)));

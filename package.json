@@ -3,7 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "node scripts/dev.mjs",
+    "start:angular": "ng serve",
+    "start:api": "node server/index.mjs",
+    "data:import": "node scripts/import-data.mjs",
+    "data:download": "node scripts/download-data.mjs",
+    "test:api": "node --test server/*.test.mjs",
+    "check": "npm run build && npm test -- --watch=false && npm run test:api",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"

@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "source": "United Nations Dag Hammarskjöld Library",
+  "version": "6 (15 octobre 2026)",
+  "publishedAt": "2026-10-15",
+  "downloadedAt": "2026-10-26T14:07:58.824Z",
+  "importedAt": "2026-10-26T14:08:21.360Z",
+  "files": [
+    {
+      "kind": "votes",
+      "directory": "raw",
+      "name": "2026_10_15_votes_ga.csv",
+      "url": "https://digitallibrary.un.org/record/4060887/files/2026_10_15_votes_ga.csv?version=1",
+      "bytes": 368130256,
+      "sha256": "8c2e1c6aaf427c685835e7fdf74833375ed711a28d1ee9e393163903e99e11a5"
+    },
+    {
+      "kind": "outcomes",
+      "directory": "raw",
+      "name": "2026_10_15_outcomes_ga.csv",
+      "url": "https://digitallibrary.un.org/record/4060945/files/2026_10_15_outcomes_ga.csv?version=1",
+      "bytes": 7523446,
+      "sha256": "573a6b6b5f76e706de58da0188f585195dfa128510386ec75ace838051e1b02b"
+    },
+    {
+      "kind": "votesMetadata",
+      "directory": "source-docs",
+      "name": "2026_10_15_votes_ga_1.md",
+      "url": "https://digitallibrary.un.org/record/4060887/files/2026_10_15_votes_ga_1.md?version=1",
+      "bytes": 4074,
+      "sha256": "9bc00a25eb56e882f92beff45523b08aab4b675fc7e1bfd7d9a9588149525242"
+    },
+    {
+      "kind": "outcomesMetadata",
+      "directory": "source-docs",
+      "name": "2026_10_15_ga_outcomes.md",
+      "url": "https://digitallibrary.un.org/record/4060945/files/2026_10_15_ga_outcomes.md?version=1",
+      "bytes": 4347,
+      "sha256": "93724c339ecc3aaabeb64f8592523c92fba0e18c22ec73a6b67945db7168effc"
+    }
+  ],
+  "joinKey": "undl_id",
+  "countryKey": "ms_code",
+  "countryLabel": "Dernier ms_name observé par code ; tous les libellés sont conservés dans aliases.",
+  "historicalCodes": [
+    "SUN",
+    "DDR",
+    "GER",
+    "CSK",
+    "YUG",
+    "SCG",
+    "YMD"
+  ],
+  "normalization": {
+    "Y": "YES",
+    "N": "NO",
+    "A": "ABSTAIN",
+    "X": "NOT_VOTED",
+    "other": "UNKNOWN"
+  },
+  "countryVoteCount": "Nombre de choix explicites Y, N ou A ; X et valeurs inconnues exclus.",
+  "coverage": {
+    "declaredStart": "1946-12-11",
+    "observedStart": "1946-01-26",
+    "observedEnd": "2026-09-17",
+    "note": "Divergence entre titre du codebook et dates effectives conservée, sans correction inventée."
+  },
+  "counts": {
+    "outcomeRows": 20834,
+    "voteRows": 954382,
+    "importedVotes": 954382,
+    "countries": 202,
+    "resolutions": 20834,
+    "recordedVoteResolutions": 5730,
+    "rejections": 0,
+    "rawVoteCounts": {
+      "Y": 716604,
+      "X": 89296,
+      "A": 101386,
+      "N": 47096
+    },
+    "unknownChoices": {}
+  },
+  "license": "© Nations unies — utilisation non commerciale avec attribution.",
+  "termsUrls": [
+    "https://digitallibrary.un.org/pages/?ln=en&page=tos",
+    "https://www.un.org/en/about-us/terms-of-use"
+  ],
+  "citation": "United Nations Dag Hammarskjöld Library, United Nations General Assembly Voting Data, version 6 (15 October 2026), downloaded 2026-10-26, https://digitallibrary.un.org/record/4060887"
+}
