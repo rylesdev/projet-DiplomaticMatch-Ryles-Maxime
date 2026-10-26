@@ -1,0 +1,33 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.page {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  transition: background-color 200ms ease;
+}
+
+.background-white {
+  background-color: #ffffff;
+}
+
+.background-red {
+  background-color: #f25022;
+}
+
+.background-green {
+  background-color: #7fba00;
+}
+
+.background-blue {
+  background-color: #00a4ef;
+}
+
+.background-yellow {
+  background-color: #ffb900;
+}

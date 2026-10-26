@@ -1,0 +1,7 @@
+<app-header-violet [prenoms]="noms"></app-header-violet>
+
+<main class="page" [ngClass]="backgroundColor">
+  <app-microsoft (colorSelected)="changeBackgroundColor($event)" />
+</main>
+
+<app-footer-orange></app-footer-orange>
