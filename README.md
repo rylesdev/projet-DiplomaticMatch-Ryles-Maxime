@@ -80,7 +80,6 @@ scripts/                      Lancement, téléchargement et import
 public/                       Favicon original, fichiers statiques
 data/                         Données compactes, dictionnaires et manifestes
 PLAN_PROJET.md                Checklist et démonstration proposée (15 min)
-AGENTS.md                     Idée et consignes de travail fournies
 ```
 
 ## Validations universitaires restantes

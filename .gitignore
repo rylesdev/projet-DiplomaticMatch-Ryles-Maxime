@@ -27,8 +27,31 @@ yarn-error.log
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-!.vscode/mcp.json
 .history/*
+
+# Local AI tools, instructions and prompts
+AGENTS*.md
+CLAUDE*.md
+GEMINI*.md
+SKILL.md
+.codex/
+.agents/
+.claude/
+.gemini/
+.cursor/
+.windsurf/
+.continue/
+.aider*
+.cursorrules
+.cursorignore
+.windsurfrules
+.mcp.json
+mcp*.json
+.github/copilot-instructions.md
+.github/instructions/
+.github/prompts/
+.github/agents/
+*.prompt.md
 
 # Miscellaneous
 /.angular/cache
