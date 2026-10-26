@@ -1,6 +1,6 @@
 ﻿# INF1 — Projet Angular
 
-Application Angular reprise du [TP1 de Daria et Maxime](https://github.com/dasha-may/dariaQuesnelMaximeDacostavieiraTP1), commit `52df89d`, pour le dépôt [rylesdev/inf1-projet-angular](https://github.com/rylesdev/inf1-projet-angular).
+Application Angular reprise du [TP1 de Daria et Maxime](https://github.com/dasha-may/dariaQuesnelMaximeDacostavieiraTP1), commit `52df89d`, pour le dépôt [rylesdev/projet-NOMDUPROJET-Ryles-Maxime.](https://github.com/rylesdev/projet-NOMDUPROJET-Ryles-Maxime.).
 
 La structure et le fonctionnement du TP1 sont conservés : en-tête violet avec les prénoms, quatre carrés Microsoft cliquables qui changent la couleur du fond, et pied de page orange. Le logo s'adapte aussi aux petits écrans et ses boutons sont accessibles au clavier et nommés pour les lecteurs d'écran.
 
@@ -9,7 +9,7 @@ La structure et le fonctionnement du TP1 sont conservés : en-tête violet avec 
 Prérequis : Git, Node.js 24 LTS et npm (configuration utilisée : Node.js 24.21.0, npm 12.0.2).
 
 ```bash
-git clone https://github.com/rylesdev/inf1-projet-angular.git
+git clone https://github.com/rylesdev/projet-NOMDUPROJET-Ryles-Maxime..git inf1-projet-angular
 cd inf1-projet-angular
 npm ci
 npm start
