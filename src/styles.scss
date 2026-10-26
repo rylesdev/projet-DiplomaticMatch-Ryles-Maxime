@@ -123,33 +123,6 @@ svg {
   font-weight: 650;
   letter-spacing: -0.65px;
 }
-.brand-second {
-  display: block;
-}
-.brand-dot {
-  color: var(--orange);
-}
-.brand-mark {
-  display: flex;
-  gap: 4px;
-  height: 36px;
-  align-items: center;
-}
-.brand-mark span {
-  display: block;
-  background: var(--accent);
-  width: 6px;
-  height: 26px;
-  border-radius: 8px;
-  transform: rotate(25deg);
-}
-.brand-mark span:nth-child(2) {
-  height: 38px;
-}
-.brand-mark span:nth-child(3) {
-  height: 20px;
-  background: var(--orange);
-}
 .site-header nav {
   display: flex;
   gap: 27px;

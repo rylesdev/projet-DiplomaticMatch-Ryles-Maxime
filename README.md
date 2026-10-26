@@ -73,11 +73,10 @@ src/app/
   features/compare/           Concordance et évolution SVG/tableau
   features/resolutions/       Recherche et détail
   features/methodology/       Sources, formule et limites
-  shared/components/          Globe illustratif original
   app.routes.ts               Routes chargées à la demande
 server/                       API HTTP Node, domaine et tests
 scripts/                      Lancement, téléchargement et import
-public/                       Favicon original, fichiers statiques
+public/                       Fichiers statiques
 data/                         Données compactes, dictionnaires et manifestes
 PLAN_PROJET.md                Checklist et démonstration proposée (15 min)
 ```

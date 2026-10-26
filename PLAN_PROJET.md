@@ -31,6 +31,14 @@
 - [x] Vérifier les cinq appels dans le panneau Réseau et répéter le parcours hors connexion aux serveurs ONU.
 - [x] Mettre à jour le README avec les commandes finales et les parcours vérifiés.
 
+## Améliorations proposées — à choisir
+
+- [ ] Partager une comparaison : conserver les deux pays, les années et le regroupement du graphique dans l'URL, avec un bouton pour copier le lien.
+- [ ] Parcourir tous les votes comparés : tableau paginé et filtres pour les votes identiques, différents ou non comparables, avec recherche de résolution.
+- [ ] Filtrer les résolutions disposant de votes individuels : afficher leur disponibilité dans les résultats et ajouter un filtre API.
+
+Ces propositions prolongent les fonctionnalités existantes. Elles ne sont pas encore implémentées et ne remplacent pas la validation des cinq parcours par l'enseignant.
+
 ## Parcours de démonstration proposé — 15 minutes maximum
 
 Ce scénario est à répéter sur la version livrée. France / Inde et la période 2000–2025 ont été vérifiées directement dans le CSV v6 : **2 218 votes comparables**, dont **1 005 concordants**, soit environ **45,3 %** ; 14 autres paires de lignes sont non comparables. Ces nombres servent de référence de contrôle, sans interprétation d'alliance.

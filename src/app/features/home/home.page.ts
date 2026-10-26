@@ -6,11 +6,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { DiplomaticApiService, apiErrorMessage } from '../../core/services/diplomatic-api.service';
 import { ComparisonResult, Country, DataMetadata } from '../../core/models/api.models';
-import { AtlasGlobeComponent } from '../../shared/components/atlas-globe.component';
 
 @Component({
   selector: 'app-home-page',
-  imports: [RouterLink, ReactiveFormsModule, DecimalPipe, DatePipe, AtlasGlobeComponent],
+  imports: [RouterLink, ReactiveFormsModule, DecimalPipe, DatePipe],
   templateUrl: './home.page.html',
   styleUrl: './home.page.scss',
 })
@@ -31,6 +30,7 @@ export class HomePage {
   load(): void {
     this.loading.set(true);
     this.error.set('');
+    this.preview.set(null);
     forkJoin({
       metadata: this.api.metadata(),
       countries: this.api.countries(),

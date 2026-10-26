@@ -1,35 +1,71 @@
-<div class="intro-line">
-  <span class="eyebrow">LE MONDE VU DE L’ASSEMBLÉE GÉNÉRALE</span
-  ><span class="edition">Une archive. Des perspectives.</span>
+﻿<div class="intro-line">
+  <span class="eyebrow">Assemblée générale des Nations unies</span>
+  <span class="edition">Archives des votes</span>
 </div>
 <section class="hero">
   <div class="hero-copy">
-    <span class="kicker"><span class="status-dot"></span>EXPLORATEUR DES VOTES À L’ONU</span>
-    <h1>Quand les pays<br />font entendre<br /><em>leur voix.</em></h1>
-    <p>
-      Sur quoi les États s’accordent-ils ? Explorez leurs votes, comparez leurs positions et
-      observez ce qui change au fil du temps.
-    </p>
+    <span class="kicker">VOTES ENREGISTRÉS</span>
+    <h1>Comparer les votes des pays à l’ONU.</h1>
+    <p>Recherchez un État, consultez ses votes et comparez deux pays sur une période.</p>
     <div class="hero-actions">
-      <a routerLink="/comparer" class="button button-primary"
-        >Comparer deux pays <span aria-hidden="true">↗</span></a
-      ><a routerLink="/pays" class="secondary"
-        >Parcourir les pays <span aria-hidden="true">→</span></a
-      >
+      <a routerLink="/comparer" class="button button-primary">Comparer deux pays</a>
+      <a routerLink="/pays" class="secondary">Parcourir les pays →</a>
     </div>
-    <p class="footnote">Des données publiques. Une méthode transparente.</p>
   </div>
-  <app-atlas-globe aria-hidden="true" />
+  <section class="preview" aria-label="Exemple de comparaison" [attr.aria-busy]="loading()">
+    <p class="eyebrow">Exemple de comparaison</p>
+    @if (loading()) {
+      <p class="preview-message" role="status">Chargement des votes de la France et de l’Inde…</p>
+    } @else if (error()) {
+      <div class="preview-message" role="alert">
+        <p>{{ error() }}</p>
+        <button type="button" class="button button-ghost" (click)="load()">Réessayer</button>
+      </div>
+    } @else if (preview(); as result) {
+      <div class="preview-heading">
+        <h2>{{ result.countryA.name }} / {{ result.countryB.name }}</h2>
+        <span>{{ result.from }}–{{ result.to }}</span>
+      </div>
+      @if (result.agreementPercent !== null) {
+        <p class="preview-rate number">
+          {{ result.agreementPercent | number: '1.1-1' }}<span> %</span>
+        </p>
+        <p class="preview-label">Taux de concordance des votes enregistrés</p>
+      } @else {
+        <p class="preview-empty">Aucun vote comparable sur cette période.</p>
+      }
+      <dl class="preview-counts">
+        <div>
+          <dt>Votes comparables</dt>
+          <dd class="number">{{ result.commonVoteCount | number }}</dd>
+        </div>
+        <div>
+          <dt>Votes identiques</dt>
+          <dd class="number">{{ result.matchingVoteCount | number }}</dd>
+        </div>
+      </dl>
+      <p class="preview-note">
+        Les abstentions communes comptent comme des votes identiques. Les non-votes sont exclus du
+        calcul.
+      </p>
+      <div class="preview-footer">
+        <a
+          routerLink="/comparer"
+          [queryParams]="{
+            countryA: result.countryA.id,
+            countryB: result.countryB.id,
+            from: result.from,
+            to: result.to,
+          }"
+          >Voir la comparaison →</a
+        ><span>{{ result.dataVersion }}</span>
+      </div>
+    } @else {
+      <p class="preview-message">Aucune comparaison disponible.</p>
+    }
+  </section>
 </section>
 
-@if (loading()) {
-  <div class="status" role="status">Ouverture des archives officielles…</div>
-}
-@if (error()) {
-  <div class="status status-error" role="alert">
-    {{ error() }} <button class="button button-ghost" (click)="load()">Réessayer</button>
-  </div>
-}
 @if (metadata(); as meta) {
   <section class="stats" aria-label="Couverture du jeu de données">
     <div>
@@ -54,16 +90,12 @@
   </section>
 }
 
-<div class="section-heading">
-  <h2>Deux pays. Une même assemblée.</h2>
-  <span class="muted small">Commencez votre exploration</span>
-</div>
+<div class="section-heading"><h2>Choisir deux pays</h2></div>
 <section class="quick panel">
   <div class="quick-copy">
-    <span class="eyebrow">CROISER LES PERSPECTIVES</span>
-    <h3>Choisissez deux pays,<br />explorez leurs points communs.</h3>
+    <h3>Comparer sur une période</h3>
     <p class="muted small">
-      La concordance mesure leurs votes identiques parmi les votes explicites communs.
+      La concordance mesure les votes identiques parmi les votes explicites communs.
     </p>
   </div>
   <form [formGroup]="form" class="quick-form">
@@ -75,7 +107,7 @@
         }
       </select>
     </div>
-    <span class="join" aria-hidden="true">↔</span>
+    <span class="join" aria-hidden="true">/</span>
     <div class="field">
       <label for="home-country-b">Second pays</label
       ><select id="home-country-b" formControlName="countryB">
@@ -94,55 +126,31 @@
         to: 2025,
       }"
       [attr.aria-disabled]="loading()"
-      >Explorer <span aria-hidden="true">→</span></a
+      >Comparer →</a
     >
   </form>
 </section>
 
-<section class="cards" aria-label="Parcours d’exploration">
+<section class="cards" aria-label="Parcours de consultation">
   <a routerLink="/pays" class="card"
-    ><span class="index">01 / LES PAYS <span>↗</span></span>
-    <h3>Chaque vote<br />laisse une trace.</h3>
-    <p>
-      Retrouvez la fiche d’un État et parcourez l’historique de ses positions, résolution par
-      résolution.
-    </p>
-    <span class="more">Explorer les pays →</span></a
+    ><span class="index">01</span>
+    <h3>Les pays</h3>
+    <p>Rechercher un État et consulter son historique de votes, résolution par résolution.</p>
+    <span class="more">Consulter les pays →</span></a
   >
   <a routerLink="/comparer" class="card"
-    ><span class="index">02 / DANS LE TEMPS <span>↗</span></span>
-    <h3>Les positions<br />évoluent.</h3>
-    <p>
-      Suivez la concordance de deux États au fil des années, avec les effectifs qui éclairent la
-      courbe.
-    </p>
-    <span class="more">Observer l’évolution →</span></a
+    ><span class="index">02</span>
+    <h3>L’évolution des votes</h3>
+    <p>Suivre la concordance de deux États par année et consulter les effectifs comparés.</p>
+    <span class="more">Voir l’évolution →</span></a
   >
   <a routerLink="/resolutions" class="card"
-    ><span class="index">03 / LES RÉSOLUTIONS <span>↗</span></span>
-    <h3>Revenir<br />au texte.</h3>
-    <p>
-      Consultez les résolutions et la répartition des votes. Chaque résultat vous relie à sa source.
-    </p>
+    ><span class="index">03</span>
+    <h3>Les résolutions</h3>
+    <p>Rechercher une résolution, consulter les votes et retrouver la notice officielle.</p>
     <span class="more">Consulter les résolutions →</span></a
   >
 </section>
-@if (preview(); as result) {
-  <section class="example">
-    <span class="eyebrow">UNE PREMIÈRE LECTURE</span>
-    <p>
-      <strong>{{ result.countryA.name }} & {{ result.countryB.name }}</strong> ·
-      {{ result.from }}–{{ result.to }}
-      <span class="rate">{{ result.agreementPercent | number: '1.1-1' }} %</span> de votes
-      concordants sur <strong>{{ result.commonVoteCount | number }}</strong> votes comparables.
-    </p>
-    <a
-      routerLink="/comparer"
-      [queryParams]="{ countryA: 'FRA', countryB: 'IND', from: 2000, to: 2025 }"
-      >Comprendre ce chiffre →</a
-    >
-  </section>
-}
 <p class="source-note">
   Les votes enregistrés décrivent des positions sur des résolutions précises ; ils ne mesurent pas
   les relations diplomatiques entre les États.
