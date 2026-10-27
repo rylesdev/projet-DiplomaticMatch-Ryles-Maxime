@@ -1,6 +1,6 @@
 # Diplomatic Match — suivi du projet
 
-État de cadrage au **26 octobre 2026**. Les cinq parcours sont réalisés et testés ; ce fichier les distingue des validations universitaires à obtenir. Les cinq fonctions gardent chacune un véritable appel à l'API locale consommée par Angular.
+État du projet au **27 octobre 2026**. Les cinq parcours principaux et leurs extensions sont réalisés et testés ; ce fichier les distingue des validations universitaires à obtenir. Les fonctionnalités utilisent de véritables appels à l'API locale consommée par Angular.
 
 ## Cadrage et données
 
@@ -30,6 +30,13 @@
 - [x] Exécuter la compilation, les tests Angular et les tests métier/API.
 - [x] Vérifier les cinq appels dans le panneau Réseau et répéter le parcours hors connexion aux serveurs ONU.
 - [x] Mettre à jour le README avec les commandes finales et les parcours vérifiés.
+
+## Extensions réalisées
+
+- [x] Classement demandé : top 3 des taux de concordance les plus élevés et les plus faibles dans une fiche pays, avec période et minimum de votes, calculé par l'API. Vérifié par tests métier, HTTP et navigateur (ordinateur, mobile, clavier, erreur et période vide).
+- [x] Filtrage thématique des comparaisons, tendances et classements à partir des sujets documentaires conservés, avec règles propres au projet documentées et états sans données.
+- [x] Matrice des 202 pays en double entrée : bleu/rouge, effectifs sous le seuil en gris, lecture des cases, navigation clavier et ouverture des comparaisons détaillées.
+- [x] Vérifier indépendamment les résultats écologie et sécurité, la symétrie de la matrice et la distinction entre 0 % et absence de données.
 
 ## Améliorations proposées — à choisir
 

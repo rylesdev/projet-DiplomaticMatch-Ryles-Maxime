@@ -16,6 +16,8 @@ export interface Resolution {
   title: string;
   date: string;
   sourceUrl: string;
+  subjects?: string[];
+  themeIds?: string[];
 }
 
 export interface Paginated<T> {
@@ -50,6 +52,7 @@ export interface ComparisonResult {
   coverage: { from: string | null; to: string | null };
   dataVersion: string;
   divergences: ComparedResolution[];
+  theme?: string;
 }
 
 export interface TrendPoint {
@@ -59,6 +62,28 @@ export interface TrendPoint {
   agreementPercent: number | null;
 }
 
+export interface CountryRankingEntry {
+  country: Country;
+  commonVoteCount: number;
+  matchingVoteCount: number;
+  differingVoteCount: number;
+  agreementPercent: number;
+  coverage: { from: string; to: string };
+}
+
+export interface CountryRankings {
+  country: Country;
+  from: number;
+  to: number;
+  minVotes: number;
+  eligibleCountryCount: number;
+  excludedCountryCount: number;
+  closest: CountryRankingEntry[];
+  furthest: CountryRankingEntry[];
+  dataVersion: string;
+  theme?: string;
+}
+
 export interface TrendResult {
   countryA: Country;
   countryB: Country;
@@ -66,6 +91,27 @@ export interface TrendResult {
   to: number;
   interval: 'year' | 'decade';
   points: TrendPoint[];
+  dataVersion: string;
+  theme?: string;
+}
+
+export interface Theme {
+  id: string;
+  label: string;
+  description: string;
+  resolutionCount: number;
+  recordedVoteResolutionCount: number;
+}
+
+export interface ConcordanceMatrix {
+  countries: Country[];
+  from: number;
+  to: number;
+  theme: string;
+  minVotes: number;
+  agreementPercents: (number | null)[][];
+  commonVoteCounts: number[][];
+  matchingVoteCounts: number[][];
   dataVersion: string;
 }
 

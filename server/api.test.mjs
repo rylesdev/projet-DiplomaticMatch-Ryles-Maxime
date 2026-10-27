@@ -42,6 +42,69 @@ test('comparaison et évolution exposent le même contrat mathématique', () => 
     50,
   );
 });
+test('classement pays : seuil par défaut et seuil explicite, sans duplicata', () => {
+  const empty = request('/api/countries/FRA/rankings?from=2020&to=2024');
+  assert.equal(empty.country.id, 'FRA');
+  assert.equal(empty.minVotes, 20);
+  assert.equal(empty.eligibleCountryCount, 0);
+  assert.equal(empty.excludedCountryCount, 1);
+  const result = request('/api/countries/FRA/rankings?from=2020&to=2024&minVotes=1');
+  assert.equal(result.closest[0].country.id, 'IND');
+  assert.equal(result.closest[0].commonVoteCount, 3);
+  assert.equal(result.closest[0].agreementPercent, (100 * 2) / 3);
+  assert.deepEqual(result.furthest, []);
+  assert.equal(result.dataVersion, 'test');
+});
+test('API thèmes : catalogue explicite et absence de sujets classée sans inférence', () => {
+  const themes = request('/api/themes');
+  assert.equal(themes.length, 8);
+  assert.equal(themes.find((theme) => theme.id === 'all').resolutionCount, 6);
+  assert.equal(themes.find((theme) => theme.id === 'unclassified').recordedVoteResolutionCount, 6);
+  assert.equal(themes.find((theme) => theme.id === 'environment').resolutionCount, 0);
+});
+test('API comparaison, tendance et classement acceptent le thème et renvoient des états vides exacts', () => {
+  const comparison = request('/api/compare?countryA=FRA&countryB=IND&theme=environment');
+  assert.equal(comparison.theme, 'environment');
+  assert.equal(comparison.commonVoteCount, 0);
+  assert.equal(comparison.agreementPercent, null);
+  const trend = request(
+    '/api/compare/trend?countryA=FRA&countryB=IND&from=2020&to=2021&theme=environment',
+  );
+  assert.equal(trend.theme, 'environment');
+  assert.deepEqual(
+    trend.points.map((point) => point.agreementPercent),
+    [null, null],
+  );
+  const ranking = request('/api/countries/FRA/rankings?minVotes=1&theme=environment');
+  assert.equal(ranking.theme, 'environment');
+  assert.deepEqual(ranking.closest, []);
+  assert.deepEqual(ranking.furthest, []);
+  assert.equal(
+    request('/api/compare?countryA=FRA&countryB=IND&theme=unclassified').commonVoteCount,
+    3,
+  );
+});
+test('API matrice : tous les pays, seuil par défaut et matrices numériques typées', () => {
+  const matrix = request('/api/matrix?from=2020&to=2024&minVotes=1');
+  assert.equal(matrix.theme, 'all');
+  assert.deepEqual(
+    matrix.countries.map((country) => country.id),
+    ['FRA', 'IND'],
+  );
+  assert.deepEqual(matrix.commonVoteCounts, [
+    [4, 3],
+    [3, 4],
+  ]);
+  assert.deepEqual(matrix.matchingVoteCounts, [
+    [4, 2],
+    [2, 4],
+  ]);
+  assert.equal(matrix.agreementPercents[0][1], (100 * 2) / 3);
+  const defaultThreshold = request('/api/matrix');
+  assert.equal(defaultThreshold.minVotes, 20);
+  assert.equal(defaultThreshold.agreementPercents[0][1], null);
+  assert.equal(defaultThreshold.commonVoteCounts[0][1], 3);
+});
 for (const url of [
   '/api/countries/FRA/votes?page=-1',
   '/api/countries/FRA/votes?pageSize=101',
@@ -51,12 +114,29 @@ for (const url of [
   '/api/compare?countryA=FRA&countryB=FRA',
   '/api/compare/trend?countryA=FRA&countryB=IND&interval=month',
   '/api/resolutions?from=2020oops',
+  '/api/countries/FRA/rankings?minVotes=0',
+  '/api/countries/FRA/rankings?minVotes=-1',
+  '/api/countries/FRA/rankings?minVotes=1.5',
+  '/api/countries/FRA/rankings?minVotes=100001',
+  '/api/countries/FRA/rankings?minVotes=non',
+  '/api/countries/FRA/rankings?from=2025&to=2020',
+  '/api/compare?countryA=FRA&countryB=IND&theme=unknown',
+  '/api/compare/trend?countryA=FRA&countryB=IND&theme=unknown',
+  '/api/countries/FRA/rankings?theme=unknown',
+  '/api/matrix?theme=unknown',
+  '/api/matrix?theme=',
+  '/api/matrix?minVotes=0',
+  '/api/matrix?minVotes=100001',
+  '/api/matrix?minVotes=1.5',
+  '/api/matrix?from=2025&to=2020',
+  '/api/matrix?from=invalid',
 ]) {
   test(`paramètres invalides refusés : ${url}`, () =>
     assert.throws(() => request(url), { status: 400 }));
 }
 test('pays et résolutions inconnus donnent 404, les écritures 405', () => {
   assert.throws(() => request('/api/countries/ZZZ'), { status: 404 });
+  assert.throws(() => request('/api/countries/ZZZ/rankings'), { status: 404 });
   assert.throws(() => request('/api/resolutions/99999'), { status: 404 });
   assert.throws(() => request('/api/metadata', 'POST'), { status: 405 });
 });
@@ -72,6 +152,15 @@ test('le véritable serveur HTTP renvoie JSON, statuts et erreurs lisibles', asy
   assert.equal(response.status, 200);
   assert.match(response.headers.get('content-type'), /application\/json/);
   assert.equal((await response.json()).version, 'test');
+  const ranking = await fetch(`${base}/api/countries/FRA/rankings?minVotes=1`);
+  assert.equal(ranking.status, 200);
+  assert.equal((await ranking.json()).closest[0].country.id, 'IND');
+  const matrixResponse = await fetch(`${base}/api/matrix?minVotes=1&theme=all`);
+  assert.equal(matrixResponse.status, 200);
+  assert.equal((await matrixResponse.json()).commonVoteCounts[0][1], 3);
+  const themesResponse = await fetch(`${base}/api/themes`);
+  assert.equal(themesResponse.status, 200);
+  assert.equal((await themesResponse.json())[0].id, 'all');
   const error = await fetch(`${base}/api/countries/ZZZ`);
   assert.equal(error.status, 404);
   assert.match((await error.json()).error, /État/);

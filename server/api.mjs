@@ -1,11 +1,16 @@
 import { createServer } from 'node:http';
 import {
   compareCountries,
+  compareMatrix,
   compareTrend,
   normalizeSearch,
   publicResolution,
+  rankCountries,
   resolutionDetail,
 } from './domain.mjs';
+import { THEMES } from './themes.mjs';
+
+const THEME_IDS = new Set(THEMES.map((theme) => theme.id));
 
 class ApiError extends Error {
   constructor(status, message) {
@@ -44,6 +49,12 @@ function search(params) {
   return normalizeSearch(value.trim());
 }
 
+function themeParameter(params) {
+  const theme = params.get('theme') ?? 'all';
+  if (!THEME_IDS.has(theme)) throw new ApiError(400, 'Ce thème n’existe pas.');
+  return theme;
+}
+
 function paginate(items, params) {
   const page = integer(params, 'page', 1, 1, 100000);
   const pageSize = integer(params, 'pageSize', 20, 1, 100);
@@ -79,6 +90,12 @@ export function handleApi(store, request) {
     throw new ApiError(405, 'Cette API accepte uniquement les requêtes GET.');
   if (path === '/api/health') return { status: 'ok', version: store.metadata.version };
   if (path === '/api/metadata') return store.metadata;
+  if (path === '/api/themes') return store.themes;
+  if (path === '/api/matrix') {
+    const { from, to } = period(params, store);
+    const minVotes = integer(params, 'minVotes', 20, 1, 100000);
+    return compareMatrix(store, from, to, minVotes, themeParameter(params));
+  }
   if (path === '/api/countries') {
     const query = search(params);
     return Array.from(store.countries.values())
@@ -89,12 +106,16 @@ export function handleApi(store, request) {
       )
       .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   }
-  const countryMatch = path.match(/^\/api\/countries\/([^/]+)(\/votes)?$/);
+  const countryMatch = path.match(/^\/api\/countries\/([^/]+)(\/votes|\/rankings)?$/);
   if (countryMatch) {
     const id = decodeURIComponent(countryMatch[1]);
     const found = country(store, id);
     if (!countryMatch[2]) return found;
     const { from, to } = period(params, store);
+    if (countryMatch[2] === '/rankings') {
+      const minVotes = integer(params, 'minVotes', 20, 1, 100000);
+      return rankCountries(store, id, from, to, minVotes, themeParameter(params));
+    }
     const votes = store.countryVotes
       .get(id)
       .filter((item) => {
@@ -106,11 +127,13 @@ export function handleApi(store, request) {
   }
   if (path === '/api/compare' || path === '/api/compare/trend') {
     const { countryA, countryB, from, to } = comparisonParameters(store, params);
-    if (path === '/api/compare') return compareCountries(store, countryA, countryB, from, to);
+    const theme = themeParameter(params);
+    if (path === '/api/compare')
+      return compareCountries(store, countryA, countryB, from, to, theme);
     const interval = params.get('interval') ?? 'year';
     if (!['year', 'decade'].includes(interval))
       throw new ApiError(400, 'L’intervalle doit être year ou decade.');
-    return compareTrend(store, countryA, countryB, from, to, interval);
+    return compareTrend(store, countryA, countryB, from, to, interval, theme);
   }
   if (path === '/api/resolutions') {
     const query = search(params);

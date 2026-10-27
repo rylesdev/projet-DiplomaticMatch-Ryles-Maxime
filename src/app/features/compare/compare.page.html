@@ -32,12 +32,25 @@
         </select>
       </div>
       <div class="field">
+        <label for="compare-theme">Thème</label
+        ><select id="compare-theme" formControlName="theme">
+          @if (!themes().length) {
+            <option [value]="form.controls.theme.value">
+              {{ themeLabel(form.controls.theme.value) }}
+            </option>
+          }
+          @for (theme of themes(); track theme.id) {
+            <option [value]="theme.id">{{ theme.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
         <label for="compare-from">De l’année</label
-        ><input id="compare-from" type="number" min="1946" max="2026" formControlName="from" />
+        ><input id="compare-from" type="number" min="1946" max="2100" formControlName="from" />
       </div>
       <div class="field">
         <label for="compare-to">À l’année</label
-        ><input id="compare-to" type="number" min="1946" max="2026" formControlName="to" />
+        ><input id="compare-to" type="number" min="1946" max="2100" formControlName="to" />
       </div>
       <button type="submit" class="button button-primary" [disabled]="loading()">
         {{ loading() ? 'Calcul…' : 'Comparer' }} <span aria-hidden="true">↗</span>
@@ -45,11 +58,15 @@
     </div>
     @if (submitted() && form.invalid) {
       <p class="validation-message" role="alert">
-        Choisissez deux pays différents et des années entières entre 1946 et 2026, dans l’ordre
+        Choisissez deux pays différents et des années entières entre 1946 et 2100, dans l’ordre
         chronologique.
       </p>
     }
   </form>
+  <p class="theme-note muted">
+    Thèmes regroupés pour ce projet à partir des sujets de l’ONU.
+    <a routerLink="/methodologie">Méthode de classement</a>
+  </p>
 </section>
 @if (loading()) {
   <div class="status" role="status">Comparaison des votes communs…</div>
@@ -75,7 +92,8 @@
         <strong>{{ comparison.countryB.name }}</strong>
       </p>
       <span class="small muted"
-        >{{ comparison.from }} — {{ comparison.to }} · {{ comparison.dataVersion }}</span
+        >{{ comparison.from }} — {{ comparison.to }} · {{ themeLabel(comparison.theme) }} ·
+        {{ comparison.dataVersion }}</span
       >
     </div>
     <div class="counts-card panel">
@@ -155,6 +173,7 @@
       {{ evolution.countryA.name }} & {{ evolution.countryB.name }} · {{ evolution.from }}–{{
         evolution.to
       }}
+      · {{ themeLabel(evolution.theme) }}
     </p>
     @if (!hasTrendData()) {
       <p class="status status-empty">

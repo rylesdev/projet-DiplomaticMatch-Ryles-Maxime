@@ -4,7 +4,7 @@
   "version": "6 (15 octobre 2026)",
   "publishedAt": "2026-10-15",
   "downloadedAt": "2026-10-26T14:07:58.824Z",
-  "importedAt": "2026-10-26T14:08:21.360Z",
+  "importedAt": "2026-10-27T22:50:29.177Z",
   "files": [
     {
       "kind": "votes",
@@ -79,7 +79,109 @@
       "A": 101386,
       "N": 47096
     },
-    "unknownChoices": {}
+    "unknownChoices": {},
+    "resolutionsWithSubjects": 14117,
+    "resolutionsWithoutSubjects": 6717,
+    "subjectLabelCount": 15515
+  },
+  "themeClassification": {
+    "version": "diplomatic-match-subject-rules-v1",
+    "officialTaxonomy": false,
+    "sourceField": "outcomes.subjects",
+    "separator": "|",
+    "method": "Règles explicites du projet appliquées aux seuls sujets source, sans inférence depuis les titres ni les pays. Subdivisions -- conservées. Appartenance multiple autorisée. all est un filtre virtuel ; unclassified couvre les sujets absents ou non reconnus.",
+    "rules": [
+      {
+        "id": "environment",
+        "patterns": [
+          "\\bENVIRONMENT(?:AL(?:LY)?)?\\b",
+          "\\b(?:CLIMATE|BIOLOGICAL DIVERSITY|BIODIVERSITY|DESERTIFICATION|POLLUTION|OZONE)\\b",
+          "\\b(?:FORESTS?|MARINE ECOSYSTEMS|LIVING MARINE RESOURCES|NATURE CONSERVATION|CONSERVATION OF NATURE)\\b",
+          "^(?:NATURE|OCEANS)(?:--|$)"
+        ]
+      },
+      {
+        "id": "security",
+        "patterns": [
+          "\\b(?:DISARMAMENT|WEAPONS?|ARMS|ARMED CONFLICTS?|TERRORISM|COUNTER-TERRORISM)\\b",
+          "\\bPEACE(?:KEEPING|BUILDING)?\\b",
+          "\\b(?:INTERNATIONAL|REGIONAL|COLLECTIVE) SECURITY\\b",
+          "\\b(?:PEACE AND SECURITY|SECURITY COUNCIL|NUCLEAR NON-PROLIFERATION|NUCLEAR TEST BANS?|NUCLEAR-TEST-BAN|MILITARY BUDGETS)\\b"
+        ]
+      },
+      {
+        "id": "rights",
+        "patterns": [
+          "\\b(?:HUMAN RIGHTS|RIGHTS OF|RIGHT TO|DISCRIMINATION|RACISM|APARTHEID|TORTURE|GENOCIDE)\\b",
+          "\\b(?:WOMEN'S ADVANCEMENT|WOMEN'S RIGHTS|GENDER EQUALITY|REFUGEES|DISPLACED PERSONS|PERSONS WITH DISABILITIES)\\b"
+        ]
+      },
+      {
+        "id": "development",
+        "patterns": [
+          "\\b(?:DEVELOPMENT|DEVELOPING COUNTRIES|POVERTY|HEALTH|EDUCATION|HUMAN SETTLEMENTS)\\b",
+          "\\b(?:ECONOMIC|SOCIAL) (?:ASSISTANCE|COOPERATION|GROWTH|CONDITIONS)\\b",
+          "\\b(?:INTERNATIONAL TRADE|FOOD SECURITY|FOOD PROBLEMS|HUNGER|LEAST DEVELOPED COUNTRIES)\\b"
+        ]
+      },
+      {
+        "id": "decolonization",
+        "patterns": [
+          "\\b(?:DECOLONIZATION|COLONIALISM|COLONIAL COUNTRIES|NON-SELF-GOVERNING TERRITORIES|TRUST TERRITORIES)\\b",
+          "\\b(?:SELF-DETERMINATION OF PEOPLES|NATIONAL LIBERATION MOVEMENTS)\\b"
+        ]
+      },
+      {
+        "id": "institutions",
+        "patterns": [
+          "^UN(?:[. ]|--)",
+          "^(?:UNRWA|UNDP|UNEP|UNICEF|UNFPA|UNITAR|UNIDIR|UNHCR)(?:[. ]|--|$)",
+          "^(?:CONFERENCE AND MEETING SERVICES|PERSONNEL QUESTIONS|INTERNATIONAL CIVIL SERVICE)(?:--|$)"
+        ]
+      }
+    ],
+    "counts": {
+      "all": {
+        "resolutions": 20834,
+        "recordedVoteResolutions": 5730,
+        "voteRows": 954382
+      },
+      "environment": {
+        "resolutions": 272,
+        "recordedVoteResolutions": 21,
+        "voteRows": 3840
+      },
+      "security": {
+        "resolutions": 2779,
+        "recordedVoteResolutions": 1193,
+        "voteRows": 216106
+      },
+      "rights": {
+        "resolutions": 2133,
+        "recordedVoteResolutions": 863,
+        "voteRows": 158351
+      },
+      "development": {
+        "resolutions": 1749,
+        "recordedVoteResolutions": 244,
+        "voteRows": 45321
+      },
+      "decolonization": {
+        "resolutions": 1010,
+        "recordedVoteResolutions": 347,
+        "voteRows": 63673
+      },
+      "institutions": {
+        "resolutions": 3336,
+        "recordedVoteResolutions": 518,
+        "voteRows": 92155
+      },
+      "unclassified": {
+        "resolutions": 10212,
+        "recordedVoteResolutions": 2649,
+        "voteRows": 394572
+      }
+    }
   },
   "license": "© Nations unies — utilisation non commerciale avec attribution.",
   "termsUrls": [

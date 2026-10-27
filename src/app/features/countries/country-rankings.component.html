@@ -1,0 +1,199 @@
+<section class="panel rankings-panel" aria-labelledby="rankings-title">
+  <div class="rankings-heading">
+    <div>
+      <p class="eyebrow">Concordance des votes</p>
+      <h2 id="rankings-title">Les autres pays en comparaison</h2>
+    </div>
+    <p class="muted">Trois pays les plus concordants et trois pays les moins concordants.</p>
+  </div>
+  <form class="rankings-form" [formGroup]="form" (ngSubmit)="apply()">
+    <div class="theme-field">
+      <label class="field" for="rankings-theme">Thème</label
+      ><select
+        class="select"
+        id="rankings-theme"
+        formControlName="theme"
+        [attr.aria-busy]="themesLoading()"
+      >
+        @if (!themes().length) {
+          <option value="all">Tous les thèmes</option>
+        }
+        @for (theme of themes(); track theme.id) {
+          <option [value]="theme.id">{{ theme.label }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label class="field" for="rankings-from">De</label
+      ><input
+        class="input"
+        id="rankings-from"
+        type="number"
+        formControlName="from"
+        min="1946"
+        max="2100"
+        step="1"
+        required
+        aria-describedby="rankings-method"
+      />
+    </div>
+    <div>
+      <label class="field" for="rankings-to">À</label
+      ><input
+        class="input"
+        id="rankings-to"
+        type="number"
+        formControlName="to"
+        min="1946"
+        max="2100"
+        step="1"
+        required
+      />
+    </div>
+    <div class="threshold-field">
+      <label class="field" for="rankings-threshold">Votes communs minimum</label
+      ><select class="select" id="rankings-threshold" formControlName="minVotes">
+        <option [ngValue]="1">1 vote</option>
+        <option [ngValue]="5">5 votes</option>
+        <option [ngValue]="10">10 votes</option>
+        <option [ngValue]="20">20 votes</option>
+        <option [ngValue]="50">50 votes</option>
+        <option [ngValue]="100">100 votes</option>
+        <option [ngValue]="200">200 votes</option>
+      </select>
+    </div>
+    <button class="button button-primary" type="submit">Actualiser</button>
+  </form>
+  @if (themesError()) {
+    <div class="status status-error" role="alert">
+      {{ themesError() }}
+      <button class="button button-ghost" type="button" (click)="loadThemes()">
+        Recharger les thèmes
+      </button>
+    </div>
+  }
+  <p class="rankings-method muted" id="rankings-method">
+    Le seuil évite de classer un pays sur quelques votes seulement. Deux abstentions comptent comme
+    un accord ; les non-votes sont exclus.
+    <a routerLink="/methodologie">Thèmes regroupés pour ce projet à partir des sujets de l’ONU.</a>
+  </p>
+  <div aria-live="polite" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <p class="status" role="status">Calcul du classement sur la période…</p>
+    }
+    @if (error()) {
+      <div class="status status-error" role="alert">
+        <p>{{ error() }}</p>
+        <button class="button button-ghost" type="button" (click)="apply()">Réessayer</button>
+      </div>
+    }
+  </div>
+  @if (result(); as data) {
+    <div class="rankings-summary">
+      <p>
+        <strong>{{ data.country.name }}</strong> · {{ data.from }}–{{ data.to }} ·
+        {{ themeLabel(data.theme) }} · au moins {{ data.minVotes | number }} votes communs
+      </p>
+      <p class="muted">
+        {{ data.eligibleCountryCount | number }} pays éligibles ·
+        {{ data.excludedCountryCount | number }} sous le seuil
+      </p>
+    </div>
+    @if (data.minVotes < 20) {
+      <p class="low-sample" role="note">
+        Interprétation limitée : seuil inférieur à 20 votes communs. Un classement sur de petits
+        effectifs peut varier fortement.
+      </p>
+    }
+    @if (!data.eligibleCountryCount) {
+      <p class="status">
+        Aucun autre pays n’atteint ce seuil sur la période. Élargissez la période ou choisissez un
+        seuil plus bas.
+      </p>
+    } @else {
+      <div class="rankings-grid">
+        <section class="ranking-group" aria-labelledby="closest-title">
+          <h3 id="closest-title">Les plus concordants</h3>
+          <ol class="ranking-list">
+            @for (entry of data.closest; track entry.country.id; let rank = $index) {
+              <li>
+                <a
+                  class="ranking-entry"
+                  routerLink="/comparer"
+                  [queryParams]="{
+                    countryA: data.country.id,
+                    countryB: entry.country.id,
+                    from: data.from,
+                    to: data.to,
+                    theme: data.theme ?? 'all',
+                  }"
+                  ><span class="rank" aria-hidden="true">{{ rank + 1 }}</span>
+                  <div class="entry-content">
+                    <div class="entry-title">
+                      <strong>{{ entry.country.name }}</strong
+                      ><span class="rate">{{ entry.agreementPercent | number: '1.1-1' }} %</span>
+                    </div>
+                    <span class="entry-count"
+                      >{{ entry.commonVoteCount | number }} votes communs</span
+                    ><span class="entry-coverage"
+                      >{{ entry.coverage.from | date: 'dd/MM/yyyy' }} –
+                      {{ entry.coverage.to | date: 'dd/MM/yyyy' }}</span
+                    ><span class="entry-link">Voir la comparaison →</span>
+                  </div></a
+                >
+              </li>
+            }
+          </ol>
+        </section>
+        <section class="ranking-group different" aria-labelledby="furthest-title">
+          <h3 id="furthest-title">Les moins concordants</h3>
+          <ol class="ranking-list">
+            @for (entry of data.furthest; track entry.country.id; let rank = $index) {
+              <li>
+                <a
+                  class="ranking-entry"
+                  routerLink="/comparer"
+                  [queryParams]="{
+                    countryA: data.country.id,
+                    countryB: entry.country.id,
+                    from: data.from,
+                    to: data.to,
+                    theme: data.theme ?? 'all',
+                  }"
+                  ><span class="rank" aria-hidden="true">{{ rank + 1 }}</span>
+                  <div class="entry-content">
+                    <div class="entry-title">
+                      <strong>{{ entry.country.name }}</strong
+                      ><span class="rate">{{ entry.agreementPercent | number: '1.1-1' }} %</span>
+                    </div>
+                    <span class="entry-count"
+                      >{{ entry.commonVoteCount | number }} votes communs</span
+                    ><span class="entry-coverage"
+                      >{{ entry.coverage.from | date: 'dd/MM/yyyy' }} –
+                      {{ entry.coverage.to | date: 'dd/MM/yyyy' }}</span
+                    ><span class="entry-link">Voir la comparaison →</span>
+                  </div></a
+                >
+              </li>
+            }
+          </ol>
+          @if (!data.furthest.length) {
+            <p class="group-empty muted">
+              Les pays éligibles figurent déjà dans la première liste.
+            </p>
+          }
+        </section>
+      </div>
+      @if (data.eligibleCountryCount < 6) {
+        <p class="limited-note muted">
+          Moins de six pays atteignent le seuil : les listes sont incomplètes pour ne pas afficher
+          un même pays deux fois.
+        </p>
+      }
+    }
+    <p class="ranking-source muted">
+      {{ data.dataVersion }} · Ce classement compare des votes, pas des alliances.
+      <a routerLink="/methodologie">Méthode de calcul</a>
+    </p>
+  }
+</section>

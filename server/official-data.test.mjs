@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { compareCountries, createStore } from './domain.mjs';
+import { compareCountries, compareMatrix, createStore, rankCountries } from './domain.mjs';
 
 // Jeu réel version 6, conservé dans le dépôt pour une démo indépendante du réseau.
 // La référence FRA/IND a été calculée séparément sur les CSV bruts avant l'import.
@@ -43,4 +43,59 @@ test('France / Inde 2000–2025 correspond au décompte indépendant du CSV sour
   assert.equal(result.nonComparableCount, 14);
   assert.equal(result.agreementPercent, (100 * 1005) / 2218);
   assert.deepEqual(result.coverage, { from: '2000-06-15', to: '2025-12-18' });
+});
+
+test('le classement France 2000–2025 correspond à l’agrégation indépendante des lignes source', () => {
+  const result = rankCountries(store, 'FRA', 2000, 2025, 20);
+  assert.equal(result.eligibleCountryCount, 194);
+  assert.equal(result.excludedCountryCount, 7);
+  const expected = [
+    ['GBR', 2216, 2033, '2000-06-15'],
+    ['MCO', 2136, 1946, '2000-06-15'],
+    ['BEL', 2214, 1958, '2000-06-15'],
+    ['SYR', 2049, 780, '2000-06-15'],
+    ['NRU', 1245, 479, '2000-10-20'],
+    ['CMR', 2020, 783, '2000-10-20'],
+  ];
+  const entries = [...result.closest, ...result.furthest];
+  assert.equal(new Set(entries.map((entry) => entry.country.id)).size, 6);
+  for (const [index, [id, common, matching, from]] of expected.entries()) {
+    const entry = entries[index];
+    assert.equal(entry.country.id, id);
+    assert.equal(entry.commonVoteCount, common);
+    assert.equal(entry.matchingVoteCount, matching);
+    assert.equal(entry.differingVoteCount, common - matching);
+    assert.equal(entry.agreementPercent, (100 * matching) / common);
+    assert.deepEqual(entry.coverage, { from, to: '2025-12-18' });
+  }
+});
+
+test('la matrice complète conserve les 202 entités et la référence bilatérale France / Inde', () => {
+  const matrix = compareMatrix(store, 2000, 2025, 20, 'all');
+  assert.equal(matrix.countries.length, 202);
+  const indexes = Object.fromEntries(matrix.countries.map((country, index) => [country.id, index]));
+  assert.ok(Number.isInteger(indexes.SUN));
+  assert.ok(Number.isInteger(indexes.RUS));
+  assert.equal(matrix.commonVoteCounts[indexes.FRA][indexes.IND], 2218);
+  assert.equal(matrix.matchingVoteCounts[indexes.FRA][indexes.IND], 1005);
+  assert.equal(matrix.agreementPercents[indexes.FRA][indexes.IND], (100 * 1005) / 2218);
+  assert.equal(matrix.agreementPercents[indexes.IND][indexes.FRA], (100 * 1005) / 2218);
+  assert.equal(matrix.commonVoteCounts[indexes.SUN][indexes.FRA], 0);
+  assert.equal(matrix.agreementPercents[indexes.SUN][indexes.FRA], null);
+});
+
+test('écologie et sécurité France / Inde correspondent aux décomptes indépendants des sujets source', () => {
+  const belowThreshold = compareMatrix(store, 2000, 2025, 20, 'environment');
+  const indexes = Object.fromEntries(
+    belowThreshold.countries.map((country, index) => [country.id, index]),
+  );
+  assert.equal(belowThreshold.commonVoteCounts[indexes.FRA][indexes.IND], 15);
+  assert.equal(belowThreshold.matchingVoteCounts[indexes.FRA][indexes.IND], 8);
+  assert.equal(belowThreshold.agreementPercents[indexes.FRA][indexes.IND], null);
+  const visible = compareMatrix(store, 2000, 2025, 1, 'environment');
+  assert.equal(visible.agreementPercents[indexes.FRA][indexes.IND], (100 * 8) / 15);
+  const security = compareCountries(store, 'FRA', 'IND', 2000, 2025, 'security');
+  assert.equal(security.commonVoteCount, 647);
+  assert.equal(security.matchingVoteCount, 193);
+  assert.equal(security.agreementPercent, (100 * 193) / 647);
 });

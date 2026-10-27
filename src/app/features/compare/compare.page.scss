@@ -2,7 +2,12 @@
   display: block;
 }
 .compare-fields {
-  grid-template-columns: 1.6fr 1.6fr 0.8fr 0.8fr auto;
+  grid-template-columns: 1.4fr 1.4fr 1.4fr 0.7fr 0.7fr auto;
+}
+.theme-note {
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 18px 0 0;
 }
 .validation-message {
   margin: 14px 0 0;
@@ -154,7 +159,7 @@
 .mobile-table-note {
   display: none;
 }
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .compare-fields {
     grid-template-columns: 1fr 1fr;
   }

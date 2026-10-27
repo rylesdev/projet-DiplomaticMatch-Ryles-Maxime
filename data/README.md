@@ -78,3 +78,72 @@ npm run data:import
 ```
 
 L'import contrôle les colonnes et la liaison des notices. Ne pas remplacer une erreur de téléchargement par des votes inventés. Les fixtures synthétiques des tests restent séparées des données affichées.
+
+## Regroupements thématiques du projet
+
+Les filtres « Écologie et environnement », « Sécurité et paix », « Droits », « Développement », « Décolonisation » et « Institutions » sont **des regroupements définis pour Diplomatic Match**, pas une taxonomie officielle publiée par l'ONU. Ils sont fondés uniquement sur la colonne documentaire `subjects` du CSV des résolutions. Aucun thème n'est déduit du titre, d'un pays cité ou d'une interprétation politique.
+
+L'audit du 27 octobre 2026 a porté sur les **20 834 résolutions** : **14 117** ont un champ `subjects` renseigné, **6 717** n'en ont pas. Le séparateur réellement observé est **`|`**, présent dans 1 332 champs ; ni le point-virgule ni le retour à la ligne ne servent de séparateur. Les **15 515 libellés** ainsi extraits sont conservés comme tableau `subjects` de chaque résolution, dans leur ordre et leur graphie source. Les subdivisions `--` restent à l'intérieur d'un libellé. La casse et les espaces externes ne sont ignorés que pour appliquer les règles, sans modifier la valeur conservée.
+
+Les expressions exactes figurent dans [`server/themes.mjs`](../server/themes.mjs) et dans `source-manifest.json`, sous `themeClassification.rules`. Leur version est **`diplomatic-match-subject-rules-v1`**. Une résolution peut relever de plusieurs thèmes : par exemple `ENVIRONMENT--SUSTAINABLE DEVELOPMENT` relève de l'environnement et du développement. Elle n'est comptée qu'une fois dans chaque thème.
+
+| Identifiant      | Principaux motifs documentaires reconnus                                                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `environment`    | `ENVIRONMENT`, `CLIMATE`, `BIOLOGICAL DIVERSITY`, désertification, pollution, ozone, forêts, écosystèmes et ressources marines, conservation de la nature                       |
+| `security`       | `DISARMAMENT`, armes, conflits armés, terrorisme, paix, maintien/consolidation de la paix, sécurité internationale/régionale/collective, non-prolifération et essais nucléaires |
+| `rights`         | `HUMAN RIGHTS`, droits explicitement nommés, discrimination, racisme, apartheid, torture, génocide, droits/avancement des femmes, réfugiés et protection des personnes          |
+| `development`    | `DEVELOPMENT`, pays en développement, pauvreté, santé, éducation, établissements humains, coopération et assistance économique/sociale, commerce, alimentation                  |
+| `decolonization` | Décolonisation, pays coloniaux, territoires non autonomes ou sous tutelle, autodétermination et mouvements de libération                                                        |
+| `institutions`   | Sujet commençant par `UN`, organes/programmes ONU explicitement identifiés, budget, personnel et services de conférence ; un simple qualificatif `--UN...` ne suffit pas        |
+| `unclassified`   | Sujets absents ou aucun motif reconnu ; ce n'est pas une absence de vote                                                                                                        |
+| `all`            | Filtre virtuel sans restriction, jamais un thème attribué à une résolution                                                                                                      |
+
+Quelques exclusions préviennent les rapprochements abusifs : `NUCLEAR ENERGY` seul ne signifie pas armement nucléaire ; `FOOD SECURITY` relève du développement, pas de la sécurité militaire ; `SUSTAINABLE DEVELOPMENT` seul ne devient pas automatiquement un sujet écologique. `PALESTINE QUESTION`, `MIDDLE EAST SITUATION` ou `ANTARCTICA` ne reçoivent pas de thème sur une simple intuition géographique. Ces sujets restent néanmoins consultables avec « Tous les sujets » et « Sans thème attribué ».
+
+### Exemples vérifiés dans le fichier source
+
+| Notice `undl_id` | Libellé exact observé                                                            | Regroupement obtenu          |
+| ---------------- | -------------------------------------------------------------------------------- | ---------------------------- |
+| 281124           | `ENVIRONMENT`                                                                    | environnement                |
+| 282760           | `CLIMATE`                                                                        | environnement                |
+| 281221           | `DESERTIFICATION`                                                                | environnement                |
+| 283753           | `ENVIRONMENT--SUSTAINABLE DEVELOPMENT`                                           | environnement, développement |
+| 280722           | `DISARMAMENT--UN. GENERAL ASSEMBLY (12TH SPECIAL SESS. : 1982)--RECOMMENDATIONS` | sécurité                     |
+| 280857           | `DISARMAMENT--GENERAL AND COMPLETE`                                              | sécurité                     |
+| 281148           | `NON-NUCLEAR-WEAPON STATES`                                                      | sécurité                     |
+| 280730           | `TERRITORIES OCCUPIED BY ISRAEL--HUMAN RIGHTS--REPORTS`                          | droits                       |
+| 280785           | `HUMAN RIGHTS ADVANCEMENT--UN SYSTEM`                                            | droits                       |
+| 285182           | `WOMEN'S ADVANCEMENT--CONFERENCES (4TH : 1995 : BEIJING)`                        | droits                       |
+| 405445           | `RIGHTS OF THE CHILD`                                                            | droits                       |
+| 285181           | `WOMEN IN DEVELOPMENT`                                                           | développement                |
+| 280947           | `INTERNATIONAL TRADE`                                                            | développement                |
+| 455672           | `POVERTY--INTERNATIONAL DECADES`                                                 | développement                |
+| 280834           | `DECOLONIZATION`                                                                 | décolonisation               |
+| 281755           | `NON-SELF-GOVERNING TERRITORIES--REPORTS`                                        | décolonisation               |
+| 278854           | `COLONIAL COUNTRIES--INDEPENDENCE--FOREIGN INTERESTS`                            | décolonisation               |
+| 280748           | `NATIONAL LIBERATION MOVEMENTS--OBSERVER STATUS`                                 | décolonisation               |
+| 280819           | `UN--BUDGET (1986-1987)`                                                         | institutions                 |
+| 280790           | `UN. ECONOMIC AND SOCIAL COUNCIL--REPORTS`                                       | institutions                 |
+| 280874           | `UNRWA`                                                                          | institutions                 |
+| 280797           | `MIDDLE EAST SITUATION`                                                          | sans thème attribué          |
+| 280765           | `ANTARCTICA`                                                                     | sans thème attribué          |
+| 280897           | `AGEING PERSONS`                                                                 | sans thème attribué          |
+
+### Couverture des regroupements après réimport
+
+| Filtre                                  | Résolutions | Résolutions possédant des votes individuels | Lignes de vote, non-votes inclus |
+| --------------------------------------- | ----------: | ------------------------------------------: | -------------------------------: |
+| Tous les sujets                         |      20 834 |                                       5 730 |                          954 382 |
+| Écologie et environnement               |         272 |                                          21 |                            3 840 |
+| Sécurité et paix                        |       2 779 |                                       1 193 |                          216 106 |
+| Droits et protection des personnes      |       2 133 |                                         863 |                          158 351 |
+| Développement et conditions de vie      |       1 749 |                                         244 |                           45 321 |
+| Décolonisation et autodétermination     |       1 010 |                                         347 |                           63 673 |
+| Institutions et fonctionnement de l'ONU |       3 336 |                                         518 |                           92 155 |
+| Sans thème attribué                     |      10 212 |                                       2 649 |                          394 572 |
+
+Les lignes ne s'additionnent pas : les thèmes peuvent se recouper. Les 10 212 résolutions sans thème attribué comprennent les 6 717 champs absents et 3 495 résolutions dont les libellés ne correspondent pas aux règles. L'absence de champ ne doit pas être comblée par une classification inventée.
+
+**Limite particulière de l'écologie :** parmi les 272 résolutions reconnues, seules 21 disposent de votes individuels dans cette copie historique. Beaucoup d'autres textes ont été adoptés sans vote enregistré. Une période courte ou un seuil minimal élevé peut donc ne laisser aucune paire comparable. Le classement ou la matrice doit alors afficher un état vide ou une cellule sans résultat, sans transformer l'absence de données en `0 %`. Un résultat inférieur à 20 votes comparables garde l'avertissement d'effectif limité.
+
+Le réimport préserve les **954 382 votes, 20 834 résolutions et 202 codes**, avec zéro rejet, et les empreintes SHA-256 des deux CSV bruts restent identiques. Le manifeste et le rapport d'import contiennent les effectifs thématiques pour vérifier le calcul et reproduire le classement.

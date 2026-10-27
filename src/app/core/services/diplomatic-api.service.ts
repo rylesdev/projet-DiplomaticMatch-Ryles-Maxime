@@ -4,7 +4,10 @@ import { map, Observable } from 'rxjs';
 import {
   ComparedResolution,
   ComparisonResult,
+  ConcordanceMatrix,
   Country,
+  CountryRankingEntry,
+  CountryRankings,
   CountryVote,
   DataMetadata,
   Paginated,
@@ -12,6 +15,7 @@ import {
   ResolutionDetail,
   TrendPoint,
   TrendResult,
+  Theme,
   VoteChoice,
 } from '../models/api.models';
 
@@ -35,6 +39,17 @@ function number(value: unknown): number {
     throw new Error('Une valeur numérique reçue de l’API est invalide.');
   }
   return value;
+}
+
+function count(value: unknown): number {
+  const result = number(value);
+  if (!Number.isInteger(result) || result < 0)
+    throw new Error('Un effectif reçu de l’API est invalide.');
+  return result;
+}
+
+function responseTheme(item: JsonObject): string {
+  return item['theme'] === undefined ? 'all' : string(item['theme']);
 }
 
 function percentage(value: unknown): number | null {
@@ -82,6 +97,8 @@ function resolution(value: unknown): Resolution {
     title: string(item['title']),
     date: string(item['date']),
     sourceUrl: sourceUrl(item['sourceUrl']),
+    ...(item['subjects'] === undefined ? {} : { subjects: array(item['subjects'], string) }),
+    ...(item['themeIds'] === undefined ? {} : { themeIds: array(item['themeIds'], string) }),
   };
 }
 
@@ -132,7 +149,67 @@ function comparison(value: unknown): ComparisonResult {
       to: coverage['to'] === null ? null : string(coverage['to']),
     },
     divergences: array(item['divergences'], comparedResolution),
+    theme: responseTheme(item),
   };
+}
+
+function rankingEntry(value: unknown): CountryRankingEntry {
+  const item = object(value);
+  const coverage = object(item['coverage']);
+  const agreementPercent = percentage(item['agreementPercent']);
+  const commonVoteCount = number(item['commonVoteCount']);
+  const matchingVoteCount = number(item['matchingVoteCount']);
+  const differingVoteCount = number(item['differingVoteCount']);
+  if (
+    agreementPercent === null ||
+    !Number.isInteger(commonVoteCount) ||
+    commonVoteCount < 1 ||
+    !Number.isInteger(matchingVoteCount) ||
+    matchingVoteCount < 0 ||
+    !Number.isInteger(differingVoteCount) ||
+    differingVoteCount < 0 ||
+    matchingVoteCount + differingVoteCount !== commonVoteCount
+  )
+    throw new Error('Les effectifs reçus pour le classement sont invalides.');
+  return {
+    country: country(item['country']),
+    commonVoteCount,
+    matchingVoteCount,
+    differingVoteCount,
+    agreementPercent,
+    coverage: { from: string(coverage['from']), to: string(coverage['to']) },
+  };
+}
+
+function rankings(value: unknown): CountryRankings {
+  const item = object(value);
+  const result: CountryRankings = {
+    country: country(item['country']),
+    from: number(item['from']),
+    to: number(item['to']),
+    minVotes: number(item['minVotes']),
+    eligibleCountryCount: number(item['eligibleCountryCount']),
+    excludedCountryCount: number(item['excludedCountryCount']),
+    closest: array(item['closest'], rankingEntry),
+    furthest: array(item['furthest'], rankingEntry),
+    dataVersion: string(item['dataVersion']),
+    theme: responseTheme(item),
+  };
+  const entries = [...result.closest, ...result.furthest];
+  const ids = entries.map((entry) => entry.country.id);
+  if (
+    result.closest.length > 3 ||
+    result.furthest.length > 3 ||
+    ids.includes(result.country.id) ||
+    new Set(ids).size !== ids.length ||
+    entries.some((entry) => entry.commonVoteCount < result.minVotes) ||
+    !Number.isInteger(result.eligibleCountryCount) ||
+    result.eligibleCountryCount < entries.length ||
+    !Number.isInteger(result.excludedCountryCount) ||
+    result.excludedCountryCount < 0
+  )
+    throw new Error('La liste de classement reçue de l’API est incohérente.');
+  return result;
 }
 
 function trendPoint(value: unknown): TrendPoint {
@@ -158,7 +235,64 @@ function trend(value: unknown): TrendResult {
     interval,
     points: array(item['points'], trendPoint),
     dataVersion: string(item['dataVersion']),
+    theme: responseTheme(item),
   };
+}
+
+function theme(value: unknown): Theme {
+  const item = object(value);
+  const result = {
+    id: string(item['id']),
+    label: string(item['label']),
+    description: string(item['description']),
+    resolutionCount: count(item['resolutionCount']),
+    recordedVoteResolutionCount: count(item['recordedVoteResolutionCount']),
+  };
+  if (result.recordedVoteResolutionCount > result.resolutionCount)
+    throw new Error('Les effectifs du thème reçu sont incohérents.');
+  return result;
+}
+
+function matrixGrid<T>(value: unknown, size: number, parse: (cell: unknown) => T): T[][] {
+  if (!Array.isArray(value) || value.length !== size)
+    throw new Error('Les dimensions de la matrice reçue sont invalides.');
+  return value.map((row: unknown) => {
+    if (!Array.isArray(row) || row.length !== size)
+      throw new Error('Les dimensions de la matrice reçue sont invalides.');
+    return row.map(parse);
+  });
+}
+
+function matrix(value: unknown): ConcordanceMatrix {
+  const item = object(value);
+  const countries = array(item['countries'], country);
+  const size = countries.length;
+  if (new Set(countries.map((country) => country.id)).size !== size)
+    throw new Error('La matrice contient un pays en double.');
+  const result: ConcordanceMatrix = {
+    countries,
+    from: number(item['from']),
+    to: number(item['to']),
+    theme: responseTheme(item),
+    minVotes: count(item['minVotes']),
+    dataVersion: string(item['dataVersion']),
+    agreementPercents: matrixGrid(item['agreementPercents'], size, percentage),
+    commonVoteCounts: matrixGrid(item['commonVoteCounts'], size, count),
+    matchingVoteCounts: matrixGrid(item['matchingVoteCounts'], size, count),
+  };
+  if (result.minVotes < 1) throw new Error('Le seuil de la matrice reçue est invalide.');
+  for (let row = 0; row < size; row++) {
+    for (let column = 0; column < size; column++) {
+      const common = result.commonVoteCounts[row][column];
+      if (
+        result.matchingVoteCounts[row][column] > common ||
+        (result.agreementPercents[row][column] !== null && common < result.minVotes)
+      ) {
+        throw new Error('Les valeurs de la matrice reçue sont incohérentes.');
+      }
+    }
+  }
+  return result;
 }
 
 function detail(value: unknown): ResolutionDetail {
@@ -221,11 +355,31 @@ export class DiplomaticApiService {
   metadata(): Observable<DataMetadata> {
     return this.get('/metadata', metadata);
   }
+  themes(): Observable<Theme[]> {
+    return this.get('/themes', (value) => array(value, theme));
+  }
+  matrix(from: number, to: number, minVotes = 20, theme = 'all'): Observable<ConcordanceMatrix> {
+    return this.get('/matrix', matrix, { from, to, minVotes, theme });
+  }
   countries(search = ''): Observable<Country[]> {
     return this.get('/countries', (value) => array(value, country), { search });
   }
   country(id: string): Observable<Country> {
     return this.get(`/countries/${encodeURIComponent(id)}`, country);
+  }
+  rankings(
+    id: string,
+    from: number,
+    to: number,
+    minVotes = 20,
+    theme = 'all',
+  ): Observable<CountryRankings> {
+    return this.get(`/countries/${encodeURIComponent(id)}/rankings`, rankings, {
+      from,
+      to,
+      minVotes,
+      theme,
+    });
   }
   votes(
     id: string,
@@ -245,8 +399,9 @@ export class DiplomaticApiService {
     countryB: string,
     from: number,
     to: number,
+    theme = 'all',
   ): Observable<ComparisonResult> {
-    return this.get('/compare', comparison, { countryA, countryB, from, to });
+    return this.get('/compare', comparison, { countryA, countryB, from, to, theme });
   }
   trend(
     countryA: string,
@@ -254,8 +409,9 @@ export class DiplomaticApiService {
     from: number,
     to: number,
     interval: 'year' | 'decade' = 'year',
+    theme = 'all',
   ): Observable<TrendResult> {
-    return this.get('/compare/trend', trend, { countryA, countryB, from, to, interval });
+    return this.get('/compare/trend', trend, { countryA, countryB, from, to, interval, theme });
   }
   resolutions(
     search = '',

@@ -5,6 +5,12 @@ import { pathToFileURL } from 'node:url';
 import { readCsv } from './csv.mjs';
 import { SOURCE_FILES, SOURCE_VERSION, PUBLISHED_AT } from './source-config.mjs';
 import { normalizeVote } from '../server/domain.mjs';
+import {
+  assignThemes,
+  THEMES,
+  THEME_RULES,
+  THEME_CLASSIFICATION_VERSION,
+} from '../server/themes.mjs';
 
 // Les codes sont conservés tels quels : notamment GER ≠ DEU, SUN ≠ RUS.
 // Seuls ces libellés d'affichage français sont traduits ; les noms source restent dans nameEn/aliases.
@@ -98,6 +104,12 @@ export function validDate(value) {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
+export function parseSubjects(value) {
+  if (typeof value !== 'string' || value === '') return [];
+  // Le séparateur vérifié dans le CSV v6 est |. Les subdivisions -- et chaque libellé restent exacts.
+  return value.split('|').filter((subject) => subject.trim() !== '');
+}
+
 export function normalizeResolution(row) {
   if (!/^\d+$/.test(row.undl_id) || !row.resolution || !row.title || !validDate(row.date)) {
     throw new Error('Identifiant, symbole, titre ou date de résolution invalide.');
@@ -112,6 +124,7 @@ export function normalizeResolution(row) {
     title: row.title,
     date: row.date,
     sourceUrl: row.undl_link,
+    subjects: parseSubjects(row.subjects),
     votes: [],
   };
 }
@@ -137,6 +150,7 @@ export async function importData() {
     'date',
     'title',
     'modality',
+    'subjects',
     'undl_link',
   ])) {
     outcomeRows++;
@@ -233,6 +247,27 @@ export async function importData() {
   for (const item of countries) delete item.latestDate;
   if (!importedVotes || !minDate || !maxDate)
     throw new Error('Aucun vote valide importé. Aucune donnée de remplacement ne sera créée.');
+  const themeCounts = Object.fromEntries(
+    THEMES.map(({ id }) => [
+      id,
+      {
+        resolutions: 0,
+        recordedVoteResolutions: 0,
+        voteRows: 0,
+      },
+    ]),
+  );
+  let resolutionsWithSubjects = 0;
+  let subjectLabelCount = 0;
+  for (const resolution of resolutions.values()) {
+    if (resolution.subjects.length) resolutionsWithSubjects++;
+    subjectLabelCount += resolution.subjects.length;
+    for (const id of ['all', ...assignThemes(resolution.subjects)]) {
+      themeCounts[id].resolutions++;
+      if (resolution.votes.length) themeCounts[id].recordedVoteResolutions++;
+      themeCounts[id].voteRows += resolution.votes.length;
+    }
+  }
   const files = [];
   for (const file of SOURCE_FILES) {
     const path = sourcePath(file);
@@ -301,6 +336,19 @@ export async function importData() {
       rejections: rejections.length,
       rawVoteCounts,
       unknownChoices,
+      resolutionsWithSubjects,
+      resolutionsWithoutSubjects: resolutions.size - resolutionsWithSubjects,
+      subjectLabelCount,
+    },
+    themeClassification: {
+      version: THEME_CLASSIFICATION_VERSION,
+      officialTaxonomy: false,
+      sourceField: 'outcomes.subjects',
+      separator: '|',
+      method:
+        'Règles explicites du projet appliquées aux seuls sujets source, sans inférence depuis les titres ni les pays. Subdivisions -- conservées. Appartenance multiple autorisée. all est un filtre virtuel ; unclassified couvre les sujets absents ou non reconnus.',
+      rules: THEME_RULES,
+      counts: themeCounts,
     },
     license: metadata.license,
     termsUrls: [
@@ -316,7 +364,7 @@ export async function importData() {
   );
   await writeFile(
     new URL('import-report.json', dataDirectory),
-    JSON.stringify({ counts: manifest.counts, rejections }, null, 2) + '\n',
+    JSON.stringify({ counts: manifest.counts, themeCounts, rejections }, null, 2) + '\n',
   );
   console.log(
     `${importedVotes} votes importés, ${countries.length} codes pays distincts, ${rejections.length} rejets. data/dataset.json prêt.`,

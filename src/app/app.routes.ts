@@ -22,6 +22,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/compare/compare.page').then((m) => m.ComparePage),
   },
   {
+    path: 'matrice',
+    title: 'Matrice des concordances — Diplomatic Match',
+    loadComponent: () => import('./features/matrix/matrix.page').then((m) => m.MatrixPage),
+  },
+  {
     path: 'resolutions',
     title: 'Les résolutions — Diplomatic Match',
     loadComponent: () =>

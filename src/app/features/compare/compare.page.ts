@@ -10,6 +10,7 @@ import {
   Country,
   DataMetadata,
   TrendResult,
+  Theme,
   VoteChoice,
 } from '../../core/models/api.models';
 
@@ -18,6 +19,7 @@ interface Filters {
   countryB: string;
   from: number;
   to: number;
+  theme: string;
 }
 const periodValidator = (control: AbstractControl) => {
   const from = Number(control.get('from')?.value);
@@ -41,6 +43,7 @@ export class ComparePage {
   private readonly comparisons = new Subject<Filters>();
   private readonly trends = new Subject<Filters & { interval: 'year' | 'decade' }>();
   readonly countries = signal<Country[]>([]);
+  readonly themes = signal<Theme[]>([]);
   readonly metadata = signal<DataMetadata | null>(null);
   readonly result = signal<ComparisonResult | null>(null);
   readonly trend = signal<TrendResult | null>(null);
@@ -56,8 +59,9 @@ export class ComparePage {
     {
       countryA: ['FRA', Validators.required],
       countryB: ['IND', Validators.required],
-      from: [2000, [Validators.required, Validators.min(1946), Validators.max(2026)]],
-      to: [2025, [Validators.required, Validators.min(1946), Validators.max(2026)]],
+      theme: ['all', Validators.required],
+      from: [2000, [Validators.required, Validators.min(1946), Validators.max(2100)]],
+      to: [2025, [Validators.required, Validators.min(1946), Validators.max(2100)]],
     },
     { validators: periodValidator },
   );
@@ -91,7 +95,7 @@ export class ComparePage {
           this.error.set('');
           this.result.set(null);
           return this.api
-            .compare(filters.countryA, filters.countryB, filters.from, filters.to)
+            .compare(filters.countryA, filters.countryB, filters.from, filters.to, filters.theme)
             .pipe(
               catchError((error: unknown) => {
                 this.error.set(apiErrorMessage(error));
@@ -110,7 +114,14 @@ export class ComparePage {
           this.trendError.set('');
           this.trend.set(null);
           return this.api
-            .trend(filters.countryA, filters.countryB, filters.from, filters.to, filters.interval)
+            .trend(
+              filters.countryA,
+              filters.countryB,
+              filters.from,
+              filters.to,
+              filters.interval,
+              filters.theme,
+            )
             .pipe(
               catchError((error: unknown) => {
                 this.trendError.set(apiErrorMessage(error));
@@ -127,6 +138,7 @@ export class ComparePage {
       this.form.patchValue({
         countryA: params.get('countryA') ?? 'FRA',
         countryB: params.get('countryB') ?? 'IND',
+        theme: params.get('theme') ?? 'all',
         from: Number(params.get('from') ?? 2000),
         to: Number(params.get('to') ?? 2025),
       });
@@ -136,12 +148,17 @@ export class ComparePage {
 
   loadOptions(): void {
     this.optionsError.set('');
-    forkJoin({ countries: this.api.countries(), metadata: this.api.metadata() })
+    forkJoin({
+      countries: this.api.countries(),
+      metadata: this.api.metadata(),
+      themes: this.api.themes(),
+    })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ countries, metadata }) => {
+        next: ({ countries, metadata, themes }) => {
           this.countries.set(countries);
           this.metadata.set(metadata);
+          this.themes.set(themes);
         },
         error: (error: unknown) => this.optionsError.set(apiErrorMessage(error)),
       });
@@ -163,6 +180,13 @@ export class ComparePage {
     const filters = this.activeFilters();
     if (!filters) return;
     this.trends.next({ ...filters, interval: value });
+  }
+
+  themeLabel(id = 'all'): string {
+    return (
+      this.themes().find((theme) => theme.id === id)?.label ??
+      (id === 'all' ? 'Tous les thèmes' : id)
+    );
   }
 
   periodLabel(year: number, trend: TrendResult): string {

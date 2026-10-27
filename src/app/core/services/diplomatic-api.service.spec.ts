@@ -19,6 +19,55 @@ const testResolution = {
   date: '2000-01-01',
   sourceUrl: 'https://example.test/fixture',
 };
+const testRankings = {
+  country: testCountry,
+  from: 2000,
+  to: 2026,
+  minVotes: 20,
+  eligibleCountryCount: 2,
+  excludedCountryCount: 1,
+  closest: [
+    {
+      country: { ...testCountry, id: 'CLOSE' },
+      commonVoteCount: 30,
+      matchingVoteCount: 27,
+      differingVoteCount: 3,
+      agreementPercent: 90,
+      coverage: { from: '2000-01-01', to: '2026-01-01' },
+    },
+  ],
+  furthest: [
+    {
+      country: { ...testCountry, id: 'FAR' },
+      commonVoteCount: 30,
+      matchingVoteCount: 3,
+      differingVoteCount: 27,
+      agreementPercent: 10,
+      coverage: { from: '2000-01-01', to: '2026-01-01' },
+    },
+  ],
+  dataVersion: 'Fixture de test',
+};
+const testMatrix = {
+  countries: [testCountry, { ...testCountry, id: 'OTHER' }],
+  from: 2000,
+  to: 2026,
+  minVotes: 20,
+  theme: 'environment',
+  dataVersion: 'Fixture de test',
+  agreementPercents: [
+    [100, 50],
+    [50, 100],
+  ],
+  commonVoteCounts: [
+    [30, 20],
+    [20, 30],
+  ],
+  matchingVoteCounts: [
+    [30, 10],
+    [10, 30],
+  ],
+};
 
 describe('DiplomaticApiService', () => {
   let api: DiplomaticApiService;
@@ -115,5 +164,174 @@ describe('DiplomaticApiService', () => {
       dataVersion: 'Fixture de test',
     });
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ interval: 'decade', points: [] }));
+  });
+
+  it('requests rankings with encoded country, dates and the minimum sample size', () => {
+    const next = vi.fn();
+    api.rankings('test/source', 2000, 2026, 20, 'security').subscribe(next);
+    const request = http.expectOne(
+      (request) => request.url === '/api/countries/test%2Fsource/rankings',
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('from')).toBe('2000');
+    expect(request.request.params.get('to')).toBe('2026');
+    expect(request.request.params.get('minVotes')).toBe('20');
+    expect(request.request.params.get('theme')).toBe('security');
+    request.flush(testRankings);
+    expect(next).toHaveBeenCalledWith({ ...testRankings, theme: 'all' });
+  });
+
+  it('rejects ranking entries without a real concordance percentage', () => {
+    const error = vi.fn();
+    api.rankings('TST', 2000, 2026).subscribe({ error });
+    http
+      .expectOne((request) => request.url === '/api/countries/TST/rankings')
+      .flush({
+        ...testRankings,
+        closest: [{ ...testRankings.closest[0], agreementPercent: null }],
+      });
+    expect(error).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it('rejects a duplicate country across both ranking lists', () => {
+    const error = vi.fn();
+    api.rankings('TST', 2000, 2026).subscribe({ error });
+    http
+      .expectOne((request) => request.url === '/api/countries/TST/rankings')
+      .flush({
+        ...testRankings,
+        furthest: testRankings.closest,
+      });
+    expect(error).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it('loads typed theme choices and their recorded-vote counts', () => {
+    const next = vi.fn();
+    api.themes().subscribe(next);
+    const fixture = [
+      {
+        id: 'environment',
+        label: 'Écologie de test',
+        description: 'Fixture, pas une classification officielle.',
+        resolutionCount: 5,
+        recordedVoteResolutionCount: 2,
+      },
+    ];
+    http.expectOne('/api/themes').flush(fixture);
+    expect(next).toHaveBeenCalledWith(fixture);
+  });
+
+  it('passes a theme to comparisons and trends and preserves the returned theme', () => {
+    const comparison = vi.fn();
+    const trend = vi.fn();
+    api.compare('TST', 'OTHER', 2000, 2026, 'security').subscribe(comparison);
+    api.trend('TST', 'OTHER', 2000, 2026, 'decade', 'security').subscribe(trend);
+    const comparisonRequest = http.expectOne((request) => request.url === '/api/compare');
+    const trendRequest = http.expectOne((request) => request.url === '/api/compare/trend');
+    expect(comparisonRequest.request.params.get('theme')).toBe('security');
+    expect(trendRequest.request.params.get('theme')).toBe('security');
+    comparisonRequest.flush({
+      countryA: testCountry,
+      countryB: { ...testCountry, id: 'OTHER' },
+      from: 2000,
+      to: 2026,
+      commonVoteCount: 0,
+      matchingVoteCount: 0,
+      differingVoteCount: 0,
+      nonComparableCount: 0,
+      agreementPercent: null,
+      coverage: { from: null, to: null },
+      divergences: [],
+      dataVersion: 'Fixture de test',
+      theme: 'security',
+    });
+    trendRequest.flush({
+      countryA: testCountry,
+      countryB: { ...testCountry, id: 'OTHER' },
+      from: 2000,
+      to: 2026,
+      interval: 'decade',
+      points: [],
+      dataVersion: 'Fixture de test',
+      theme: 'security',
+    });
+    expect(comparison).toHaveBeenCalledWith(expect.objectContaining({ theme: 'security' }));
+    expect(trend).toHaveBeenCalledWith(expect.objectContaining({ theme: 'security' }));
+  });
+
+  it('requests and validates the matrix and its query filters', () => {
+    const next = vi.fn();
+    api.matrix(2000, 2026, 20, 'environment').subscribe(next);
+    const request = http.expectOne((request) => request.url === '/api/matrix');
+    expect(request.request.params.get('theme')).toBe('environment');
+    expect(request.request.params.get('from')).toBe('2000');
+    expect(request.request.params.get('to')).toBe('2026');
+    expect(request.request.params.get('minVotes')).toBe('20');
+    request.flush(testMatrix);
+    expect(next).toHaveBeenCalledWith(testMatrix);
+  });
+
+  it('rejects matrix dimensions that do not match the countries', () => {
+    const error = vi.fn();
+    api.matrix(2000, 2026).subscribe({ error });
+    http
+      .expectOne((request) => request.url === '/api/matrix')
+      .flush({ ...testMatrix, agreementPercents: [[100]] });
+    expect(error).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it('rejects non-numeric matrix counts instead of casting strings', () => {
+    const error = vi.fn();
+    api.matrix(2000, 2026).subscribe({ error });
+    http
+      .expectOne((request) => request.url === '/api/matrix')
+      .flush({
+        ...testMatrix,
+        commonVoteCounts: [
+          [30, '20'],
+          [20, 30],
+        ],
+      });
+    expect(error).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it('keeps null matrix values below the requested minimum sample size', () => {
+    const next = vi.fn();
+    api.matrix(2000, 2026, 50).subscribe(next);
+    http
+      .expectOne((request) => request.url === '/api/matrix')
+      .flush({
+        ...testMatrix,
+        minVotes: 50,
+        agreementPercents: [
+          [null, null],
+          [null, null],
+        ],
+      });
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agreementPercents: [
+          [null, null],
+          [null, null],
+        ],
+      }),
+    );
+  });
+
+  it('keeps optional source subjects and project theme identifiers on resolutions', () => {
+    const next = vi.fn();
+    api.resolution('test/resolution').subscribe(next);
+    http
+      .expectOne('/api/resolutions/test%2Fresolution')
+      .flush({
+        ...testResolution,
+        subjects: ['ENVIRONMENT'],
+        themeIds: ['environment'],
+        votes: [],
+        totals: { YES: 0, NO: 0, ABSTAIN: 0, NOT_VOTED: 0, UNKNOWN: 0 },
+      });
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ subjects: ['ENVIRONMENT'], themeIds: ['environment'] }),
+    );
   });
 });

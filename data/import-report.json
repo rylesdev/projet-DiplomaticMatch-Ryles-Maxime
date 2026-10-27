@@ -13,7 +13,52 @@
       "A": 101386,
       "N": 47096
     },
-    "unknownChoices": {}
+    "unknownChoices": {},
+    "resolutionsWithSubjects": 14117,
+    "resolutionsWithoutSubjects": 6717,
+    "subjectLabelCount": 15515
+  },
+  "themeCounts": {
+    "all": {
+      "resolutions": 20834,
+      "recordedVoteResolutions": 5730,
+      "voteRows": 954382
+    },
+    "environment": {
+      "resolutions": 272,
+      "recordedVoteResolutions": 21,
+      "voteRows": 3840
+    },
+    "security": {
+      "resolutions": 2779,
+      "recordedVoteResolutions": 1193,
+      "voteRows": 216106
+    },
+    "rights": {
+      "resolutions": 2133,
+      "recordedVoteResolutions": 863,
+      "voteRows": 158351
+    },
+    "development": {
+      "resolutions": 1749,
+      "recordedVoteResolutions": 244,
+      "voteRows": 45321
+    },
+    "decolonization": {
+      "resolutions": 1010,
+      "recordedVoteResolutions": 347,
+      "voteRows": 63673
+    },
+    "institutions": {
+      "resolutions": 3336,
+      "recordedVoteResolutions": 518,
+      "voteRows": 92155
+    },
+    "unclassified": {
+      "resolutions": 10212,
+      "recordedVoteResolutions": 2649,
+      "voteRows": 394572
+    }
   },
   "rejections": []
 }
