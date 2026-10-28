@@ -9,6 +9,9 @@ import {
   resolutionDetail,
 } from './domain.mjs';
 import { THEMES } from './themes.mjs';
+import { GroupError } from './group-domain.mjs';
+import { createGroupRepository } from './group-repository.mjs';
+import { handleGroupsRequest, isGroupsPath } from './groups-api.mjs';
 
 const THEME_IDS = new Set(THEMES.map((theme) => theme.id));
 
@@ -159,18 +162,29 @@ export function handleApi(store, request) {
   throw new ApiError(404, 'Cette route API n’existe pas.');
 }
 
-export function createApiServer(store) {
-  return createServer((request, response) => {
+export function createApiServer(store, options = {}) {
+  const groupRepository = options.groupRepository ?? createGroupRepository();
+  const server = createServer(async (request, response) => {
     response.setHeader('Content-Type', 'application/json; charset=utf-8');
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'no-store');
     try {
+      if (isGroupsPath(new URL(request.url, 'http://127.0.0.1').pathname)) {
+        const result = await handleGroupsRequest(store, groupRepository, request);
+        response.writeHead(result.status);
+        response.end(result.status === 204 ? undefined : JSON.stringify(result.body));
+        return;
+      }
       const body = handleApi(store, request);
       response.writeHead(200);
       response.end(JSON.stringify(body));
     } catch (error) {
       const status =
-        error instanceof ApiError ? error.status : error instanceof URIError ? 400 : 500;
+        error instanceof ApiError || error instanceof GroupError
+          ? error.status
+          : error instanceof URIError
+            ? 400
+            : 500;
       if (status === 500) console.error(error);
       response.writeHead(status);
       response.end(
@@ -180,4 +194,6 @@ export function createApiServer(store) {
       );
     }
   });
+  server.once('close', () => groupRepository.close());
+  return server;
 }

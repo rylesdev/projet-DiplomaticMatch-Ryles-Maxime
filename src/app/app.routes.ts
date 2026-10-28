@@ -22,6 +22,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/compare/compare.page').then((m) => m.ComparePage),
   },
   {
+    path: 'groupes',
+    title: 'Groupes de pays — Diplomatic Match',
+    loadComponent: () => import('./features/groups/groups.page').then((m) => m.GroupsPage),
+  },
+  {
+    path: 'groupes/:id',
+    title: 'Atelier de groupe — Diplomatic Match',
+    loadComponent: () => import('./features/groups/groups.page').then((m) => m.GroupsPage),
+  },
+  {
     path: 'matrice',
     title: 'Matrice des concordances — Diplomatic Match',
     loadComponent: () => import('./features/matrix/matrix.page').then((m) => m.MatrixPage),

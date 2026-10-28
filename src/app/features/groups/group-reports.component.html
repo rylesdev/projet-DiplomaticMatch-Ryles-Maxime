@@ -1,0 +1,185 @@
+<section class="panel reports-panel" aria-labelledby="reports-title">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">HISTORIQUE ENREGISTRÉ</p>
+      <h2 id="reports-title">Comparer les rapports</h2>
+    </div>
+    <button type="button" class="button button-ghost" [disabled]="loading()" (click)="reload()">
+      Actualiser l’historique
+    </button>
+  </div>
+  <p class="small muted">
+    Chaque rapport conserve les membres, les paramètres, le calcul et les versions des données au
+    moment de son enregistrement. Les modifications ultérieures du groupe ne changent pas ces
+    résultats.
+  </p>
+  @if (loading()) {
+    <p class="status" role="status">Lecture des rapports enregistrés…</p>
+  }
+  @if (error()) {
+    <p class="status status-error" role="alert">{{ error() }}</p>
+  }
+  @if (!loading() && !error() && !reports().length) {
+    <p class="status">
+      Aucun rapport enregistré. Utilisez « Enregistrer le rapport » après avoir choisi les
+      paramètres de votre analyse.
+    </p>
+  }
+  @if (reports().length) {
+    <div class="report-selectors" [formGroup]="form">
+      <div>
+        <label for="report-first">Rapport A</label
+        ><select id="report-first" formControlName="first">
+          @for (report of reports(); track report.id) {
+            <option [value]="report.id">
+              {{ report.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }} · v{{ report.groupRevision }} ·
+              {{ report.memberCount }} pays
+            </option>
+          }
+        </select>
+      </div>
+      <div>
+        <label for="report-second">Rapport B</label
+        ><select id="report-second" formControlName="second">
+          <option value="">Choisir un second rapport</option>
+          @for (report of reports(); track report.id) {
+            <option [value]="report.id" [disabled]="report.id === form.controls.first.value">
+              {{ report.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }} · v{{ report.groupRevision }} ·
+              {{ report.memberCount }} pays
+            </option>
+          }
+        </select>
+      </div>
+    </div>
+  }
+  @if (detailLoading()) {
+    <p class="status" role="status">Ouverture des instantanés…</p>
+  }
+  @if (detailError()) {
+    <p class="status status-error" role="alert">
+      {{ detailError() }}
+      <button type="button" class="button button-ghost" (click)="loadSelected()">Réessayer</button>
+    </p>
+  }
+  @if (first(); as a) {
+    @if (second(); as b) {
+      @if (!comparable()) {
+        <p class="comparison-note">
+          Les filtres ou les versions de données et de méthode diffèrent. Aucun écart de pourcentage
+          n’est calculé entre ces deux rapports.
+        </p>
+      }
+      @if (delta() !== null) {
+        <p class="report-delta">
+          Rapport B − rapport A :
+          <strong>{{ delta()! > 0 ? '+' : '' }}{{ delta() | number: '1.1-1' }} points</strong> de
+          concordance pondérée. Les effectifs et les membres restent à lire ensemble.
+        </p>
+      }
+      <div class="table-wrap" tabindex="0">
+        <table class="data-table">
+          <caption class="sr-only">
+            Comparaison des deux rapports enregistrés
+          </caption>
+          <thead>
+            <tr>
+              <th>Indicateur</th>
+              <th>Rapport A</th>
+              <th>Rapport B</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Groupe et révision</td>
+              <td>{{ a.groupSnapshot.name }} · v{{ a.groupSnapshot.revision }}</td>
+              <td>{{ b.groupSnapshot.name }} · v{{ b.groupSnapshot.revision }}</td>
+            </tr>
+            <tr>
+              <td>Membres</td>
+              <td>{{ a.analysis.memberIds.length }} pays</td>
+              <td>{{ b.analysis.memberIds.length }} pays</td>
+            </tr>
+            <tr>
+              <td>Paramètres</td>
+              <td>
+                {{ a.analysis.filters.from }}–{{ a.analysis.filters.to }} ·
+                {{ label(a.analysis.filters.theme) }} · seuil {{ a.analysis.filters.minVotes }}
+              </td>
+              <td>
+                {{ b.analysis.filters.from }}–{{ b.analysis.filters.to }} ·
+                {{ label(b.analysis.filters.theme) }} · seuil {{ b.analysis.filters.minVotes }}
+              </td>
+            </tr>
+            <tr>
+              <td>Concordance pondérée</td>
+              <td>
+                @if (a.analysis.cohesionPercent === null) {
+                  —
+                } @else {
+                  {{ a.analysis.cohesionPercent | number: '1.1-1' }} %
+                }
+              </td>
+              <td>
+                @if (b.analysis.cohesionPercent === null) {
+                  —
+                } @else {
+                  {{ b.analysis.cohesionPercent | number: '1.1-1' }} %
+                }
+              </td>
+            </tr>
+            <tr>
+              <td>Paires retenues</td>
+              <td>{{ a.analysis.eligiblePairCount }} / {{ a.analysis.totalPairCount }}</td>
+              <td>{{ b.analysis.eligiblePairCount }} / {{ b.analysis.totalPairCount }}</td>
+            </tr>
+            <tr>
+              <td>Comparaisons de votes</td>
+              <td>{{ a.analysis.commonPairVotes | number }}</td>
+              <td>{{ b.analysis.commonPairVotes | number }}</td>
+            </tr>
+            <tr>
+              <td>Jeu de données</td>
+              <td>{{ a.analysis.dataVersion }}</td>
+              <td>{{ b.analysis.dataVersion }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="small muted">
+        Sélectionnez un deuxième rapport pour comparer deux compositions ou deux enregistrements.
+      </p>
+    }
+    <details class="snapshot">
+      <summary>
+        Consulter le rapport A complet — {{ a.groupSnapshot.name }} · v{{
+          a.groupSnapshot.revision
+        }}
+      </summary>
+      <p class="small muted">
+        Enregistré le {{ a.createdAt | date: 'dd/MM/yyyy à HH:mm' }}. Composition :
+        @for (member of a.analysis.members; track member.id) {
+          {{ member.name }}{{ $last ? '.' : ', ' }}
+        }
+      </p>
+      <app-group-analysis-view
+        [analysis]="a.analysis"
+        [themeLabel]="label(a.analysis.filters.theme)"
+      />
+    </details>
+  }
+  @if (second(); as b) {
+    <details class="snapshot">
+      <summary>
+        Consulter le rapport B complet — {{ b.groupSnapshot.name }} · v{{
+          b.groupSnapshot.revision
+        }}
+      </summary>
+      <p class="small muted">Enregistré le {{ b.createdAt | date: 'dd/MM/yyyy à HH:mm' }}.</p>
+      <app-group-analysis-view
+        [analysis]="b.analysis"
+        [themeLabel]="label(b.analysis.filters.theme)"
+      />
+    </details>
+  }
+</section>

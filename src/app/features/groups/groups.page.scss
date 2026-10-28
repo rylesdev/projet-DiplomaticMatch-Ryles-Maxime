@@ -1,0 +1,203 @@
+:host {
+  display: block;
+}
+.groups-layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.group-directory {
+  padding: 22px;
+}
+.directory-heading,
+.editor-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.directory-heading h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.directory-heading .button {
+  font-size: 11px;
+  padding: 8px 11px;
+}
+.directory-empty {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0;
+}
+.group-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 7px;
+  max-height: 650px;
+  overflow: auto;
+}
+.group-links a {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 13px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.group-links a:hover,
+.group-links .is-selected {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+.group-links strong,
+.group-links span {
+  display: block;
+}
+.group-links strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.group-links span {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.group-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 23px;
+  min-width: 0;
+}
+.group-content > * {
+  min-width: 0;
+}
+.group-content > .status {
+  margin: 0;
+}
+.editor-heading {
+  align-items: start;
+}
+.editor-heading .eyebrow {
+  margin-bottom: 9px;
+}
+.editor-heading h2 {
+  margin: 0;
+  font-size: 23px;
+}
+.revision {
+  font-size: 10px;
+  text-align: right;
+  max-width: 180px;
+}
+.editor-panel textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+.description-label {
+  margin-top: 17px;
+}
+.editor-actions,
+.action-row,
+.report-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.editor-actions {
+  margin-top: 24px;
+}
+.delete-button {
+  margin-left: auto;
+  color: #994b34;
+}
+.delete-confirmation,
+.save-note {
+  background: #fbf2df;
+  color: #80622b;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 20px 0 0;
+}
+.delete-confirmation p {
+  margin-bottom: 13px;
+}
+.save-note {
+  margin: 0;
+}
+.validation-message {
+  color: #994b34;
+  font-size: 12px;
+  margin: 20px 0 0;
+}
+.analysis-filters h2 {
+  font-size: 22px;
+  margin-bottom: 22px;
+}
+.analysis-filters .form-grid {
+  grid-template-columns: 1.3fr 0.7fr 0.7fr 1fr;
+}
+.analysis-filters .form-grid > .button {
+  grid-column: 1/-1;
+  justify-self: start;
+}
+.analysis-filters label {
+  font-size: 11px;
+}
+.report-actions > span {
+  font-size: 11px;
+}
+.new-group-note {
+  font-size: 12px;
+  margin: 0;
+}
+@media (max-width: 1000px) {
+  .groups-layout {
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 18px;
+  }
+  .group-directory {
+    padding: 18px;
+  }
+  .directory-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+  .analysis-filters .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .revision {
+    max-width: 140px;
+  }
+}
+@media (max-width: 720px) {
+  .groups-layout {
+    grid-template-columns: 1fr;
+  }
+  .directory-heading {
+    flex-direction: row;
+    align-items: center;
+  }
+  .group-links {
+    max-height: 240px;
+  }
+  .editor-heading {
+    flex-wrap: wrap;
+  }
+  .revision {
+    max-width: none;
+    text-align: left;
+  }
+  .delete-button {
+    margin-left: 0;
+  }
+  .editor-actions > .button {
+    flex: 1;
+  }
+}

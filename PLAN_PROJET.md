@@ -1,6 +1,6 @@
 # Diplomatic Match — suivi du projet
 
-État du projet au **27 octobre 2026**. Les cinq parcours principaux et leurs extensions sont réalisés et testés ; ce fichier les distingue des validations universitaires à obtenir. Les fonctionnalités utilisent de véritables appels à l'API locale consommée par Angular.
+État du projet au **28 octobre 2026**. Les cinq parcours principaux et leurs extensions sont réalisés ; ce fichier distingue leurs vérifications des validations universitaires à obtenir. Les fonctionnalités utilisent de véritables appels à l'API locale consommée par Angular.
 
 ## Cadrage et données
 
@@ -37,6 +37,12 @@
 - [x] Filtrage thématique des comparaisons, tendances et classements à partir des sujets documentaires conservés, avec règles propres au projet documentées et états sans données.
 - [x] Matrice des 202 pays en double entrée : bleu/rouge, effectifs sous le seuil en gris, lecture des cases, navigation clavier et ouverture des comparaisons détaillées.
 - [x] Vérifier indépendamment les résultats écologie et sécurité, la symétrie de la matrice et la distinction entre 0 % et absence de données.
+
+- [x] Ajouter un atelier de groupes de pays : création, modification et suppression via API, avec stockage SQLite local ignoré par Git.
+- [x] Analyser la concordance interne pondérée, l'évolution et les résolutions qui divisent le groupe, avec seuil et couverture visibles.
+- [x] Tester des ajouts/retraits sans mutation jusqu'à application explicite et proposer des candidats avec couverture temporelle documentée.
+- [x] Enregistrer des rapports immuables et comparer deux versions uniquement à paramètres et versions compatibles.
+- [x] Vérifier la persistance et les conflits de révision avec les tests serveur ; vérifier le CRUD et les scénarios dans un vrai navigateur.
 
 ## Améliorations proposées — à choisir
 

@@ -1,0 +1,135 @@
+:host {
+  display: block;
+}
+.analysis-panel {
+  min-width: 0;
+}
+.analysis-stats {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 20px;
+  border-block: 1px solid var(--line);
+  padding: 24px 0;
+  margin: 22px 0;
+}
+.analysis-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.stat-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+.analysis-stats strong {
+  font-size: 35px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -1px;
+}
+.analysis-stats strong small {
+  font-size: 19px;
+  letter-spacing: 0;
+}
+.calculation-note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.sample-note {
+  background: #fbf2df;
+  color: #80622b;
+  padding: 12px 15px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.analysis-details {
+  margin-top: 18px;
+}
+.analysis-details summary,
+.division-list summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 12px;
+  padding: 8px 0;
+}
+.analysis-details .table-wrap {
+  margin-top: 12px;
+}
+.subheading {
+  margin: 30px 0 12px;
+}
+.group-chart {
+  width: 100%;
+  display: block;
+}
+.trend-values {
+  max-height: 320px;
+  overflow: auto;
+}
+.division-list {
+  display: grid;
+  gap: 12px;
+}
+.division-list article {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 19px;
+}
+.division-heading {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+}
+.division-heading > a {
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.division-list article > p {
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 10px 0;
+}
+.member-votes {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: grid;
+  gap: 9px;
+}
+.member-votes li {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  font-size: 12px;
+}
+.source-note {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 650px) {
+  .analysis-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .analysis-stats > div:first-child {
+    grid-column: 1/-1;
+  }
+  .analysis-stats strong {
+    font-size: 31px;
+  }
+  .analysis-panel {
+    padding: 23px 16px;
+  }
+  .division-heading {
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .data-table {
+    min-width: 560px;
+  }
+  .member-votes li {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}

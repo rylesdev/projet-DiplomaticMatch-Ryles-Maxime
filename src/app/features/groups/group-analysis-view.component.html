@@ -1,0 +1,232 @@
+<section class="panel analysis-panel" aria-label="Analyse du groupe">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">CONCORDANCE INTERNE</p>
+      <h2>Les membres, deux à deux</h2>
+    </div>
+    <span class="tag">Version {{ analysis.groupRevision }}</span>
+  </div>
+  <p class="small muted">
+    {{ analysis.filters.from }}–{{ analysis.filters.to }} ·
+    {{ themeLabel || analysis.filters.theme }} · au moins {{ analysis.filters.minVotes }} votes
+    communs par paire
+  </p>
+  <div class="analysis-stats">
+    <div>
+      <span class="stat-label">Concordance pondérée</span
+      ><strong class="number">
+        @if (analysis.cohesionPercent === null) {
+          —
+        } @else {
+          {{ analysis.cohesionPercent | number: '1.1-1' }}<small> %</small>
+        }
+      </strong>
+    </div>
+    <div>
+      <span class="stat-label">Paires de pays retenues</span
+      ><strong class="number"
+        >{{ analysis.eligiblePairCount }}<small> / {{ analysis.totalPairCount }}</small></strong
+      >
+    </div>
+    <div>
+      <span class="stat-label">Comparaisons de votes</span
+      ><strong class="number">{{ analysis.commonPairVotes | number }}</strong
+      ><span class="small muted">{{ analysis.matchingPairVotes | number }} identiques</span>
+    </div>
+  </div>
+  <p class="calculation-note">
+    Taux = total des votes identiques / total des votes comparables des paires qui atteignent le
+    seuil. Une résolution peut contribuer à plusieurs paires. Les absences et valeurs inconnues sont
+    exclues ; deux abstentions comptent comme un accord.
+  </p>
+  @if (analysis.cohesionPercent === null) {
+    <p class="status">
+      Aucune paire de pays n’atteint ce seuil. Élargissez la période ou choisissez un minimum plus
+      bas.
+    </p>
+  }
+  @if (analysis.filters.minVotes < 20) {
+    <p class="sample-note">
+      Seuil inférieur à 20 : les petits effectifs limitent l’interprétation.
+    </p>
+  }
+  @if (analysis.eligiblePairCount < analysis.totalPairCount && analysis.eligiblePairCount > 0) {
+    <p class="small muted">
+      Certaines paires sont exclues faute de votes comparables suffisants. Le taux porte sur
+      {{ analysis.eligiblePairCount }} paires sur {{ analysis.totalPairCount }}.
+    </p>
+  }
+  <p class="small muted">
+    {{ analysis.observedResolutionCount | number }} résolutions comportent une ligne source pour au
+    moins un membre.
+    @if (analysis.coverage.from) {
+      Les paires retenues couvrent le {{ analysis.coverage.from | date: 'dd/MM/yyyy' }} au
+      {{ analysis.coverage.to | date: 'dd/MM/yyyy' }}.
+    }
+  </p>
+
+  <details class="analysis-details">
+    <summary>Voir les comparaisons entre membres</summary>
+    <div class="table-wrap" tabindex="0">
+      <table class="data-table">
+        <caption class="sr-only">
+          Comparaisons des paires de pays du groupe
+        </caption>
+        <thead>
+          <tr>
+            <th>Pays</th>
+            <th>Votes communs</th>
+            <th>Identiques</th>
+            <th>Concordance</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (pair of analysis.pairs; track pair.countryA.id + pair.countryB.id) {
+            <tr>
+              <td>
+                <a
+                  routerLink="/comparer"
+                  [queryParams]="{
+                    countryA: pair.countryA.id,
+                    countryB: pair.countryB.id,
+                    from: analysis.filters.from,
+                    to: analysis.filters.to,
+                    theme: analysis.filters.theme,
+                  }"
+                  >{{ pair.countryA.name }} / {{ pair.countryB.name }} ↗</a
+                >
+              </td>
+              <td>{{ pair.commonVoteCount | number }}</td>
+              <td>{{ pair.matchingVoteCount | number }}</td>
+              <td>
+                @if (pair.agreementPercent === null) {
+                  <span class="muted">{{
+                    pair.commonVoteCount ? 'Sous le seuil' : 'Aucun vote commun'
+                  }}</span>
+                } @else {
+                  {{ pair.agreementPercent | number: '1.1-1' }} %
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <h3 class="subheading">L’évolution annuelle</h3>
+  <p class="small muted">
+    Le seuil est appliqué à chaque paire pour chaque année. Les paires retenues peuvent varier ; les
+    périodes sans effectif suffisant interrompent la courbe.
+  </p>
+  <svg
+    viewBox="0 0 700 220"
+    role="img"
+    aria-label="Évolution annuelle de la concordance pondérée du groupe"
+    class="group-chart"
+  >
+    <g stroke="#e4ebe5" stroke-dasharray="3 4">
+      <line x1="45" y1="20" x2="665" y2="20" />
+      <line x1="45" y1="100" x2="665" y2="100" />
+      <line x1="45" y1="180" x2="665" y2="180" />
+    </g>
+    <g fill="#687b75" font-size="10">
+      <text x="1" y="24">100 %</text>
+      <text x="9" y="104">50 %</text>
+      <text x="17" y="184">0 %</text>
+      <text x="45" y="208">{{ analysis.filters.from }}</text>
+      <text x="637" y="208">{{ analysis.filters.to }}</text>
+    </g>
+    @for (segment of segments; track $index) {
+      <polyline [attr.points]="segment" fill="none" stroke="#166d5b" stroke-width="2.5" />
+    }
+    @for (point of points; track point.year) {
+      @if (point.y !== null) {
+        <circle [attr.cx]="point.x" [attr.cy]="point.y" r="3" fill="#166d5b">
+          <title>
+            {{ point.year }} : {{ point.rate | number: '1.1-1' }} %, {{ point.count }} comparaisons
+            de votes
+          </title>
+        </circle>
+      }
+    }
+  </svg>
+  <details class="analysis-details">
+    <summary>Lire les chiffres annuels</summary>
+    <div class="table-wrap trend-values" tabindex="0">
+      <table class="data-table">
+        <caption class="sr-only">
+          Valeurs annuelles du groupe
+        </caption>
+        <thead>
+          <tr>
+            <th>Année</th>
+            <th>Paires retenues</th>
+            <th>Comparaisons de votes</th>
+            <th>Concordance</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (point of analysis.trend; track point.year) {
+            <tr>
+              <td>{{ point.year }}</td>
+              <td>{{ point.eligiblePairCount }} / {{ point.totalPairCount }}</td>
+              <td>{{ point.commonPairVotes | number }}</td>
+              <td>
+                @if (point.cohesionPercent === null) {
+                  —
+                } @else {
+                  {{ point.cohesionPercent | number: '1.1-1' }} %
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <h3 class="subheading">Les résolutions qui divisent le groupe</h3>
+  <p class="small muted">
+    Dernières divergences parmi les plus faibles concordances, avec au moins deux votes explicites.
+    Le nombre de membres participants est indiqué pour chaque texte.
+  </p>
+  @if (!analysis.divisiveResolutions.length) {
+    <p class="status">
+      Aucune résolution avec des votes explicites divergents sur cette période et ce thème.
+    </p>
+  } @else {
+    <div class="division-list">
+      @for (item of analysis.divisiveResolutions; track item.resolution.id) {
+        <article>
+          <div class="division-heading">
+            <a [routerLink]="['/resolutions', item.resolution.id]">{{ item.resolution.symbol }} ↗</a
+            ><span class="small muted">{{ item.resolution.date | date: 'dd/MM/yyyy' }}</span>
+          </div>
+          <p>{{ item.resolution.title }}</p>
+          <p class="small muted">
+            {{ item.participatingCount }} / {{ item.memberCount }} membres avec vote explicite ·
+            {{ item.agreementPercent | number: '1.1-1' }} % de paires identiques
+          </p>
+          <details>
+            <summary>Voir les positions des membres</summary>
+            <ul class="member-votes">
+              @for (vote of item.votes; track vote.countryId) {
+                <li>
+                  <span>{{ countryName(vote.countryId) }}</span
+                  ><span [class]="'tag ' + voteClass(vote.choice)">{{
+                    voteLabel(vote.choice)
+                  }}</span>
+                </li>
+              }
+            </ul>
+          </details>
+        </article>
+      }
+    </div>
+  }
+  <p class="source-note">
+    © Nations unies · {{ analysis.dataVersion }} · Méthode {{ analysis.methodVersion }} ·
+    Regroupement thématique {{ analysis.themeClassificationVersion }}.
+  </p>
+</section>

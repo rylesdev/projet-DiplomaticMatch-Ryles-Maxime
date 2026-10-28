@@ -4,6 +4,7 @@
 /dist
 /tmp
 /data/raw/
+/data/local/
 /out-tsc
 /bazel-out
 

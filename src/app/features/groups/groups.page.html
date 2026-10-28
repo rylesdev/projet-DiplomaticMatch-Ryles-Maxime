@@ -1,0 +1,294 @@
+<header class="page-heading">
+  <span class="eyebrow">Groupes de pays</span>
+  <h1>Créer et étudier un groupe.</h1>
+  <p>Composez vos groupes, comparez leurs votes et conservez des rapports datés de vos analyses.</p>
+</header>
+<div class="groups-layout">
+  <aside class="panel group-directory" aria-label="Groupes enregistrés">
+    <div class="directory-heading">
+      <h2>Mes groupes</h2>
+      <button type="button" class="button button-ghost" (click)="startNew()" [disabled]="busy()">
+        Nouveau
+      </button>
+    </div>
+    @if (listLoading()) {
+      <p class="status" role="status">Chargement des groupes…</p>
+    }
+    @if (listError()) {
+      <div class="status status-error" role="alert">
+        {{ listError() }}
+        <button type="button" class="button button-ghost" (click)="reloadGroups()">
+          Réessayer
+        </button>
+      </div>
+    }
+    @if (!listLoading() && !listError() && !groups().length) {
+      <p class="muted directory-empty">
+        Aucun groupe enregistré. Choisissez un nom et au moins deux pays pour commencer.
+      </p>
+    }
+    <ul class="group-links">
+      @for (item of groups(); track item.id) {
+        <li>
+          <a
+            [routerLink]="['/groupes', item.id]"
+            [class.is-selected]="group()?.id === item.id"
+            [attr.aria-current]="group()?.id === item.id ? 'page' : null"
+            ><strong>{{ item.name }}</strong
+            ><span>{{ item.memberIds.length }} pays · révision {{ item.revision }}</span></a
+          >
+        </li>
+      }
+    </ul>
+  </aside>
+  <section class="group-content" aria-label="Composition et analyse du groupe">
+    @if (loading()) {
+      <p class="status" role="status">Ouverture du groupe…</p>
+    }
+    @if (loadError()) {
+      <div class="status status-error" role="alert">
+        {{ loadError() }}
+        <button type="button" class="button button-ghost" (click)="reloadGroup()">Recharger</button>
+      </div>
+    }
+    @if (!loading() && !loadError()) {
+      <section class="panel editor-panel">
+        <div class="editor-heading">
+          <div>
+            <p class="eyebrow">Composition</p>
+            <h2>{{ group() ? 'Modifier le groupe' : 'Nouveau groupe' }}</h2>
+          </div>
+          @if (group(); as saved) {
+            <span class="muted revision"
+              >Révision {{ saved.revision }} ·
+              {{ saved.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</span
+            >
+          }
+        </div>
+        @if (optionsError()) {
+          <div class="status status-error" role="alert">
+            {{ optionsError() }}
+            <button type="button" class="button button-ghost" (click)="loadOptions()">
+              Recharger les pays et thèmes
+            </button>
+          </div>
+        }
+        <form [formGroup]="editor" (ngSubmit)="save()">
+          <label class="field" for="group-name">Nom du groupe</label
+          ><input
+            class="input"
+            id="group-name"
+            formControlName="name"
+            maxlength="80"
+            required
+            [readOnly]="busy()"
+          /><label class="field description-label" for="group-description"
+            >Description <span class="muted">(facultative)</span></label
+          ><textarea
+            class="input"
+            id="group-description"
+            formControlName="description"
+            maxlength="500"
+            rows="3"
+            [readOnly]="busy()"
+          ></textarea>
+          <app-group-country-picker
+            [countries]="countries()"
+            [memberIds]="memberIds()"
+            [disabled]="busy()"
+            (memberIdsChange)="changeMembers($event)"
+          />
+          @if (
+            submitted() &&
+            (editor.invalid ||
+              !draft().name.trim() ||
+              memberIds().length < 2 ||
+              memberIds().length > 12)
+          ) {
+            <p class="validation-message" role="alert">
+              Renseignez un nom et choisissez entre 2 et 12 pays distincts.
+            </p>
+          }
+          <div class="editor-actions">
+            <button
+              class="button button-primary"
+              type="submit"
+              [disabled]="busy() || conflict() || (group() && !dirty())"
+            >
+              {{ saving() ? 'Enregistrement…' : 'Enregistrer le groupe' }}
+            </button>
+            @if (group()) {
+              <button
+                class="button button-ghost delete-button"
+                type="button"
+                [disabled]="busy() || conflict()"
+                (click)="deleteConfirmation.set(true)"
+              >
+                Supprimer
+              </button>
+            }
+          </div>
+        </form>
+        @if (deleteConfirmation()) {
+          <div class="delete-confirmation" role="alert">
+            <p>
+              Supprimer ce groupe et tous ses rapports enregistrés ? Cette suppression est
+              définitive.
+            </p>
+            <div class="action-row">
+              <button
+                type="button"
+                class="button button-ghost"
+                (click)="deleteConfirmation.set(false)"
+                [disabled]="busy()"
+              >
+                Annuler</button
+              ><button
+                type="button"
+                class="button button-primary"
+                (click)="remove()"
+                [disabled]="busy()"
+              >
+                {{ deleting() ? 'Suppression…' : 'Confirmer la suppression' }}
+              </button>
+            </div>
+          </div>
+        }
+      </section>
+      @if (conflict()) {
+        <div class="status status-error" role="alert">
+          <p>
+            Le groupe a été modifié depuis son ouverture. Votre brouillon reste affiché ; rechargez
+            la version enregistrée avant de poursuivre.
+          </p>
+          <button type="button" class="button button-ghost" (click)="reloadGroup()">
+            Recharger et remplacer mon brouillon
+          </button>
+        </div>
+      }
+      @if (actionError()) {
+        <p class="status status-error" role="alert">{{ actionError() }}</p>
+      }
+      @if (notice()) {
+        <p class="status" role="status">{{ notice() }}</p>
+      }
+      @if (group(); as saved) {
+        @if (dirty()) {
+          <p class="save-note" role="note">
+            Enregistrez les modifications du groupe avant de lancer une analyse, d’appliquer un
+            scénario ou de créer un rapport.
+          </p>
+        }
+        <section class="panel analysis-filters">
+          <h2>Analyser les votes du groupe</h2>
+          <form class="form-grid" [formGroup]="filters" (ngSubmit)="analyze()">
+            <div>
+              <label for="group-theme">Thème</label
+              ><select id="group-theme" formControlName="theme">
+                @if (!themes().length) {
+                  <option value="all">Tous les thèmes</option>
+                }
+                @for (theme of themes(); track theme.id) {
+                  <option [value]="theme.id">{{ theme.label }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label for="group-from">De</label
+              ><input
+                id="group-from"
+                type="number"
+                min="1946"
+                max="2100"
+                step="1"
+                formControlName="from"
+                required
+              />
+            </div>
+            <div>
+              <label for="group-to">À</label
+              ><input
+                id="group-to"
+                type="number"
+                min="1946"
+                max="2100"
+                step="1"
+                formControlName="to"
+                required
+              />
+            </div>
+            <div>
+              <label for="group-min">Votes communs minimum</label
+              ><select id="group-min" formControlName="minVotes">
+                <option [ngValue]="1">1 vote</option>
+                <option [ngValue]="5">5 votes</option>
+                <option [ngValue]="10">10 votes</option>
+                <option [ngValue]="20">20 votes</option>
+                <option [ngValue]="50">50 votes</option>
+                <option [ngValue]="100">100 votes</option>
+                <option [ngValue]="200">200 votes</option>
+              </select>
+            </div>
+            <button
+              type="submit"
+              class="button button-primary"
+              [disabled]="busy() || dirty() || conflict()"
+            >
+              Analyser
+            </button>
+          </form>
+          <p class="source-note">
+            Les thèmes sont regroupés pour ce projet à partir des sujets de l’ONU.
+            <a routerLink="/methodologie">Méthode et limites</a>.
+          </p>
+        </section>
+        @if (analysisLoading()) {
+          <p class="status" role="status">Analyse des votes communs du groupe…</p>
+        }
+        @if (analysisError()) {
+          <p class="status status-error" role="alert">{{ analysisError() }}</p>
+        }
+        @if (analysis(); as result) {
+          <app-group-analysis-view
+            [analysis]="result"
+            [themeLabel]="themeLabel(result.filters.theme)"
+          />
+          @if (result.filters.minVotes < 20) {
+            <p class="save-note">
+              Seuil inférieur à 20 votes : les petits effectifs nécessitent une interprétation
+              limitée.
+            </p>
+          }
+          <div class="report-actions">
+            <button
+              class="button button-primary"
+              type="button"
+              (click)="saveReport()"
+              [disabled]="busy() || dirty() || conflict() || hasUnappliedFilters()"
+            >
+              {{ reportSaving() ? 'Enregistrement du rapport…' : 'Enregistrer le rapport' }}
+            </button>
+            @if (hasUnappliedFilters()) {
+              <span class="muted">Relancez l’analyse pour appliquer les nouveaux filtres.</span>
+            }
+          </div>
+        }
+        @if (appliedFilters(); as applied) {
+          <app-group-scenarios
+            [group]="saved"
+            [filters]="applied"
+            [baseAnalysis]="analysis()"
+            [disabled]="busy() || dirty() || conflict() || hasUnappliedFilters()"
+            (applyMembers)="applyMembers($event)"
+            (reloadGroup)="reloadGroup()"
+          />
+        }
+        <app-group-reports [groupId]="saved.id" [refreshKey]="reportRefresh()" />
+      } @else {
+        <p class="muted new-group-note">
+          Enregistrez le groupe pour accéder à ses analyses, ses scénarios et ses rapports.
+        </p>
+      }
+    }
+  </section>
+</div>

@@ -1,0 +1,47 @@
+<fieldset [disabled]="disabled" class="country-picker">
+  <legend>
+    Pays du groupe <span>{{ memberIds.length }} / 12</span>
+  </legend>
+  <p class="muted">
+    Choisissez entre 2 et 12 pays distincts. Les entités historiques restent séparées.
+  </p>
+  <ul class="member-chips" aria-label="Pays sélectionnés">
+    @for (id of memberIds; track id) {
+      <li>
+        <span>{{ label(id) }}</span
+        ><button type="button" [attr.aria-label]="'Retirer ' + label(id)" (click)="remove(id)">
+          ×
+        </button>
+      </li>
+    }
+  </ul>
+  @if (memberIds.length < 12) {
+    <label class="field" for="group-country-search">Ajouter un pays</label
+    ><input
+      id="group-country-search"
+      (keydown.enter)="$event.preventDefault()"
+      class="input"
+      type="search"
+      [formControl]="search"
+      placeholder="Nom ou code d’un pays…"
+      autocomplete="off"
+    />
+    <ul class="country-options" aria-label="Pays à ajouter">
+      @for (country of available; track country.id) {
+        <li>
+          <button type="button" (click)="add(country.id)">
+            <span>{{ country.name }}</span
+            ><span class="muted">{{ country.id }} · Ajouter</span>
+          </button>
+        </li>
+      }
+    </ul>
+    @if (!available.length) {
+      <p class="muted empty-options">Aucun pays disponible pour cette recherche.</p>
+    }
+  } @else {
+    <p class="limit-note">
+      Le groupe contient 12 pays. Retirez un membre pour en ajouter un autre.
+    </p>
+  }
+</fieldset>

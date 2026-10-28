@@ -1,6 +1,6 @@
 ﻿# Diplomatic Match
 
-Application universitaire Angular pour explorer les votes enregistrés à l'Assemblée générale des Nations unies : recherche de pays, historique, comparaison, classements, évolution, résolutions et matrice de concordance. Les comparaisons peuvent être filtrées par thématique. Interface originale en français, responsive, sans template de site préconstruit.
+Application universitaire Angular pour explorer les votes enregistrés à l'Assemblée générale des Nations unies : recherche de pays, historique, comparaison, classements, évolution, résolutions et matrice de concordance. Un atelier permet aussi de créer des groupes de pays, tester leur composition et enregistrer leurs analyses. Les comparaisons peuvent être filtrées par thématique. Interface originale en français, responsive, sans template de site préconstruit.
 
 ## Installer et démarrer
 
@@ -63,6 +63,53 @@ La matrice conserve tous les pays sur les deux axes, avec période, thème et se
 
 Survoler une case affiche pays, taux et effectif ; cliquer ouvre la comparaison détaillée avec les filtres appliqués. Les sélecteurs de pays permettent une lecture précise, y compris au clavier. Flèches, Début/Fin, Page précédente/suivante et Entrée sont pris en charge. Trois tailles de cases sont proposées ; en vue globale, certaines étiquettes sont espacées pour rester lisibles. Les en-têtes restent visibles pendant le défilement interne. Le dessin canvas évite de créer plus de 40 000 éléments HTML ; le panneau de lecture et les sélecteurs fournissent les valeurs sous forme textuelle.
 
+## Atelier Groupes : écritures et rapports persistants
+
+Ouvrir **http://localhost:4200/groupes**. Créer un groupe de **2 à 12 pays distincts**, avec un nom et une description facultative. Le groupe est enregistré dans l'API, puis peut être modifié ou supprimé. Les analyses portent sur la composition enregistrée : un brouillon doit être sauvegardé avant analyse. La suppression demande une confirmation et retire aussi les rapports associés.
+
+Le bouton **Analyser** produit un aperçu calculé à partir des votes officiels. **Enregistrer le rapport** recalcule côté serveur et sauvegarde un instantané comprenant composition, révision, paramètres, résultats, date et versions des données, des règles thématiques et de la méthode. Un rapport ancien reste identique après modification du groupe. L'historique permet de consulter deux rapports et de calculer un écart uniquement si leurs filtres et leurs versions de données/méthode sont compatibles.
+
+### Simulations et suggestions
+
+Ajouter ou retirer un membre dans le simulateur appelle l'API avec une composition de brouillon. **Le groupe enregistré ne change qu'avec « Appliquer au groupe »**. Les résultats avant/après indiquent les effectifs et les paires retenues ; leur différence ne constitue pas une prédiction diplomatique.
+
+Les suggestions recherchent trois candidats atteignant le seuil de votes communs avec **chacun** des membres. Leur classement utilise les votes identiques et comparables des nouvelles paires candidat/membre. Par défaut, les candidats doivent avoir une couverture source allant jusqu'à la dernière année disponible de la période ; une option permet d'inclure les couvertures terminées plus tôt. Ce filtre utilise les dates observées dans le jeu et n'infère pas l'existence ou le statut politique actuel d'un État. Les entités historiques déjà choisies dans un groupe restent distinctes.
+
+### Calcul de la concordance interne
+
+Pour chaque paire du groupe, seuls les votes explicites `Y/N/A` communs sont retenus. Une paire doit atteindre le seuil choisi. La concordance interne vaut :
+
+```text
+100 × somme des votes identiques des paires éligibles
+    / somme de leurs votes explicites communs
+```
+
+Ce taux est **pondéré par les effectifs**, et non une moyenne simple des pourcentages. Une résolution peut contribuer à plusieurs paires : le dénominateur est un nombre de **comparaisons de votes**, pas un nombre de résolutions uniques. Les paires peuvent couvrir des dates et des résolutions différentes ; le nombre de paires retenues sur le total est toujours affiché. Sans paire éligible, le taux est `null`. La couverture globale est l'union des dates des paires retenues. Le graphique recalcule exactement la même formule par année, avec le seuil appliqué à chaque paire/année.
+
+La liste des résolutions divisantes conserve les désaccords stricts avec au moins deux votes explicites, leur proportion de paires identiques et le nombre de membres participants. Une ligne source absente reste inconnue et ne devient pas une abstention. Le compteur de résolutions observées inclut les textes où au moins un membre figure dans la source, y compris avec un non-vote.
+
+Référence indépendante sur **France, Inde, Brésil et Canada**, 2000–2025, tous sujets, seuil 20 : **6 paires**, **13 304 comparaisons de votes**, **7 329 identiques**, soit **55,088695 %**. Retirer l'Inde donne **56,556391 %** ; ajouter la Belgique au groupe initial donne **60,624521 %**. Ces chiffres servent aux tests de calcul et ne sont pas des groupes précréés dans l'application.
+
+### Routes d'écriture
+
+| Action                                    | Requête                                                                |
+| ----------------------------------------- | ---------------------------------------------------------------------- |
+| Créer / lister                            | `POST /api/groups`, `GET /api/groups`                                  |
+| Lire / modifier                           | `GET /api/groups/:id`, `PATCH /api/groups/:id`                         |
+| Supprimer le groupe et ses rapports       | `DELETE /api/groups/:id?expectedRevision=2`                            |
+| Tester une composition sans l'enregistrer | `POST /api/groups/:id/preview`                                         |
+| Calculer et enregistrer un rapport        | `POST /api/groups/:id/reports`                                         |
+| Lister / lire les rapports figés          | `GET /api/groups/:id/reports`, `GET /api/groups/:id/reports/:reportId` |
+| Rechercher des candidats                  | `POST /api/groups/:id/suggestions`                                     |
+
+Les créations renvoient 201 et les suppressions 204. `PATCH`, `DELETE` et les demandes d'analyse utilisent une `expectedRevision` : une version périmée renvoie **409**, sans écrasement. L'interface garde le brouillon en cas de conflit et propose un rechargement explicite. Le serveur valide membres, paramètres et champs JSON ; les résultats des rapports sont calculés par le serveur. Limites : 100 groupes, 100 rapports par groupe, corps JSON de 32 Ko et requêtes d'écriture en JSON.
+
+### Stockage local
+
+SQLite natif de Node.js conserve groupes et rapports dans **`data/local/groups.sqlite`**. Aucun paquet supplémentaire n'est nécessaire avec Node.js 24.21.0. Les données survivent au redémarrage de l'API et sont partagées entre les onglets utilisant cette installation locale. Il n'y a pas de comptes utilisateurs.
+
+Le dossier **`data/local/` est exclu de Git**, y compris les fichiers SQLite WAL/SHM. Pour une sauvegarde manuelle, arrêter l'API puis copier ce dossier entier. `GROUPS_DB_PATH` permet de choisir un autre emplacement. Les tests utilisent une base mémoire ou temporaire séparée ; ils ne modifient pas les groupes personnels. Les écritures ne modifient jamais le jeu officiel `data/dataset.json`.
+
 ## Reproduire l'import
 
 ```bash
@@ -94,13 +141,15 @@ src/app/
   features/countries/         Recherche, fiche et historique
   features/compare/           Concordance et évolution SVG/tableau
   features/matrix/            Matrice canvas, axes et lecture accessible
+  features/groups/            Groupes, simulations et rapports enregistrés
   features/resolutions/       Recherche et détail
   features/methodology/       Sources, formule et limites
   app.routes.ts               Routes chargées à la demande
-server/                       API HTTP Node, domaine et tests
+server/                       API HTTP Node, domaines, SQLite et tests
 scripts/                      Lancement, téléchargement et import
 public/                       Fichiers statiques
 data/                         Données compactes, dictionnaires et manifestes
+  local/                      Base des groupes et rapports (ignorée par Git)
 PLAN_PROJET.md                Checklist et démonstration proposée (15 min)
 ```
 
