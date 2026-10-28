@@ -96,6 +96,17 @@
         >
       </div>
 
+      <a
+        class="button button-ghost"
+        routerLink="/carte"
+        [queryParams]="{
+          country: country.id,
+          from: filters.controls.from.value,
+          to: filters.controls.to.value,
+        }"
+        >Voir les concordances sur la carte →</a
+      >
+
       <app-country-rankings [countryId]="country.id" />
 
       <div class="panel history-panel">

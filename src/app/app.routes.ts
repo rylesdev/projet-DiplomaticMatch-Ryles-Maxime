@@ -32,6 +32,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/groups/groups.page').then((m) => m.GroupsPage),
   },
   {
+    path: 'carte',
+    title: 'Carte des concordances — Diplomatic Match',
+    loadComponent: () => import('./features/map/map.page').then((m) => m.MapPage),
+  },
+  {
     path: 'matrice',
     title: 'Matrice des concordances — Diplomatic Match',
     loadComponent: () => import('./features/matrix/matrix.page').then((m) => m.MatrixPage),

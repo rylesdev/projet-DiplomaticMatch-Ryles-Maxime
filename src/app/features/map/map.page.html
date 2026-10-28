@@ -1,0 +1,296 @@
+<header class="page-heading">
+  <span class="eyebrow">CARTE DES CONCORDANCES</span>
+  <h1>Un pays, le monde<br />en regard.</h1>
+  <p>
+    Cliquez sur un pays pour voir comment les autres votent avec lui à l’ONU. Du rouge au bleu,
+    explorez leurs taux de concordance.
+  </p>
+</header>
+
+<section class="panel map-filters" aria-label="Filtres de la carte">
+  <form [formGroup]="form" (ngSubmit)="apply()" class="form-grid">
+    <div>
+      <label for="map-theme">Thématique</label>
+      <select id="map-theme" formControlName="theme">
+        @if (!themes().length) {
+          <option value="all">Tous les thèmes</option>
+        }
+        @for (theme of themes(); track theme.id) {
+          <option [value]="theme.id">{{ theme.label }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="map-from">De l’année</label
+      ><input
+        id="map-from"
+        type="number"
+        formControlName="from"
+        min="1946"
+        max="2100"
+        step="1"
+        required
+      />
+    </div>
+    <div>
+      <label for="map-to">À l’année</label
+      ><input
+        id="map-to"
+        type="number"
+        formControlName="to"
+        min="1946"
+        max="2100"
+        step="1"
+        required
+      />
+    </div>
+    <div>
+      <label for="map-min">Votes communs minimum</label>
+      <select id="map-min" formControlName="minVotes">
+        <option [ngValue]="1">1 vote</option>
+        <option [ngValue]="5">5 votes</option>
+        <option [ngValue]="10">10 votes</option>
+        <option [ngValue]="20">20 votes</option>
+        <option [ngValue]="50">50 votes</option>
+        <option [ngValue]="100">100 votes</option>
+      </select>
+    </div>
+    <button class="button button-primary" type="submit" [disabled]="loading()">
+      {{ loading() ? 'Calcul…' : 'Actualiser la carte' }}
+    </button>
+  </form>
+  @if (themesError()) {
+    <p class="status status-error" role="alert">
+      {{ themesError() }}
+      <button type="button" class="button button-ghost" (click)="loadThemes()">
+        Recharger les thèmes
+      </button>
+    </p>
+  }
+</section>
+
+@if (loading() || mapLoading()) {
+  <p class="status" role="status">Chargement de la carte et calcul des concordances…</p>
+}
+@if (error()) {
+  <p class="status status-error" role="alert">
+    {{ error() }}
+    <button type="button" class="button button-ghost" (click)="apply()">
+      Réessayer les données
+    </button>
+  </p>
+}
+@if (mapError()) {
+  <p class="status status-error" role="alert">
+    {{ mapError() }}
+    <button type="button" class="button button-ghost" (click)="loadMap()">
+      Recharger la carte
+    </button>
+  </p>
+}
+
+@if (geography(); as world) {
+  <section class="panel map-panel" [attr.aria-busy]="loading()">
+    <div class="map-heading">
+      <div>
+        <span class="eyebrow">PAYS DE RÉFÉRENCE</span>
+        <h2 aria-live="polite">{{ reference()?.name ?? 'Choisissez un pays' }}</h2>
+        @if (data(); as matrix) {
+          <p class="small muted">
+            {{ matrix.from }}–{{ matrix.to }} · {{ themeLabel() }} · minimum
+            {{ matrix.minVotes }} votes
+          </p>
+        }
+      </div>
+      <div class="reference-picker">
+        <label for="map-reference">Choisir aussi dans la liste</label>
+        <select
+          id="map-reference"
+          #referenceSelect
+          (change)="selectCountry(referenceSelect.value)"
+          [disabled]="!data()"
+        >
+          @for (country of data()?.countries ?? []; track country.id) {
+            <option [value]="country.id" [selected]="country.id === referenceId()">
+              {{ country.name }}
+            </option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="map-layout">
+      <div class="map-canvas">
+        <div class="map-tools" aria-label="Zoom de la carte">
+          <button
+            type="button"
+            (click)="changeZoom(-0.5)"
+            [disabled]="zoom() === 1"
+            aria-label="Réduire le zoom"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            (click)="changeZoom(0.5)"
+            [disabled]="zoom() === 3"
+            aria-label="Agrandir la carte"
+          >
+            +
+          </button>
+          <button type="button" (click)="zoom.set(1)" class="reset-zoom">Vue globale</button>
+        </div>
+        <div
+          class="map-scroll"
+          tabindex="0"
+          aria-label="Carte mondiale, défilement possible après agrandissement"
+        >
+          <svg
+            [attr.viewBox]="'0 0 ' + world.width + ' ' + world.height"
+            [style.width.%]="zoom() * 100"
+            role="group"
+            aria-label="Pays colorés selon leur concordance avec le pays de référence"
+            aria-describedby="map-help map-legend"
+          >
+            @for (shape of countries(); track shape.id) {
+              <path
+                [attr.d]="shape.path"
+                [attr.fill]="shape.color"
+                [attr.data-country]="shape.id"
+                fill-rule="evenodd"
+                [class.reference]="shape.country?.id === referenceId()"
+                [class.selectable]="shape.country !== null"
+                [class.inspected]="shape.id === hoveredId()"
+                [attr.tabindex]="shape.country ? 0 : null"
+                [attr.role]="shape.country ? 'button' : null"
+                [attr.aria-label]="description(shape)"
+                [attr.aria-pressed]="shape.country ? shape.country.id === referenceId() : null"
+                (mouseenter)="inspect(shape)"
+                (focus)="inspect(shape)"
+                (click)="shape.country && selectCountry(shape.country.id)"
+                (keydown)="onCountryKey($event, shape)"
+              >
+                <title>{{ description(shape) }}</title>
+              </path>
+            }
+          </svg>
+        </div>
+        <p id="map-help" class="small muted map-help">
+          Cliquez sur un pays pour changer de référence. Survolez-le pour lire son taux. Au clavier
+          : sélection dans la liste ou Tab puis Entrée.
+        </p>
+      </div>
+
+      <aside class="country-readout" aria-label="Lecture des concordances" aria-live="polite">
+        @if (inspected(); as shape) {
+          <span class="eyebrow">{{
+            shape.country?.id === referenceId() ? 'PAYS DE RÉFÉRENCE' : 'PAYS SURVOLÉ'
+          }}</span>
+          <h3>{{ shape.name }}</h3>
+          @if (!shape.country) {
+            <p class="muted">Ce territoire n’a pas de correspondance dans le jeu de votes.</p>
+          } @else if (shape.country.id === referenceId()) {
+            <p>Les couleurs comparent les autres pays à {{ shape.name }}.</p>
+          } @else {
+            <p class="small muted">avec {{ reference()?.name }}</p>
+            @if (shape.percentage !== null) {
+              <p class="country-rate" [style.color]="shape.percentage < 50 ? '#a72c2c' : '#2459ab'">
+                {{ shape.percentage | number: '1.1-1' }}<span> %</span>
+              </p>
+              <p class="small muted">de concordance des votes</p>
+            } @else {
+              <p class="no-score">{{ shape.common ? 'Seuil non atteint' : 'Aucun vote commun' }}</p>
+            }
+            <dl>
+              <div>
+                <dt>Votes comparables</dt>
+                <dd>{{ shape.common | number }}</dd>
+              </div>
+              <div>
+                <dt>Votes identiques</dt>
+                <dd>{{ shape.matching | number }}</dd>
+              </div>
+            </dl>
+            @if (shape.percentage !== null && shape.common < 20) {
+              <p class="small sample-note">
+                Petit effectif : résultat à interpréter avec prudence.
+              </p>
+            }
+            <a class="button button-ghost" routerLink="/comparer" [queryParams]="comparisonParams()"
+              >Comparer en détail →</a
+            >
+            <button
+              class="button button-primary"
+              type="button"
+              (click)="selectCountry(shape.country.id)"
+            >
+              Choisir comme référence
+            </button>
+          }
+          @if (shape.country) {
+            <a class="country-link" [routerLink]="['/pays', shape.country.id]"
+              >Voir la fiche du pays →</a
+            >
+          }
+        } @else {
+          <span class="eyebrow">EXPLORER LE MONDE</span>
+          <h3>{{ reference()?.name ?? 'Carte mondiale' }}</h3>
+          <p class="muted">
+            Survolez un pays pour lire sa concordance et ses effectifs, ou cliquez pour le choisir
+            comme référence.
+          </p>
+          @if (data()) {
+            <p class="eligible-count">
+              <strong>{{ eligible() }}</strong> pays sur la carte atteignent le seuil avec ce pays.
+            </p>
+            @if (!eligible()) {
+              <p class="small">
+                Élargissez la période ou diminuez le minimum de votes pour obtenir des résultats.
+              </p>
+            }
+          }
+        }
+      </aside>
+    </div>
+
+    <div id="map-legend" class="map-legend">
+      <div class="scale-key">
+        <div class="scale-labels">
+          <span>0 % · faible</span><span>50 %</span><span>100 % · forte</span>
+        </div>
+        <div class="color-scale"></div>
+        <span class="small muted">Concordance des votes</span>
+      </div>
+      <span class="legend-item"
+        ><i class="missing-swatch" aria-hidden="true"></i>Aucune donnée ou seuil non atteint</span
+      >
+      <span class="legend-item"
+        ><i class="reference-swatch" aria-hidden="true"></i>Pays de référence</span
+      >
+    </div>
+    @if (data() && !referenceOnMap()) {
+      <p class="small muted">
+        Le pays de référence n’a pas de contour sur cette carte simplifiée. Les couleurs utilisent
+        néanmoins ses votes, sans le fusionner avec un autre État.
+      </p>
+    }
+    @if (data(); as matrix) {
+      @if (matrix.minVotes < 20) {
+        <p class="sample-note small">
+          Seuil inférieur à 20 : certains taux reposent sur peu de votes communs.
+        </p>
+      }
+    }
+  </section>
+}
+<p class="source-note">
+  Fond de carte simplifié : certains petits États et les entités historiques ne sont pas
+  représentés. Les frontières servent au repérage et ne décrivent pas leur évolution historique.
+  Fond :
+  <a
+    href="https://www.naturalearthdata.com/about/terms-of-use/"
+    target="_blank"
+    rel="noopener noreferrer"
+    >Natural Earth, domaine public</a
+  >. Votes : © Nations unies. <a routerLink="/methodologie">Méthode de calcul</a>.
+</p>

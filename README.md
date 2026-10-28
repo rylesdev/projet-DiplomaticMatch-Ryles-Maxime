@@ -63,6 +63,14 @@ La matrice conserve tous les pays sur les deux axes, avec période, thème et se
 
 Survoler une case affiche pays, taux et effectif ; cliquer ouvre la comparaison détaillée avec les filtres appliqués. Les sélecteurs de pays permettent une lecture précise, y compris au clavier. Flèches, Début/Fin, Page précédente/suivante et Entrée sont pris en charge. Trois tailles de cases sont proposées ; en vue globale, certaines étiquettes sont espacées pour rester lisibles. Les en-têtes restent visibles pendant le défilement interne. Le dessin canvas évite de créer plus de 40 000 éléments HTML ; le panneau de lecture et les sélecteurs fournissent les valeurs sous forme textuelle.
 
+### Carte des concordances
+
+La page **Carte** (`/carte`) permet de choisir un pays en cliquant sur son territoire ou avec le sélecteur. Les autres pays sont colorés selon leur concordance avec ce pays de référence : **rouge à 0 %**, **bleu à 100 %**, **gris si aucun vote commun ou si le seuil n'est pas atteint**. La période, le thème et le minimum de votes communs sont réglables. Le survol permet de consulter les valeurs ; la comparaison détaillée reste accessible.
+
+La carte réutilise `GET /api/matrix?from=2000&to=2025&theme=all&minVotes=20`. Une fois cette réponse chargée, changer le pays de référence recolore la carte localement, sans nouvelle requête. Modifier les filtres et les appliquer déclenche une nouvelle demande à l'API.
+
+Le fond géographique est simplifié : tous les petits territoires et les entités historiques du jeu de votes ne sont pas nécessairement représentés. Les frontières de ce fond ne reconstituent pas les frontières de chaque période historique. Les entités historiques ne sont pas fusionnées avec les pays actuels. La source et la licence du fond sont documentées dans `public/maps/README.md`.
+
 ## Atelier Groupes : écritures et rapports persistants
 
 Ouvrir **http://localhost:4200/groupes**. Créer un groupe de **2 à 12 pays distincts**, avec un nom et une description facultative. Le groupe est enregistré dans l'API, puis peut être modifié ou supprimé. Les analyses portent sur la composition enregistrée : un brouillon doit être sauvegardé avant analyse. La suppression demande une confirmation et retire aussi les rapports associés.
