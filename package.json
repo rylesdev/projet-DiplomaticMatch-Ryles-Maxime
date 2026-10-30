@@ -8,8 +8,6 @@
     "start:api": "node server/index.mjs",
     "data:import": "node scripts/import-data.mjs",
     "data:download": "node scripts/download-data.mjs",
-    "trade:download": "node scripts/import-trade.mjs --download",
-    "trade:import": "node scripts/import-trade.mjs",
     "test:api": "node --test server/*.test.mjs",
     "check": "npm run build && npm test -- --watch=false && npm run test:api",
     "build": "ng build",
