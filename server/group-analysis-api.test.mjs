@@ -42,7 +42,7 @@ test('les calculs de groupe acceptent uniquement GET', () => {
   assert.throws(() => request('/api/groups/analysis?members=FRA,IND', 'POST'), { status: 405 });
 });
 
-test('le vrai serveur HTTP sert l’analyse au lieu de la traiter comme un groupe enregistré', async (t) => {
+test('le vrai serveur HTTP sert l’analyse et refuse les écritures sur les groupes', async (t) => {
   const server = createApiServer(store);
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   t.after(() => new Promise((resolve) => server.close(resolve)));
@@ -53,4 +53,19 @@ test('le vrai serveur HTTP sert l’analyse au lieu de la traiter comme un group
   const invalid = await fetch(`${base}/api/groups/analysis?members=FRA`);
   assert.equal(invalid.status, 400);
   assert.match((await invalid.json()).error, /entre 2 et 12/);
+  // Les anciennes routes d'écriture (SQLite) sont retirées : les écritures passent par Mirage.
+  for (const [method, path] of [
+    ['POST', '/api/groups'],
+    ['PUT', '/api/groups/groupe'],
+    ['PATCH', '/api/groups/groupe'],
+    ['DELETE', '/api/groups/groupe'],
+    ['POST', '/api/groups/groupe/reports'],
+  ]) {
+    const refused = await fetch(`${base}${path}`, {
+      method,
+      body: method === 'DELETE' ? undefined : '{}',
+    });
+    assert.equal(refused.status, 405, `${method} ${path}`);
+  }
+  assert.equal((await fetch(`${base}/api/groups`)).status, 404);
 });

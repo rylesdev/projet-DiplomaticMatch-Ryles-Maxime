@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStore } from './domain.mjs';
-import { analyzeGroup, validateAnalysisRequest, validateGroupDraft } from './group-domain.mjs';
+import { analyzeGroup, validateMemberIds } from './group-domain.mjs';
 import { groupDataset, groupFilters } from './fixtures/group-dataset.mjs';
 
 // Membres fictifs utilisés par les calculs : le calcul ne dépend que de cette liste.
@@ -97,43 +97,16 @@ test('groupes : le calcul porte sur la liste de membres reçue, comme pour un sc
   assert.equal(result.cohesionPercent, 100);
 });
 
-test('groupes : validation bornée, doublons, codes inconnus et filtres complets', () => {
+test('groupes : 2 à 12 membres distincts, tous présents dans le jeu de données', () => {
   const store = createStore(groupDataset());
-  const valid = { name: '  Groupe  ', description: '', memberIds: ['FRA', 'IND'] };
-  assert.equal(validateGroupDraft(store, valid).name, 'Groupe');
-  for (const input of [
+  assert.deepEqual(validateMemberIds(store, ['FRA', 'IND']), ['FRA', 'IND']);
+  for (const memberIds of [
     null,
     [],
-    { ...valid, name: 'x' },
-    { ...valid, name: 'x'.repeat(81) },
-    { ...valid, description: 'x'.repeat(501) },
-    { ...valid, memberIds: ['FRA'] },
-    { ...valid, memberIds: ['FRA', 'FRA'] },
-    { ...valid, memberIds: ['FRA', 'NON'] },
-    { ...valid, unknown: true },
+    ['FRA'],
+    ['FRA', 'FRA'],
+    ['FRA', 'NON'],
+    Array(13).fill('FRA'),
   ])
-    assert.throws(() => validateGroupDraft(store, input), { status: 400 });
-  const request = { ...groupFilters, expectedRevision: 1 };
-  assert.deepEqual(validateAnalysisRequest(store, request).filters, groupFilters);
-  assert.throws(() => validateAnalysisRequest(store, { ...request, expectedRevision: undefined }), {
-    status: 400,
-  });
-  assert.throws(() => validateAnalysisRequest(store, { ...request, from: 1945 }), { status: 400 });
-  assert.throws(() => validateAnalysisRequest(store, { ...request, from: 2024, to: 2020 }), {
-    status: 400,
-  });
-  assert.throws(() => validateAnalysisRequest(store, { ...request, theme: 'not-a-theme' }), {
-    status: 400,
-  });
-  assert.throws(() => validateAnalysisRequest(store, { ...request, memberIds: ['FRA', 'CAN'] }), {
-    status: 400,
-  });
-  assert.deepEqual(
-    validateAnalysisRequest(store, { ...request, memberIds: ['FRA', 'CAN'] }, true).memberIds,
-    ['FRA', 'CAN'],
-  );
-  assert.throws(
-    () => validateAnalysisRequest(store, { ...request, includeHistorical: 'true' }, false, true),
-    { status: 400 },
-  );
+    assert.throws(() => validateMemberIds(store, memberIds), { status: 400 });
 });

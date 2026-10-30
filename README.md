@@ -73,13 +73,13 @@ Le fond géographique est simplifié : tous les petits territoires et les entit�
 
 ## Atelier Groupes : écritures et rapports persistants
 
-Ouvrir **http://localhost:4200/groupes**. Créer un groupe de **2 à 12 pays distincts**, avec un nom et une description facultative. Le groupe est enregistré dans l'API, puis peut être modifié ou supprimé. Les analyses portent sur la composition enregistrée : un brouillon doit être sauvegardé avant analyse. La suppression demande une confirmation et retire aussi les rapports associés.
+Ouvrir **http://localhost:4200/groupes**. Créer un groupe de **2 à 12 pays distincts**, avec un nom et une description facultative. Le groupe est enregistré dans l'API mockée (MirageJS), puis peut être modifié ou supprimé. Les analyses portent sur la composition enregistrée : un brouillon doit être sauvegardé avant analyse. La suppression demande une confirmation et retire aussi les rapports associés.
 
-Le bouton **Analyser** produit un aperçu calculé à partir des votes officiels. **Enregistrer le rapport** recalcule côté serveur et sauvegarde un instantané comprenant composition, révision, paramètres, résultats, date et versions des données, des règles thématiques et de la méthode. Un rapport ancien reste identique après modification du groupe. L'historique permet de consulter deux rapports et de calculer un écart uniquement si leurs filtres et leurs versions de données/méthode sont compatibles.
+Le bouton **Analyser** produit un aperçu calculé à partir des votes officiels. **Enregistrer le rapport** sauvegarde dans l'API mockée l'analyse affichée, sous forme d'instantané comprenant composition, révision, paramètres, résultats, date et versions des données, des règles thématiques et de la méthode. Un rapport ancien reste identique après modification du groupe. L'historique permet de consulter deux rapports et de calculer un écart uniquement si leurs filtres et leurs versions de données/méthode sont compatibles.
 
 ### Simulations et suggestions
 
-Ajouter ou retirer un membre dans le simulateur appelle l'API avec une composition de brouillon. **Le groupe enregistré ne change qu'avec « Appliquer au groupe »**. Les résultats avant/après indiquent les effectifs et les paires retenues ; leur différence ne constitue pas une prédiction diplomatique.
+Ajouter ou retirer un membre dans le simulateur demande à l'API Node l'analyse d'une composition de brouillon. **Le groupe enregistré ne change qu'avec « Appliquer au groupe »**. Les résultats avant/après indiquent les effectifs et les paires retenues ; leur différence ne constitue pas une prédiction diplomatique.
 
 Les suggestions recherchent trois candidats atteignant le seuil de votes communs avec **chacun** des membres. Leur classement utilise les votes identiques et comparables des nouvelles paires candidat/membre. Par défaut, les candidats doivent avoir une couverture source allant jusqu'à la dernière année disponible de la période ; une option permet d'inclure les couvertures terminées plus tôt. Ce filtre utilise les dates observées dans le jeu et n'infère pas l'existence ou le statut politique actuel d'un État. Les entités historiques déjà choisies dans un groupe restent distinctes.
 
@@ -98,25 +98,32 @@ La liste des résolutions divisantes conserve les désaccords stricts avec au mo
 
 Référence indépendante sur **France, Inde, Brésil et Canada**, 2000–2025, tous sujets, seuil 20 : **6 paires**, **13 304 comparaisons de votes**, **7 329 identiques**, soit **55,088695 %**. Retirer l'Inde donne **56,556391 %** ; ajouter la Belgique au groupe initial donne **60,624521 %**. Ces chiffres servent aux tests de calcul et ne sont pas des groupes précréés dans l'application.
 
-### Routes d'écriture
+### Deux API
 
-| Action                                    | Requête                                                                |
-| ----------------------------------------- | ---------------------------------------------------------------------- |
-| Créer / lister                            | `POST /api/groups`, `GET /api/groups`                                  |
-| Lire / modifier                           | `GET /api/groups/:id`, `PATCH /api/groups/:id`                         |
-| Supprimer le groupe et ses rapports       | `DELETE /api/groups/:id?expectedRevision=2`                            |
-| Tester une composition sans l'enregistrer | `POST /api/groups/:id/preview`                                         |
-| Calculer et enregistrer un rapport        | `POST /api/groups/:id/reports`                                         |
-| Lister / lire les rapports figés          | `GET /api/groups/:id/reports`, `GET /api/groups/:id/reports/:reportId` |
-| Rechercher des candidats                  | `POST /api/groups/:id/suggestions`                                     |
+Les calculs viennent de l'API Node, en lecture seule (`GET`) :
 
-Les créations renvoient 201 et les suppressions 204. `PATCH`, `DELETE` et les demandes d'analyse utilisent une `expectedRevision` : une version périmée renvoie **409**, sans écrasement. L'interface garde le brouillon en cas de conflit et propose un rechargement explicite. Le serveur valide membres, paramètres et champs JSON ; les résultats des rapports sont calculés par le serveur. Limites : 100 groupes, 100 rapports par groupe, corps JSON de 32 Ko et requêtes d'écriture en JSON.
+| Calcul                                         | Requête                                                                   |
+| ---------------------------------------------- | ------------------------------------------------------------------------- |
+| Analyse d'une composition (groupe ou scénario) | `GET /api/groups/analysis?members=FRA,IND&from=…&to=…&theme=…&minVotes=…` |
+| Pays candidats                                 | `GET /api/groups/suggestions?members=…&includeHistorical=false`           |
+
+Toute autre méthode que `GET` sur `/api` renvoie **405**.
+
+Les écritures passent par l'API mockée **MirageJS**, sous le préfixe `/mock-api`, exécutée dans le navigateur :
+
+| Action                              | Requête                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------- |
+| Lister / créer                      | `GET /mock-api/groups`, `POST /mock-api/groups`                                  |
+| Lire / modifier                     | `GET /mock-api/groups/:id`, `PUT /mock-api/groups/:id`                           |
+| Supprimer le groupe et ses rapports | `DELETE /mock-api/groups/:id?expectedRevision=2`                                 |
+| Enregistrer un rapport              | `POST /mock-api/groups/:id/reports`                                              |
+| Lister / lire les rapports figés    | `GET /mock-api/groups/:id/reports`, `GET /mock-api/groups/:id/reports/:reportId` |
+
+Les créations renvoient 201 et les suppressions 204. `PUT`, `DELETE` et l'enregistrement d'un rapport utilisent une `expectedRevision` : une version périmée renvoie **409**, sans écrasement. Avant chaque calcul, l'interface relit aussi la révision enregistrée ; si le groupe a changé dans un autre onglet, elle affiche le même conflit. L'interface garde le brouillon et propose un rechargement explicite. Mirage valide nom, description et membres ; limites : 100 groupes et 100 rapports par groupe. Ses requêtes sont journalisées dans la console du navigateur (elles n'apparaissent pas dans l'onglet Réseau).
 
 ### Stockage local
 
-SQLite natif de Node.js conserve groupes et rapports dans **`data/local/groups.sqlite`**. Aucun paquet supplémentaire n'est nécessaire avec Node.js 24.21.0. Les données survivent au redémarrage de l'API et sont partagées entre les onglets utilisant cette installation locale. Il n'y a pas de comptes utilisateurs.
-
-Le dossier **`data/local/` est exclu de Git**, y compris les fichiers SQLite WAL/SHM. Pour une sauvegarde manuelle, arrêter l'API puis copier ce dossier entier. `GROUPS_DB_PATH` permet de choisir un autre emplacement. Les tests utilisent une base mémoire ou temporaire séparée ; ils ne modifient pas les groupes personnels. Les écritures ne modifient jamais le jeu officiel `data/dataset.json`.
+Mirage enregistre groupes et rapports dans le **`localStorage`** du navigateur (clé `diplomatic-match-mock-api`), relu à chaque requête : les données survivent au rechargement de la page et sont partagées entre les onglets du même navigateur. Deux groupes d'exemple sont créés au premier lancement : « Membres permanents du Conseil de sécurité » et « BRICS (membres fondateurs) ». Effacer cette clé remet ces exemples. Il n'y a pas de comptes utilisateurs. Les écritures ne modifient jamais le jeu officiel `data/dataset.json`.
 
 ## Reproduire l'import
 
@@ -151,14 +158,14 @@ src/app/
   features/matrix/            Matrice des pays choisis (2 à 15)
   features/map/               Carte, réutilisée sur l’accueil
   features/groups/            Groupes, simulations et rapports enregistrés
+  mock-api/                   API mockée MirageJS (groupes et rapports, localStorage)
   features/resolutions/       Recherche et détail
   features/methodology/       Sources, formule et limites
   app.routes.ts               Routes chargées à la demande
-server/                       API HTTP Node, domaines, SQLite et tests
+server/                       API HTTP Node (GET), domaines et tests
 scripts/                      Lancement, téléchargement et import
 public/                       Fichiers statiques
 data/                         Données compactes, dictionnaires et manifestes
-  local/                      Base des groupes et rapports (ignorée par Git)
 PLAN_PROJET.md                Checklist et démonstration proposée (15 min)
 ```
 

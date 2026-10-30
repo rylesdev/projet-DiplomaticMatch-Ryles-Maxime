@@ -1,24 +1,9 @@
 import { countryRef, EXPLICIT_CHOICES, inScope, publicResolution } from './domain.mjs';
-import { HttpError, integerInRange } from './http-error.mjs';
-import { THEMES, THEME_CLASSIFICATION_VERSION } from './themes.mjs';
+import { HttpError } from './http-error.mjs';
+import { THEME_CLASSIFICATION_VERSION } from './themes.mjs';
 
 export const GROUP_METHOD_VERSION = 'diplomatic-match-weighted-groups-v1';
 export const MAX_GROUP_MEMBERS = 12;
-const THEME_IDS = new Set(THEMES.map((theme) => theme.id));
-
-function objectBody(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    throw new HttpError(400, 'Le corps doit être un objet JSON.');
-}
-
-function allowedFields(value, fields) {
-  for (const key of Object.keys(value))
-    if (!fields.includes(key)) throw new HttpError(400, `Champ non autorisé : ${key}.`);
-}
-
-export function validateRevision(value) {
-  return integerInRange(value, 'La révision attendue', 1, Number.MAX_SAFE_INTEGER);
-}
 
 export function validateMemberIds(store, ids) {
   if (!Array.isArray(ids) || ids.length < 2 || ids.length > MAX_GROUP_MEMBERS)
@@ -29,73 +14,6 @@ export function validateMemberIds(store, ids) {
     if (typeof id !== 'string' || !store.countries.has(id))
       throw new HttpError(400, 'Un des États sélectionnés est absent du jeu de données.');
   return ids.slice();
-}
-
-export function validateGroupDraft(store, input, previous = null) {
-  objectBody(input);
-  allowedFields(
-    input,
-    previous
-      ? ['name', 'description', 'memberIds', 'expectedRevision']
-      : ['name', 'description', 'memberIds'],
-  );
-  if (previous) {
-    validateRevision(input.expectedRevision);
-    if (!['name', 'description', 'memberIds'].some((key) => Object.hasOwn(input, key)))
-      throw new HttpError(400, 'Indiquez au moins un champ à modifier.');
-  }
-  const name = Object.hasOwn(input, 'name') ? input.name : previous?.name;
-  const description = Object.hasOwn(input, 'description')
-    ? input.description
-    : (previous?.description ?? '');
-  const memberIds = Object.hasOwn(input, 'memberIds') ? input.memberIds : previous?.memberIds;
-  if (typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 80)
-    throw new HttpError(400, 'Le nom du groupe doit contenir entre 2 et 80 caractères.');
-  if (typeof description !== 'string' || description.length > 500)
-    throw new HttpError(400, 'La description est limitée à 500 caractères.');
-  return {
-    name: name.trim(),
-    description: description.trim(),
-    memberIds: validateMemberIds(store, memberIds),
-  };
-}
-
-export function validateAnalysisRequest(
-  store,
-  input,
-  allowOverride = false,
-  allowHistorical = false,
-) {
-  objectBody(input);
-  allowedFields(input, [
-    'from',
-    'to',
-    'theme',
-    'minVotes',
-    'expectedRevision',
-    ...(allowOverride ? ['memberIds'] : []),
-    ...(allowHistorical ? ['includeHistorical'] : []),
-  ]);
-  const from = integerInRange(input.from, 'L’année de début', 1946, 2100);
-  const to = integerInRange(input.to, 'L’année de fin', 1946, 2100);
-  if (from > to) throw new HttpError(400, 'L’année de début doit précéder l’année de fin.');
-  if (typeof input.theme !== 'string' || !THEME_IDS.has(input.theme))
-    throw new HttpError(400, 'Ce thème n’existe pas.');
-  const minVotes = integerInRange(input.minVotes, 'Le nombre minimum de votes communs', 1, 100000);
-  if (
-    allowHistorical &&
-    Object.hasOwn(input, 'includeHistorical') &&
-    typeof input.includeHistorical !== 'boolean'
-  )
-    throw new HttpError(400, 'L’option des entités historiques doit être un booléen.');
-  return {
-    filters: { from, to, theme: input.theme, minVotes },
-    expectedRevision: validateRevision(input.expectedRevision),
-    ...(Object.hasOwn(input, 'memberIds')
-      ? { memberIds: validateMemberIds(store, input.memberIds) }
-      : {}),
-    ...(allowHistorical ? { includeHistorical: input.includeHistorical ?? false } : {}),
-  };
 }
 
 export function coverageUnion(coverage, next) {

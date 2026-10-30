@@ -38,11 +38,11 @@
 - [x] Matrice des pays choisis (2 à 15) : taux et votes communs par case, bleu/rouge, effectifs sous le seuil en gris, ouverture des comparaisons détaillées. La vue des 202 pays a été retirée.
 - [x] Vérifier indépendamment les résultats écologie et sécurité, la symétrie de la matrice et la distinction entre 0 % et absence de données.
 
-- [x] Ajouter un atelier de groupes de pays : création, modification et suppression via API, avec stockage SQLite local ignoré par Git.
+- [x] Ajouter un atelier de groupes de pays : création, modification et suppression via l'API mockée MirageJS, avec stockage dans le localStorage.
 - [x] Analyser la concordance interne pondérée, l'évolution et les résolutions qui divisent le groupe, avec seuil et couverture visibles.
 - [x] Tester des ajouts/retraits sans mutation jusqu'à application explicite et proposer des candidats avec couverture temporelle documentée.
 - [x] Enregistrer des rapports immuables et comparer deux versions uniquement à paramètres et versions compatibles.
-- [x] Vérifier la persistance et les conflits de révision avec les tests serveur ; vérifier le CRUD et les scénarios dans un vrai navigateur.
+- [x] Vérifier la persistance et les conflits de révision avec les tests de l'API mockée ; vérifier le CRUD et les scénarios dans un vrai navigateur.
 
 ## Améliorations proposées — à choisir
 

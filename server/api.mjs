@@ -14,8 +14,6 @@ import { THEMES } from './themes.mjs';
 import { analyzeGroup, validateMemberIds } from './group-domain.mjs';
 import { suggestGroupMembers } from './group-suggestions.mjs';
 import { HttpError, integerInRange } from './http-error.mjs';
-import { createGroupRepository } from './group-repository.mjs';
-import { handleGroupsRequest, isGroupsPath } from './groups-api.mjs';
 
 const THEME_IDS = new Set(THEMES.map((theme) => theme.id));
 
@@ -209,19 +207,13 @@ export function handleApi(store, request) {
   throw new HttpError(404, 'Cette route API n’existe pas.');
 }
 
-export function createApiServer(store, options = {}) {
-  const groupRepository = options.groupRepository ?? createGroupRepository();
-  const server = createServer(async (request, response) => {
+// Lecture seule : les écritures (groupes et rapports) sont gérées par l'API mockée MirageJS.
+export function createApiServer(store) {
+  return createServer((request, response) => {
     response.setHeader('Content-Type', 'application/json; charset=utf-8');
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'no-store');
     try {
-      if (isGroupsPath(new URL(request.url, 'http://127.0.0.1').pathname)) {
-        const result = await handleGroupsRequest(store, groupRepository, request);
-        response.writeHead(result.status);
-        response.end(result.status === 204 ? undefined : JSON.stringify(result.body));
-        return;
-      }
       const body = handleApi(store, request);
       response.writeHead(200);
       response.end(JSON.stringify(body));
@@ -237,6 +229,4 @@ export function createApiServer(store, options = {}) {
       );
     }
   });
-  server.once('close', () => groupRepository.close());
-  return server;
 }

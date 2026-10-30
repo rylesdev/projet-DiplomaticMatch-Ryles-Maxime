@@ -1,6 +1,6 @@
 import { syntheticDataset } from './synthetic-dataset.mjs';
 
-// Données et groupes inventés pour les tests uniquement ; aucun fichier SQLite de production.
+// Données inventées pour les tests uniquement.
 export function groupDataset() {
   const dataset = syntheticDataset();
   dataset.countries = ['FRA', 'IND', 'BRA', 'CAN', 'BEL', 'USA', 'ZZZ'].map((id) => ({
@@ -38,18 +38,6 @@ export function groupDataset() {
     votes: Object.entries(choices).map(([id, raw]) => [codes.get(id), raw]),
   }));
   return dataset;
-}
-
-export function testGroup(memberIds = ['FRA', 'IND', 'BRA']) {
-  return {
-    id: 'group-test',
-    name: 'Groupe fictif',
-    description: 'Tests seulement',
-    memberIds: memberIds.slice(),
-    revision: 1,
-    createdAt: '2020-01-01T00:00:00.000Z',
-    updatedAt: '2020-01-01T00:00:00.000Z',
-  };
 }
 
 export const groupFilters = { from: 2020, to: 2022, theme: 'all', minVotes: 2 };
