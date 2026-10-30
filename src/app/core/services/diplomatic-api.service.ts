@@ -4,6 +4,7 @@ import { Observable, TimeoutError } from 'rxjs';
 import {
   ComparisonResult,
   ConcordanceMatrix,
+  ConcordanceRow,
   Country,
   CountryRankings,
   CountryVote,
@@ -55,6 +56,21 @@ export class DiplomaticApiService {
   ): Observable<ConcordanceMatrix> {
     return this.get<ConcordanceMatrix>('/matrix/selection', {
       countries: countries.join(','),
+      from,
+      to,
+      minVotes,
+      theme,
+    });
+  }
+  // Ligne du pays de référence (carte) : environ 25 Ko au lieu de la matrice complète.
+  concordances(
+    id: string,
+    from: number,
+    to: number,
+    minVotes = 20,
+    theme = 'all',
+  ): Observable<ConcordanceRow> {
+    return this.get<ConcordanceRow>(`/countries/${encodeURIComponent(id)}/concordances`, {
       from,
       to,
       minVotes,

@@ -9,7 +9,7 @@ import { periodValidator } from '../../core/period.validator';
 import { DataPeriodService, DEFAULT_FROM } from '../../core/services/data-period.service';
 import { apiErrorMessage, DiplomaticApiService } from '../../core/services/diplomatic-api.service';
 import { CountryPickerComponent } from '../../shared/country-picker.component';
-import { concordanceColor, concordanceTextColor } from './matrix-colors';
+import { concordanceColor, concordanceTextColor } from '../../shared/concordance-colors';
 
 interface SelectionRequest {
   countries: string[];

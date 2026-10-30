@@ -116,6 +116,27 @@ export interface ConcordanceMatrix {
   dataVersion: string;
 }
 
+// Concordance d'un pays de référence avec chacun des autres : une ligne de la matrice (carte).
+export interface ConcordanceEntry {
+  id: string;
+  name: string;
+  iso3?: string;
+  commonVoteCount: number;
+  matchingVoteCount: number;
+  // null : aucun vote commun ou seuil non atteint.
+  agreementPercent: number | null;
+}
+
+export interface ConcordanceRow {
+  country: Country;
+  from: number;
+  to: number;
+  theme: string;
+  minVotes: number;
+  entries: ConcordanceEntry[];
+  dataVersion: string;
+}
+
 export interface ResolutionDetail extends Resolution {
   votes: { country: CountryRef; choice: VoteChoice; rawChoice: string }[];
   totals: Record<VoteChoice, number>;

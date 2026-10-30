@@ -1,5 +1,5 @@
-import { ConcordanceMatrix, Country } from '../../core/models/api.models';
-import { concordanceColor } from '../matrix/matrix-colors';
+import { ConcordanceEntry, ConcordanceRow } from '../../core/models/api.models';
+import { concordanceColor } from '../../shared/concordance-colors';
 
 export interface WorldMap {
   width: number;
@@ -11,7 +11,8 @@ export interface MapCountry {
   id: string;
   name: string;
   path: string;
-  country: Country | null;
+  // Pays du jeu de votes dessiné par ce contour (null : contour sans votes).
+  country: ConcordanceEntry | null;
   percentage: number | null;
   common: number;
   matching: number;
@@ -51,28 +52,22 @@ export function parseWorldMap(value: unknown): WorldMap {
   return { width: map['width'], height: map['height'], countries };
 }
 
+// Colore chaque contour selon sa concordance avec le pays de référence (ligne reçue de l'API).
 // Une entité historique garde son propre code : aucune fusion avec un État actuel.
-export function mapCountries(
-  geography: WorldMap | null,
-  matrix: ConcordanceMatrix | null,
-  referenceId: string,
-): MapCountry[] {
+export function mapCountries(geography: WorldMap | null, row: ConcordanceRow | null): MapCountry[] {
   if (!geography) return [];
-  const row = matrix?.countries.findIndex((country) => country.id === referenceId) ?? -1;
-  const columns = new Map<string, number>();
-  matrix?.countries.forEach((country, index) => columns.set(country.iso3 ?? country.id, index));
+  const entries = new Map<string, ConcordanceEntry>();
+  row?.entries.forEach((entry) => entries.set(entry.iso3 ?? entry.id, entry));
   return geography.countries.map((shape) => {
-    const column = columns.get(shape.id);
-    const country = column === undefined ? null : matrix!.countries[column];
-    const hasPair = row >= 0 && column !== undefined;
-    const percentage = hasPair ? matrix!.agreementPercents[row][column] : null;
+    const country = entries.get(shape.id) ?? null;
+    const percentage = country?.agreementPercent ?? null;
     return {
       ...shape,
       name: country?.name ?? shape.name,
       country,
       percentage,
-      common: hasPair ? matrix!.commonVoteCounts[row][column] : 0,
-      matching: hasPair ? matrix!.matchingVoteCounts[row][column] : 0,
+      common: country?.commonVoteCount ?? 0,
+      matching: country?.matchingVoteCount ?? 0,
       color: concordanceColor(percentage),
     };
   });

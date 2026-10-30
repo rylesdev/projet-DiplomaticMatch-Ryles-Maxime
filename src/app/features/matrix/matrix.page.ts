@@ -18,7 +18,7 @@ import { Subject, catchError, finalize, of, switchMap } from 'rxjs';
 import { ConcordanceMatrix, Theme } from '../../core/models/api.models';
 import { DiplomaticApiService, apiErrorMessage } from '../../core/services/diplomatic-api.service';
 import { DataPeriodService, DEFAULT_FROM } from '../../core/services/data-period.service';
-import { concordanceColor } from './matrix-colors';
+import { concordanceColor } from '../../shared/concordance-colors';
 
 interface MatrixFilters {
   from: number;
