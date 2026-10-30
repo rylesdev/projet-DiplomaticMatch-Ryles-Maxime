@@ -1,46 +1,33 @@
-import { compareMatrix, publicResolution } from './domain.mjs';
+import { compareMatrix, EXPLICIT_CHOICES, inScope, publicResolution } from './domain.mjs';
+import { HttpError, integerInRange } from './http-error.mjs';
 import { THEMES, THEME_CLASSIFICATION_VERSION } from './themes.mjs';
 
 export const GROUP_METHOD_VERSION = 'diplomatic-match-weighted-groups-v1';
 export const MAX_GROUP_MEMBERS = 12;
-const EXPLICIT = new Set(['YES', 'NO', 'ABSTAIN']);
 const THEME_IDS = new Set(THEMES.map((theme) => theme.id));
-
-export class GroupError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
 
 function objectBody(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value))
-    throw new GroupError(400, 'Le corps doit être un objet JSON.');
+    throw new HttpError(400, 'Le corps doit être un objet JSON.');
 }
 
 function allowedFields(value, fields) {
   for (const key of Object.keys(value))
-    if (!fields.includes(key)) throw new GroupError(400, `Champ non autorisé : ${key}.`);
-}
-
-function integer(value, label, min, max) {
-  if (!Number.isSafeInteger(value) || value < min || value > max)
-    throw new GroupError(400, `${label} doit être un entier compris entre ${min} et ${max}.`);
-  return value;
+    if (!fields.includes(key)) throw new HttpError(400, `Champ non autorisé : ${key}.`);
 }
 
 export function validateRevision(value) {
-  return integer(value, 'La révision attendue', 1, Number.MAX_SAFE_INTEGER);
+  return integerInRange(value, 'La révision attendue', 1, Number.MAX_SAFE_INTEGER);
 }
 
 export function validateMemberIds(store, ids) {
   if (!Array.isArray(ids) || ids.length < 2 || ids.length > MAX_GROUP_MEMBERS)
-    throw new GroupError(400, 'Un groupe doit contenir entre 2 et 12 États.');
+    throw new HttpError(400, 'Un groupe doit contenir entre 2 et 12 États.');
   if (new Set(ids).size !== ids.length)
-    throw new GroupError(400, 'Chaque État doit apparaître une seule fois dans le groupe.');
+    throw new HttpError(400, 'Chaque État doit apparaître une seule fois dans le groupe.');
   for (const id of ids)
     if (typeof id !== 'string' || !store.countries.has(id))
-      throw new GroupError(400, 'Un des États sélectionnés est absent du jeu de données.');
+      throw new HttpError(400, 'Un des États sélectionnés est absent du jeu de données.');
   return ids.slice();
 }
 
@@ -55,7 +42,7 @@ export function validateGroupDraft(store, input, previous = null) {
   if (previous) {
     validateRevision(input.expectedRevision);
     if (!['name', 'description', 'memberIds'].some((key) => Object.hasOwn(input, key)))
-      throw new GroupError(400, 'Indiquez au moins un champ à modifier.');
+      throw new HttpError(400, 'Indiquez au moins un champ à modifier.');
   }
   const name = Object.hasOwn(input, 'name') ? input.name : previous?.name;
   const description = Object.hasOwn(input, 'description')
@@ -63,9 +50,9 @@ export function validateGroupDraft(store, input, previous = null) {
     : (previous?.description ?? '');
   const memberIds = Object.hasOwn(input, 'memberIds') ? input.memberIds : previous?.memberIds;
   if (typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 80)
-    throw new GroupError(400, 'Le nom du groupe doit contenir entre 2 et 80 caractères.');
+    throw new HttpError(400, 'Le nom du groupe doit contenir entre 2 et 80 caractères.');
   if (typeof description !== 'string' || description.length > 500)
-    throw new GroupError(400, 'La description est limitée à 500 caractères.');
+    throw new HttpError(400, 'La description est limitée à 500 caractères.');
   return {
     name: name.trim(),
     description: description.trim(),
@@ -89,18 +76,18 @@ export function validateAnalysisRequest(
     ...(allowOverride ? ['memberIds'] : []),
     ...(allowHistorical ? ['includeHistorical'] : []),
   ]);
-  const from = integer(input.from, 'L’année de début', 1946, 2100);
-  const to = integer(input.to, 'L’année de fin', 1946, 2100);
-  if (from > to) throw new GroupError(400, 'L’année de début doit précéder l’année de fin.');
+  const from = integerInRange(input.from, 'L’année de début', 1946, 2100);
+  const to = integerInRange(input.to, 'L’année de fin', 1946, 2100);
+  if (from > to) throw new HttpError(400, 'L’année de début doit précéder l’année de fin.');
   if (typeof input.theme !== 'string' || !THEME_IDS.has(input.theme))
-    throw new GroupError(400, 'Ce thème n’existe pas.');
-  const minVotes = integer(input.minVotes, 'Le nombre minimum de votes communs', 1, 100000);
+    throw new HttpError(400, 'Ce thème n’existe pas.');
+  const minVotes = integerInRange(input.minVotes, 'Le nombre minimum de votes communs', 1, 100000);
   if (
     allowHistorical &&
     Object.hasOwn(input, 'includeHistorical') &&
     typeof input.includeHistorical !== 'boolean'
   )
-    throw new GroupError(400, 'L’option des entités historiques doit être un booléen.');
+    throw new HttpError(400, 'L’option des entités historiques doit être un booléen.');
   return {
     filters: { from, to, theme: input.theme, minVotes },
     expectedRevision: validateRevision(input.expectedRevision),
@@ -109,15 +96,6 @@ export function validateAnalysisRequest(
       : {}),
     ...(allowHistorical ? { includeHistorical: input.includeHistorical ?? false } : {}),
   };
-}
-
-function inScope(resolution, filters) {
-  const year = Number(resolution.date.slice(0, 4));
-  return (
-    year >= filters.from &&
-    year <= filters.to &&
-    (filters.theme === 'all' || resolution.themeIds.includes(filters.theme))
-  );
 }
 
 function coverageUnion(coverage, next) {
@@ -166,7 +144,7 @@ export function analyzeGroup(store, group, filters, memberIds = group.memberIds)
   let observedResolutionCount = 0;
   const divisiveResolutions = [];
   for (const resolution of store.orderedResolutions) {
-    if (!inScope(resolution, filters)) continue;
+    if (!inScope(resolution, filters.from, filters.to, filters.theme)) continue;
     const votes = memberIds.map((id) => resolution.voteMap.get(id));
     if (votes.some((vote) => vote !== undefined)) observedResolutionCount++;
     const yearPairs = yearly[Number(resolution.date.slice(0, 4)) - filters.from].pairs;
@@ -174,10 +152,10 @@ export function analyzeGroup(store, group, filters, memberIds = group.memberIds)
     let matchingPairVotes = 0;
     let participatingCount = 0;
     for (let a = 0; a < members.length; a++) {
-      if (!EXPLICIT.has(votes[a]?.choice)) continue;
+      if (!EXPLICIT_CHOICES.has(votes[a]?.choice)) continue;
       participatingCount++;
       for (let b = a + 1; b < members.length; b++) {
-        if (!EXPLICIT.has(votes[b]?.choice)) continue;
+        if (!EXPLICIT_CHOICES.has(votes[b]?.choice)) continue;
         const index = pairIndexes[a][b];
         const pair = pairs[index];
         pair.commonVoteCount++;
@@ -312,12 +290,12 @@ export function suggestGroupMembers(store, group, filters, includeHistorical = f
   // Le cache matrice donne les effectifs ; une seule passe sourcée donne la couverture des 3 retenus.
   for (const resolution of store.orderedResolutions) {
     if (
-      !inScope(resolution, filters) ||
-      !group.memberIds.some((id) => EXPLICIT.has(resolution.voteMap.get(id)?.choice))
+      !inScope(resolution, filters.from, filters.to, filters.theme) ||
+      !group.memberIds.some((id) => EXPLICIT_CHOICES.has(resolution.voteMap.get(id)?.choice))
     )
       continue;
     for (const suggestion of suggestions)
-      if (EXPLICIT.has(resolution.voteMap.get(suggestion.country.id)?.choice)) {
+      if (EXPLICIT_CHOICES.has(resolution.voteMap.get(suggestion.country.id)?.choice)) {
         coverageUnion(suggestion.coverage, { from: resolution.date, to: resolution.date });
       }
   }

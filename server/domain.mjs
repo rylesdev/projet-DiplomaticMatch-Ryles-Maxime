@@ -2,11 +2,11 @@ import { THEMES, assignThemes } from './themes.mjs';
 
 // Les valeurs brutes viennent du dictionnaire officiel de l'ONU (version 6).
 export const VOTE_CHOICES = ['YES', 'NO', 'ABSTAIN', 'NOT_VOTED', 'UNKNOWN'];
-const EXPLICIT_CHOICES = new Set(['YES', 'NO', 'ABSTAIN']);
+export const EXPLICIT_CHOICES = new Set(['YES', 'NO', 'ABSTAIN']);
 const MATRIX_CACHE_LIMIT = 6;
 const matrixCaches = new WeakMap();
 
-function inScope(resolution, from, to, theme) {
+export function inScope(resolution, from, to, theme) {
   const year = Number(resolution.date.slice(0, 4));
   return year >= from && year <= to && (theme === 'all' || resolution.themeIds.includes(theme));
 }

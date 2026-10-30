@@ -9,28 +9,17 @@ import {
   resolutionDetail,
 } from './domain.mjs';
 import { THEMES } from './themes.mjs';
-import { GroupError } from './group-domain.mjs';
+import { HttpError, integerInRange } from './http-error.mjs';
 import { createGroupRepository } from './group-repository.mjs';
 import { handleGroupsRequest, isGroupsPath } from './groups-api.mjs';
 
 const THEME_IDS = new Set(THEMES.map((theme) => theme.id));
 
-class ApiError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
-
 function integer(params, key, fallback, min, max) {
   const raw = params.get(key);
   if (raw === null) return fallback;
-  if (!/^\d+$/.test(raw)) throw new ApiError(400, `Le paramètre ${key} doit être un entier.`);
-  const value = Number(raw);
-  if (!Number.isSafeInteger(value) || value < min || value > max) {
-    throw new ApiError(400, `Le paramètre ${key} doit être compris entre ${min} et ${max}.`);
-  }
-  return value;
+  // « 12abc » ou « -3 » deviennent NaN et sont refusés par integerInRange.
+  return integerInRange(/^\d+$/.test(raw) ? Number(raw) : NaN, `Le paramètre ${key}`, min, max);
 }
 
 function period(params, store) {
@@ -42,19 +31,19 @@ function period(params, store) {
     2100,
   );
   const to = integer(params, 'to', Number(store.metadata.coverage.to.slice(0, 4)), 1900, 2100);
-  if (from > to) throw new ApiError(400, 'L’année de début doit précéder l’année de fin.');
+  if (from > to) throw new HttpError(400, 'L’année de début doit précéder l’année de fin.');
   return { from, to };
 }
 
 function search(params) {
   const value = params.get('search') ?? '';
-  if (value.length > 200) throw new ApiError(400, 'La recherche est limitée à 200 caractères.');
+  if (value.length > 200) throw new HttpError(400, 'La recherche est limitée à 200 caractères.');
   return normalizeSearch(value.trim());
 }
 
 function themeParameter(params) {
   const theme = params.get('theme') ?? 'all';
-  if (!THEME_IDS.has(theme)) throw new ApiError(400, 'Ce thème n’existe pas.');
+  if (!THEME_IDS.has(theme)) throw new HttpError(400, 'Ce thème n’existe pas.');
   return theme;
 }
 
@@ -71,17 +60,17 @@ function paginate(items, params) {
 
 function country(store, id) {
   const result = store.countries.get(id);
-  if (!result) throw new ApiError(404, 'Cet État est absent du jeu de données.');
+  if (!result) throw new HttpError(404, 'Cet État est absent du jeu de données.');
   return result;
 }
 
 function comparisonParameters(store, params) {
   const countryA = params.get('countryA');
   const countryB = params.get('countryB');
-  if (!countryA || !countryB) throw new ApiError(400, 'Choisissez les deux États à comparer.');
+  if (!countryA || !countryB) throw new HttpError(400, 'Choisissez les deux États à comparer.');
   country(store, countryA);
   country(store, countryB);
-  if (countryA === countryB) throw new ApiError(400, 'Choisissez deux États différents.');
+  if (countryA === countryB) throw new HttpError(400, 'Choisissez deux États différents.');
   return { countryA, countryB, ...period(params, store) };
 }
 
@@ -90,7 +79,7 @@ export function handleApi(store, request) {
   const path = url.pathname;
   const params = url.searchParams;
   if (request.method !== 'GET')
-    throw new ApiError(405, 'Cette API accepte uniquement les requêtes GET.');
+    throw new HttpError(405, 'Cette API accepte uniquement les requêtes GET.');
   if (path === '/api/health') return { status: 'ok', version: store.metadata.version };
   if (path === '/api/metadata') return store.metadata;
   if (path === '/api/themes') return store.themes;
@@ -135,7 +124,7 @@ export function handleApi(store, request) {
       return compareCountries(store, countryA, countryB, from, to, theme);
     const interval = params.get('interval') ?? 'year';
     if (!['year', 'decade'].includes(interval))
-      throw new ApiError(400, 'L’intervalle doit être year ou decade.');
+      throw new HttpError(400, 'L’intervalle doit être year ou decade.');
     return compareTrend(store, countryA, countryB, from, to, interval, theme);
   }
   if (path === '/api/resolutions') {
@@ -156,10 +145,10 @@ export function handleApi(store, request) {
   const resolutionMatch = path.match(/^\/api\/resolutions\/([^/]+)$/);
   if (resolutionMatch) {
     const found = store.resolutions.get(decodeURIComponent(resolutionMatch[1]));
-    if (!found) throw new ApiError(404, 'Cette résolution est absente du jeu de données.');
+    if (!found) throw new HttpError(404, 'Cette résolution est absente du jeu de données.');
     return resolutionDetail(store, found);
   }
-  throw new ApiError(404, 'Cette route API n’existe pas.');
+  throw new HttpError(404, 'Cette route API n’existe pas.');
 }
 
 export function createApiServer(store, options = {}) {
@@ -180,11 +169,7 @@ export function createApiServer(store, options = {}) {
       response.end(JSON.stringify(body));
     } catch (error) {
       const status =
-        error instanceof ApiError || error instanceof GroupError
-          ? error.status
-          : error instanceof URIError
-            ? 400
-            : 500;
+        error instanceof HttpError ? error.status : error instanceof URIError ? 400 : 500;
       if (status === 500) console.error(error);
       response.writeHead(status);
       response.end(

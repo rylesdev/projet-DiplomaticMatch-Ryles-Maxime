@@ -1,11 +1,11 @@
 import {
   analyzeGroup,
-  GroupError,
   suggestGroupMembers,
   validateAnalysisRequest,
   validateGroupDraft,
   validateRevision,
 } from './group-domain.mjs';
+import { HttpError } from './http-error.mjs';
 
 const BODY_LIMIT = 32 * 1024;
 
@@ -16,13 +16,13 @@ function checkLocalOrigin(request) {
   try {
     url = new URL(origin);
   } catch {
-    throw new GroupError(403, 'Cette origine n’est pas autorisée pour les écritures locales.');
+    throw new HttpError(403, 'Cette origine n’est pas autorisée pour les écritures locales.');
   }
   if (
     !['http:', 'https:'].includes(url.protocol) ||
     !['localhost', '127.0.0.1', '[::1]', '::1'].includes(url.hostname)
   ) {
-    throw new GroupError(403, 'Cette origine n’est pas autorisée pour les écritures locales.');
+    throw new HttpError(403, 'Cette origine n’est pas autorisée pour les écritures locales.');
   }
 }
 
@@ -31,10 +31,10 @@ async function readJson(request) {
     (request.headers['content-type'] ?? '').split(';')[0].trim().toLowerCase() !==
     'application/json'
   )
-    throw new GroupError(415, 'Utilisez le type de contenu application/json.');
+    throw new HttpError(415, 'Utilisez le type de contenu application/json.');
   if (Number(request.headers['content-length']) > BODY_LIMIT) {
     request.resume();
-    throw new GroupError(413, 'Le corps JSON est limité à 32 Ko.');
+    throw new HttpError(413, 'Le corps JSON est limité à 32 Ko.');
   }
   const chunks = [];
   let size = 0;
@@ -42,18 +42,18 @@ async function readJson(request) {
     size += chunk.length;
     if (size <= BODY_LIMIT) chunks.push(chunk);
   }
-  if (size > BODY_LIMIT) throw new GroupError(413, 'Le corps JSON est limité à 32 Ko.');
+  if (size > BODY_LIMIT) throw new HttpError(413, 'Le corps JSON est limité à 32 Ko.');
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {
-    throw new GroupError(400, 'Le corps JSON est invalide.');
+    throw new HttpError(400, 'Le corps JSON est invalide.');
   }
 }
 
 function revisionQuery(params) {
   const raw = params.get('expectedRevision');
   if (raw === null || !/^\d+$/.test(raw))
-    throw new GroupError(400, 'La révision attendue est obligatoire pour supprimer le groupe.');
+    throw new HttpError(400, 'La révision attendue est obligatoire pour supprimer le groupe.');
   return validateRevision(Number(raw));
 }
 
@@ -73,17 +73,17 @@ export async function handleGroupsRequest(store, repository, request) {
         status: 201,
         body: repository.create(validateGroupDraft(store, await readJson(request))),
       };
-    throw new GroupError(405, 'Cette route accepte GET ou POST.');
+    throw new HttpError(405, 'Cette route accepte GET ou POST.');
   }
   const match = path.match(
     /^\/api\/groups\/([^/]+)(?:\/(preview|reports|suggestions))?(?:\/([^/]+))?$/,
   );
   if (!match || (match[3] && match[2] !== 'reports'))
-    throw new GroupError(404, 'Cette route de groupe n’existe pas.');
+    throw new HttpError(404, 'Cette route de groupe n’existe pas.');
   const id = decodeURIComponent(match[1]);
   const action = match[2];
   const group = repository.get(id);
-  if (!group) throw new GroupError(404, 'Ce groupe n’existe pas.');
+  if (!group) throw new HttpError(404, 'Ce groupe n’existe pas.');
   if (!action) {
     if (method === 'GET') return { status: 200, body: group };
     if (method === 'PATCH') {
@@ -96,15 +96,15 @@ export async function handleGroupsRequest(store, repository, request) {
       repository.delete(id, revisionQuery(url.searchParams));
       return { status: 204 };
     }
-    throw new GroupError(405, 'Cette route accepte GET, PATCH ou DELETE.');
+    throw new HttpError(405, 'Cette route accepte GET, PATCH ou DELETE.');
   }
   if (action === 'reports' && method === 'GET') {
     if (!match[3]) return { status: 200, body: repository.listReports(id) };
     const report = repository.getReport(id, decodeURIComponent(match[3]));
-    if (!report) throw new GroupError(404, 'Ce rapport n’existe pas pour ce groupe.');
+    if (!report) throw new HttpError(404, 'Ce rapport n’existe pas pour ce groupe.');
     return { status: 200, body: report };
   }
-  if (method !== 'POST' || match[3]) throw new GroupError(405, 'Cette route accepte POST.');
+  if (method !== 'POST' || match[3]) throw new HttpError(405, 'Cette route accepte POST.');
   const input = validateAnalysisRequest(
     store,
     await readJson(request),

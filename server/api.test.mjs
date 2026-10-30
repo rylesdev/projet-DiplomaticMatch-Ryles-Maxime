@@ -134,6 +134,13 @@ for (const url of [
   test(`paramètres invalides refusés : ${url}`, () =>
     assert.throws(() => request(url), { status: 400 }));
 }
+for (const value of ['invalid', '1.5', '-3', '100001']) {
+  test(`message unique pour un entier invalide : minVotes=${value}`, () =>
+    assert.throws(() => request(`/api/matrix?minVotes=${value}`), {
+      status: 400,
+      message: 'Le paramètre minVotes doit être un entier compris entre 1 et 100000.',
+    }));
+}
 test('pays et résolutions inconnus donnent 404, les écritures 405', () => {
   assert.throws(() => request('/api/countries/ZZZ'), { status: 404 });
   assert.throws(() => request('/api/countries/ZZZ/rankings'), { status: 404 });

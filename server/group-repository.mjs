@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
-import { GroupError } from './group-domain.mjs';
+import { HttpError } from './http-error.mjs';
 
 const MAX_GROUPS = 100;
 const MAX_REPORTS = 100;
@@ -86,9 +86,9 @@ export function createGroupRepository(path = ':memory:') {
   const get = (id) => groupFromRow(queries.group.get(id));
   function requireCurrent(id, expectedRevision) {
     const group = get(id);
-    if (!group) throw new GroupError(404, 'Ce groupe n’existe pas.');
+    if (!group) throw new HttpError(404, 'Ce groupe n’existe pas.');
     if (group.revision !== expectedRevision)
-      throw new GroupError(
+      throw new HttpError(
         409,
         'Le groupe a été modifié. Rechargez sa dernière version avant de continuer.',
       );
@@ -112,7 +112,7 @@ export function createGroupRepository(path = ':memory:') {
     create: (draft) =>
       transaction(() => {
         if (queries.groupCount.get().count >= MAX_GROUPS)
-          throw new GroupError(
+          throw new HttpError(
             409,
             'La limite de 100 groupes est atteinte. Supprimez un groupe avant d’en créer un autre.',
           );
@@ -154,12 +154,12 @@ export function createGroupRepository(path = ':memory:') {
           analysis.groupRevision !== expectedRevision ||
           JSON.stringify(analysis.memberIds) !== JSON.stringify(groupSnapshot.memberIds)
         )
-          throw new GroupError(
+          throw new HttpError(
             400,
             'L’analyse ne correspond pas à la version enregistrée du groupe.',
           );
         if (queries.reportCount.get(id).count >= MAX_REPORTS)
-          throw new GroupError(409, 'La limite de 100 rapports pour ce groupe est atteinte.');
+          throw new HttpError(409, 'La limite de 100 rapports pour ce groupe est atteinte.');
         const report = {
           id: randomUUID(),
           groupId: id,
