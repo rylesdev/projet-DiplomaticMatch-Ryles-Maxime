@@ -6,6 +6,7 @@ import {
   ConcordanceMatrix,
   ConcordanceRow,
   Country,
+  CountryProfile,
   CountryRankings,
   CountryVote,
   DataMetadata,
@@ -59,6 +60,14 @@ export class DiplomaticApiService {
       from,
       to,
       minVotes,
+      theme,
+    });
+  }
+  // Fiche pays : répartition des votes et alignement sur la majorité de séance.
+  profile(id: string, from: number, to: number, theme = 'all'): Observable<CountryProfile> {
+    return this.get<CountryProfile>(`/countries/${encodeURIComponent(id)}/profile`, {
+      from,
+      to,
       theme,
     });
   }

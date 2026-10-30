@@ -1,4 +1,5 @@
 export type VoteChoice = 'YES' | 'NO' | 'ABSTAIN' | 'NOT_VOTED' | 'UNKNOWN';
+export type ExplicitVoteChoice = 'YES' | 'NO' | 'ABSTAIN';
 
 export interface Country {
   id: string;
@@ -92,6 +93,56 @@ export interface TrendResult {
   to: number;
   interval: 'year' | 'decade';
   points: TrendPoint[];
+  dataVersion: string;
+  theme?: string;
+}
+
+export interface CountryMinorityVote {
+  resolution: Resolution;
+  choice: ExplicitVoteChoice;
+  majorityChoice: ExplicitVoteChoice;
+  sameChoiceCount: number;
+  assemblyExplicitTotal: number;
+  assemblyTotals: Record<ExplicitVoteChoice, number>;
+}
+
+export interface CountryProfile {
+  country: Country;
+  from: number;
+  to: number;
+  theme: string;
+  totals: Record<VoteChoice, number>;
+  recordedResolutionCount: number;
+  explicitVoteCount: number;
+  comparableWithMajorityCount: number;
+  alignedWithMajorityCount: number;
+  dissentingVoteCount: number;
+  tiedMajorityCount: number;
+  majorityAlignmentPercent: number | null;
+  strictMinorityVoteCount: number;
+  coverage: { from: string | null; to: string | null };
+  minorityVotes: CountryMinorityVote[];
+  dataVersion: string;
+}
+
+export interface CountryRankingEntry {
+  country: Country;
+  commonVoteCount: number;
+  matchingVoteCount: number;
+  differingVoteCount: number;
+  agreementPercent: number;
+  coverage: { from: string; to: string };
+}
+
+export interface CountryRankings {
+  country: Country;
+  from: number;
+  to: number;
+  minVotes: number;
+  eligibleCountryCount: number;
+  excludedCountryCount: number;
+  closest: CountryRankingEntry[];
+  furthest: CountryRankingEntry[];
   dataVersion: string;
   theme?: string;
 }
