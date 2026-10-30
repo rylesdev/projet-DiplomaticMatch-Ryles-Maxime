@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, TimeoutError } from 'rxjs';
 import {
   ComparisonResult,
   ConcordanceMatrix,
@@ -15,7 +15,12 @@ import {
   Theme,
 } from '../models/api.models';
 
+// Message affiché quand une requête dépasse le délai maximal (http-timeout.interceptor.ts).
+export const TIMEOUT_MESSAGE =
+  'Le serveur ne répond pas (plus de 15 secondes). Vérifiez que l’API est lancée avec npm start, puis réessayez.';
+
 export function apiErrorMessage(error: unknown): string {
+  if (error instanceof TimeoutError) return TIMEOUT_MESSAGE;
   if (error instanceof HttpErrorResponse) {
     if (error.status === 0 || error.status >= 500)
       return 'Le service de données est indisponible. Réessayez dans un instant.';

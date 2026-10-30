@@ -8,10 +8,11 @@ import {
 } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
+import { timeoutInterceptor } from './core/http-timeout.interceptor';
 import { DataPeriodService } from './core/services/data-period.service';
 
 registerLocaleData(localeFr);
@@ -19,7 +20,7 @@ registerLocaleData(localeFr);
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([timeoutInterceptor])),
     { provide: LOCALE_ID, useValue: 'fr-FR' },
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),

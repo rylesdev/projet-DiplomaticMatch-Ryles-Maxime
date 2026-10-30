@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, TimeoutError } from 'rxjs';
 import {
   CountryGroup,
   GroupAnalysis,
@@ -12,8 +12,10 @@ import {
   GroupSuggestions,
   GroupSuggestionsRequest,
 } from '../models/groups.models';
+import { TIMEOUT_MESSAGE } from './diplomatic-api.service';
 
 export function groupErrorMessage(error: unknown): string {
+  if (error instanceof TimeoutError) return TIMEOUT_MESSAGE;
   if (error instanceof HttpErrorResponse) {
     if (error.status === 409)
       return 'Ce groupe a été modifié depuis son ouverture. Rechargez-le avant de réessayer : vos modifications ne seront pas écrasées automatiquement.';
