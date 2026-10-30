@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { compareCountries, compareMatrix, createStore, rankCountries } from './domain.mjs';
+import { FRENCH_NAMES } from './country-names.mjs';
 
 // Jeu réel version 6, conservé dans le dépôt pour une démo indépendante du réseau.
 // La référence FRA/IND a été calculée séparément sur les CSV bruts avant l'import.
@@ -19,6 +20,17 @@ test('le jeu importé conserve toutes les lignes officielles et la couverture ef
   );
   assert.deepEqual(dataset.metadata.coverage, { from: '1946-01-26', to: '2026-09-17' });
   assert.equal(dataset.metadata.status, 'official');
+});
+test('chacun des 202 codes reçoit un nom français, sans perdre la recherche en anglais', () => {
+  const missing = dataset.countries.filter((country) => !FRENCH_NAMES[country.id]);
+  assert.deepEqual(missing, []);
+  assert.equal(Object.keys(FRENCH_NAMES).length, 202);
+  assert.equal(store.countries.get('NRU').name, 'Nauru');
+  assert.equal(store.countries.get('SUN').name, 'Union soviétique (historique)');
+  assert.equal(store.countries.get('EAZ').name, 'Zanzibar (historique)');
+  // Les noms source restent conservés pour la recherche et la traçabilité.
+  assert.equal(store.countries.get('NRU').nameEn, 'NAOERO');
+  assert.ok(store.countries.get('NRU').aliases.includes('NAURU'));
 });
 test('les codes d’entités historiques ne sont pas fusionnés aux États actuels', () => {
   for (const [former, current] of [

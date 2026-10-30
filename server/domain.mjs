@@ -1,3 +1,4 @@
+import { FRENCH_NAMES } from './country-names.mjs';
 import { THEMES, assignThemes } from './themes.mjs';
 
 // Les valeurs brutes viennent du dictionnaire officiel de l'ONU (version 6).
@@ -35,7 +36,12 @@ export function createStore(dataset) {
   ) {
     throw new Error('Format de données incompatible. Relancer npm run data:import.');
   }
-  const countries = new Map(dataset.countries.map((country) => [country.id, country]));
+  // Le nom affiché vient de la table française ; un code absent de la table garde son nom source.
+  const localized = dataset.countries.map((country) => ({
+    ...country,
+    name: FRENCH_NAMES[country.id] ?? country.name,
+  }));
+  const countries = new Map(localized.map((country) => [country.id, country]));
   const resolutions = new Map();
   const countryVotes = new Map(dataset.countries.map((country) => [country.id, []]));
   const symbolCollator = new Intl.Collator('en', { numeric: true });
@@ -60,7 +66,7 @@ export function createStore(dataset) {
       if (rawVotes.length > 0) theme.recordedVoteResolutionCount++;
     }
     for (const [countryIndex, rawChoice] of rawVotes) {
-      const country = dataset.countries[countryIndex];
+      const country = localized[countryIndex];
       if (!country) throw new Error(`Index de pays invalide pour ${item.id}.`);
       const choice = normalizeVote(rawChoice);
       resolution.voteMap.set(country.id, { choice, rawChoice });
