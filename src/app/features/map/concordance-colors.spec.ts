@@ -1,4 +1,4 @@
-import { concordanceColor } from './matrix-colors';
+import { concordanceColor } from './concordance-colors';
 
 describe('concordanceColor', () => {
   it('maps a real zero concordance to red and full concordance to blue', () => {

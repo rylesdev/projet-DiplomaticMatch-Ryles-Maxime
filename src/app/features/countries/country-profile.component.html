@@ -1,0 +1,292 @@
+<section class="panel profile-panel" aria-labelledby="profile-title">
+  <div class="profile-heading">
+    <div>
+      <p class="eyebrow">Positionnement en séance</p>
+      <h2 id="profile-title">Majorité de l’Assemblée et votes à contre-courant</h2>
+    </div>
+    <p class="muted">
+      Comparaison descriptive de chaque vote explicite avec le choix majoritaire de la résolution.
+    </p>
+  </div>
+
+  <form class="profile-form" [formGroup]="form" (ngSubmit)="apply()">
+    <div class="theme-field">
+      <label class="field" for="profile-theme">Thème</label
+      ><select
+        class="select"
+        id="profile-theme"
+        formControlName="theme"
+        [attr.aria-busy]="themesLoading()"
+      >
+        @if (!themes().length) {
+          <option value="all">Tous les thèmes</option>
+        }
+        @for (theme of themes(); track theme.id) {
+          <option [value]="theme.id">{{ theme.label }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label class="field" for="profile-from">De</label
+      ><input
+        class="input"
+        id="profile-from"
+        type="number"
+        formControlName="from"
+        min="1946"
+        max="2100"
+        step="1"
+        required
+      />
+    </div>
+    <div>
+      <label class="field" for="profile-to">À</label
+      ><input
+        class="input"
+        id="profile-to"
+        type="number"
+        formControlName="to"
+        min="1946"
+        max="2100"
+        step="1"
+        required
+      />
+    </div>
+    <button class="button button-primary" type="submit" [disabled]="loading()">Actualiser</button>
+  </form>
+
+  @if (themesError()) {
+    <div class="status status-error" role="alert">
+      {{ themesError() }}
+      <button class="button button-ghost" type="button" (click)="loadThemes()">
+        Recharger les thèmes
+      </button>
+    </div>
+  }
+
+  <div aria-live="polite" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <p class="status" role="status">Calcul du profil de majorité et des votes isolés…</p>
+    }
+    @if (error()) {
+      <div class="status status-error" role="alert">
+        <p>{{ error() }}</p>
+        <button class="button button-ghost" type="button" (click)="apply()">Réessayer</button>
+      </div>
+    }
+  </div>
+
+  @if (result(); as profile) {
+    <div class="profile-summary">
+      <p>
+        <strong>{{ profile.country.name }}</strong> · {{ profile.from }}–{{ profile.to }} ·
+        {{ themeLabel(profile.theme) }}
+      </p>
+      <p class="muted">
+        {{ profile.explicitVoteCount | number }} votes explicites sur
+        {{ profile.recordedResolutionCount | number }} scrutins observés
+        @if (profile.coverage.from) {
+          ({{ profile.coverage.from | date: 'dd/MM/yyyy' }} –
+          {{ profile.coverage.to | date: 'dd/MM/yyyy' }})
+        }
+      </p>
+    </div>
+
+    @if (profile.explicitVoteCount === 0) {
+      <p class="status">
+        Aucun vote explicite enregistré pour cet État sur cette période et ce thème.
+      </p>
+    } @else {
+      @if (profile.explicitVoteCount < 20) {
+        <p class="low-sample" role="note">
+          Interprétation limitée : moins de 20 votes explicites sur cette sélection.
+        </p>
+      }
+
+      <div class="profile-metrics">
+        <div class="metric-card highlight">
+          <span class="metric-label">Vote avec la majorité de séance</span>
+          <strong class="metric-value number">
+            @if (profile.majorityAlignmentPercent !== null) {
+              {{ profile.majorityAlignmentPercent | number: '1.1-1' }}<span> %</span>
+            } @else {
+              —
+            }
+          </strong>
+          <p class="small muted">
+            {{ profile.alignedWithMajorityCount | number }} /
+            {{ profile.comparableWithMajorityCount | number }} scrutins à majorité nette
+            @if (profile.tiedMajorityCount > 0) {
+              ({{ profile.tiedMajorityCount | number }} égalité(s) exclue(s))
+            }
+          </p>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Votes différents de la majorité</span>
+          <strong class="metric-value number">{{ profile.dissentingVoteCount | number }}</strong>
+          <p class="small muted">
+            Dont <strong>{{ profile.strictMinorityVoteCount | number }}</strong> en minorité stricte
+            (5 États ou moins ayant fait ce choix dans l’Assemblée)
+          </p>
+        </div>
+      </div>
+
+      <div class="distribution-box">
+        <div class="distribution-header">
+          <span class="eyebrow">RÉPARTITION DES CHOIX DE L’ÉTAT</span>
+          <span class="small muted"
+            >Parts calculées sur les {{ profile.explicitVoteCount | number }} votes explicites</span
+          >
+        </div>
+        <div
+          class="distribution-bar"
+          role="img"
+          [attr.aria-label]="
+            'Répartition des votes explicites : ' +
+            profile.totals.YES +
+            ' Pour, ' +
+            profile.totals.NO +
+            ' Contre, ' +
+            profile.totals.ABSTAIN +
+            ' Abstentions'
+          "
+        >
+          <span
+            class="bar-segment yes"
+            [style.width.%]="choicePercent(profile.totals.YES, profile.explicitVoteCount)"
+          ></span>
+          <span
+            class="bar-segment no"
+            [style.width.%]="choicePercent(profile.totals.NO, profile.explicitVoteCount)"
+          ></span>
+          <span
+            class="bar-segment abstain"
+            [style.width.%]="choicePercent(profile.totals.ABSTAIN, profile.explicitVoteCount)"
+          ></span>
+        </div>
+        <dl class="distribution-legend">
+          <div>
+            <dt><span class="tag tag-yes">Pour</span></dt>
+            <dd class="number">
+              {{ profile.totals.YES | number }}
+              <span class="muted"
+                >({{
+                  choicePercent(profile.totals.YES, profile.explicitVoteCount) | number: '1.1-1'
+                }}
+                %)</span
+              >
+            </dd>
+          </div>
+          <div>
+            <dt><span class="tag tag-no">Contre</span></dt>
+            <dd class="number">
+              {{ profile.totals.NO | number }}
+              <span class="muted"
+                >({{
+                  choicePercent(profile.totals.NO, profile.explicitVoteCount) | number: '1.1-1'
+                }}
+                %)</span
+              >
+            </dd>
+          </div>
+          <div>
+            <dt><span class="tag tag-abstain">Abstention</span></dt>
+            <dd class="number">
+              {{ profile.totals.ABSTAIN | number }}
+              <span class="muted"
+                >({{
+                  choicePercent(profile.totals.ABSTAIN, profile.explicitVoteCount)
+                    | number: '1.1-1'
+                }}
+                %)</span
+              >
+            </dd>
+          </div>
+          <div>
+            <dt><span class="tag tag-missing">Non-vote</span></dt>
+            <dd class="number">
+              {{ profile.totals.NOT_VOTED | number }}
+              <span class="muted">(hors dénominateur)</span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="minority-section">
+        <div class="minority-header">
+          <h3>Votes les plus isolés face à la majorité de séance</h3>
+          <span class="small muted"
+            >Triés du plus petit nombre d’États partageant la position vers le plus grand</span
+          >
+        </div>
+        @if (!profile.minorityVotes.length) {
+          <p class="status">
+            Aucun vote explicite à contre-courant de la majorité de séance sur cette période.
+          </p>
+        } @else {
+          <div class="table-wrap">
+            <table class="data-table">
+              <caption class="sr-only">
+                Résolutions où {{ profile.country.name }} a voté différemment de la majorité de
+                l’Assemblée
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Résolution</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">{{ profile.country.name }}</th>
+                  <th scope="col">Majorité ONU</th>
+                  <th scope="col">Isolement de la position</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of profile.minorityVotes; track item.resolution.id) {
+                  <tr>
+                    <td>
+                      <a
+                        class="resolution-link"
+                        [routerLink]="['/resolutions', item.resolution.id]"
+                        >{{ item.resolution.symbol }} ↗</a
+                      >
+                      <p class="resolution-title">{{ item.resolution.title }}</p>
+                    </td>
+                    <td class="date-cell">{{ item.resolution.date | date: 'dd/MM/yyyy' }}</td>
+                    <td>
+                      <span [class]="'tag ' + voteClass(item.choice)">{{
+                        voteLabel(item.choice)
+                      }}</span>
+                    </td>
+                    <td>
+                      <span [class]="'tag ' + voteClass(item.majorityChoice)">{{
+                        voteLabel(item.majorityChoice)
+                      }}</span>
+                    </td>
+                    <td>
+                      <strong class="isolation-badge number">
+                        {{ item.sameChoiceCount | number }}
+                        {{ item.sameChoiceCount === 1 ? 'seul État' : 'États' }} sur
+                        {{ item.assemblyExplicitTotal | number }}
+                      </strong>
+                      <span class="assembly-breakdown muted">
+                        Pour : {{ item.assemblyTotals.YES }} · Contre :
+                        {{ item.assemblyTotals.NO }} · Abst. : {{ item.assemblyTotals.ABSTAIN }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+
+    <p class="profile-source muted">
+      {{ profile.dataVersion }} · La majorité de séance désigne le choix explicite (Pour, Contre ou
+      Abstention) réunissant le plus d’États sur la résolution.
+      <a routerLink="/methodologie">Méthode et limites</a>
+    </p>
+  }
+</section>
+

@@ -38,8 +38,8 @@ export const routes: Routes = [
   },
   {
     path: 'matrice',
-    title: 'Matrice des concordances — Diplomatic Match',
-    loadComponent: () => import('./features/matrix/matrix.page').then((m) => m.MatrixPage),
+    redirectTo: 'carte',
+    pathMatch: 'full',
   },
   {
     path: 'resolutions',

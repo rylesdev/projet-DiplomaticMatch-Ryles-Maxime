@@ -22,6 +22,7 @@ import {
   VoteChoice,
 } from '../../core/models/api.models';
 import { apiErrorMessage, DiplomaticApiService } from '../../core/services/diplomatic-api.service';
+import { CountryProfileComponent } from './country-profile.component';
 import { CountryRankingsComponent } from './country-rankings.component';
 
 interface VoteRequest {
@@ -33,7 +34,14 @@ interface VoteRequest {
 
 @Component({
   selector: 'app-countries-page',
-  imports: [ReactiveFormsModule, RouterLink, DecimalPipe, DatePipe, CountryRankingsComponent],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    DecimalPipe,
+    DatePipe,
+    CountryProfileComponent,
+    CountryRankingsComponent,
+  ],
   templateUrl: './countries.page.html',
   styleUrl: './countries.page.scss',
 })

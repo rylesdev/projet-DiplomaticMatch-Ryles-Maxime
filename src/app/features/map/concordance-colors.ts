@@ -1,4 +1,4 @@
-// Échelle commune à la matrice et à sa légende : rouge faible, bleu élevé.
+// Échelle de concordance de la carte : rouge faible, bleu élevé.
 export function concordanceColor(value: number | null): string {
   if (value === null) return '#e3e7eb';
   const low = [190, 50, 50];

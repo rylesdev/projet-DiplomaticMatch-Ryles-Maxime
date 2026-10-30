@@ -56,6 +56,42 @@
         {{ loading() ? 'Calcul…' : 'Comparer' }} <span aria-hidden="true">↗</span>
       </button>
     </div>
+    <div class="keyword-filter-bar">
+      <div class="field keyword-field">
+        <label for="compare-search">
+          Filtrer par mot-clé (sujet, pays cité, résolution — en remplacement ou en complément du
+          thème)
+        </label>
+        <div class="keyword-input-row">
+          <input
+            id="compare-search"
+            type="search"
+            formControlName="search"
+            placeholder="Ex. : Palestine, Taïwan, Chine, Ukraine, nucléaire, Cuba, A/RES/2758…"
+          />
+          @if (form.controls.search.value.trim()) {
+            <button type="button" class="button button-ghost" (click)="clearSearch()">
+              Effacer le mot-clé
+            </button>
+          }
+        </div>
+      </div>
+      <div class="keyword-suggestions" aria-label="Exemples de mots-clés">
+        <span class="small muted">Exemples rapides :</span>
+        @for (item of keywordSuggestions; track item.label) {
+          <button
+            type="button"
+            class="keyword-chip"
+            [class.is-active]="
+              form.controls.search.value.trim().toLowerCase() === item.keyword.toLowerCase()
+            "
+            (click)="applyKeywordSuggestion(item)"
+          >
+            {{ item.label }}
+          </button>
+        }
+      </div>
+    </div>
     @if (submitted() && form.invalid) {
       <p class="validation-message" role="alert">
         Choisissez deux pays différents et des années entières entre 1946 et 2100, dans l’ordre
@@ -92,8 +128,11 @@
         <strong>{{ comparison.countryB.name }}</strong>
       </p>
       <span class="small muted"
-        >{{ comparison.from }} — {{ comparison.to }} · {{ themeLabel(comparison.theme) }} ·
-        {{ comparison.dataVersion }}</span
+        >{{ comparison.from }} — {{ comparison.to }} · {{ themeLabel(comparison.theme) }}
+        @if (comparison.search?.trim()) {
+          · Mot-clé : <strong>« {{ comparison.search }} »</strong>
+        }
+        · {{ comparison.dataVersion }}</span
       >
     </div>
     <div class="counts-card panel">
@@ -122,6 +161,42 @@
     <div class="status status-empty">
       Aucun vote explicite commun sur cette période. Le taux de concordance ne peut pas être
       calculé.
+      @if (
+        comparison.archiveSearchHint &&
+        comparison.archiveSearchHint.archiveCommonVoteCount > 0 &&
+        comparison.archiveSearchHint.fromYear !== null &&
+        comparison.archiveSearchHint.toYear !== null
+      ) {
+        <div class="archive-hint-box">
+          <p class="small">
+            <strong>Résolutions trouvées sur une autre période :</strong> le mot-clé
+            <strong>« {{ comparison.search }} »</strong> compte
+            <strong>{{ comparison.archiveSearchHint.archiveCommonVoteCount | number }}</strong>
+            votes explicites communs entre {{ comparison.countryA.name }} et
+            {{ comparison.countryB.name }} sur la période
+            <strong
+              >{{ comparison.archiveSearchHint.fromYear }}–{{
+                comparison.archiveSearchHint.toYear
+              }}</strong
+            >.
+          </p>
+          <button
+            type="button"
+            class="button button-primary"
+            (click)="
+              applyArchiveHint(
+                comparison.archiveSearchHint.fromYear!,
+                comparison.archiveSearchHint.toYear!
+              )
+            "
+          >
+            Explorer {{ comparison.archiveSearchHint.fromYear }}–{{
+              comparison.archiveSearchHint.toYear
+            }}
+            ({{ comparison.archiveSearchHint.archiveCommonVoteCount | number }} votes) ↗
+          </button>
+        </div>
+      }
     </div>
   } @else if (comparison.commonVoteCount < 20) {
     <p class="small limited-sample">
@@ -137,6 +212,196 @@
     }
     <a routerLink="/methodologie">Comprendre le calcul ↗</a>
   </p>
+}
+@if (focusLoading()) {
+  <div class="status" role="status">Chargement du focus sur la sous-période sélectionnée…</div>
+}
+@if (focusError()) {
+  <div class="status status-error" role="alert">
+    {{ focusError() }}
+    <button type="button" class="button button-ghost" (click)="clearPeriodFocus()">
+      Revenir à la période complète
+    </button>
+  </div>
+}
+@if (activeComparison(); as activeComp) {
+  @if (focusedComparison(); as focused) {
+    <div class="focus-banner" role="region" aria-label="Sous-période inspectée">
+      <div>
+        <span class="eyebrow">FOCUS TEMPOREL ACTIF</span>
+        <strong>
+          {{ focused.from === focused.to ? focused.from : focused.from + '–' + focused.to }}
+        </strong>
+        <span class="small muted">
+          · {{ focused.commonVoteCount | number }} votes comparables ·
+          @if (focused.agreementPercent !== null) {
+            {{ focused.agreementPercent | number: '1.1-1' }} % de concordance
+          } @else {
+            aucun vote comparable
+          }
+        </span>
+      </div>
+      <button type="button" class="button button-ghost" (click)="clearPeriodFocus()">
+        Revenir à toute la période ({{ result()?.from }}–{{ result()?.to }})
+      </button>
+    </div>
+  }
+  @if (breakdownSummary(); as summary) {
+    @if (summary.commonVoteCount > 0) {
+      <section class="panel breakdown-panel" aria-labelledby="breakdown-title">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">MATRICE DE CONFUSION 3 × 3</span>
+            <h2 id="breakdown-title">Comment les deux États s’accordent ou divergent</h2>
+            <p class="small muted">
+              Décomposition exacte des {{ summary.commonVoteCount | number }} votes explicites
+              communs ({{ activeComp.from }}–{{ activeComp.to }}). Cliquez sur n’importe quelle case
+              (accord ou écart) pour afficher les résolutions correspondantes ci-dessous.
+            </p>
+          </div>
+          @if (selectedDivergencePair()) {
+            <button
+              type="button"
+              class="button button-ghost"
+              (click)="selectedDivergencePair.set(null)"
+            >
+              Réinitialiser le filtre 3 × 3
+            </button>
+          }
+        </div>
+        <div class="breakdown-kpis">
+          <div class="breakdown-kpi match">
+            <span class="kpi-label">Accords explicites (diagonale)</span>
+            <strong class="number">{{ summary.matchingVoteCount | number }}</strong>
+            <span class="small muted">
+              {{ summary.doubleYesCount | number }} Pour/Pour ·
+              {{ summary.doubleNoCount | number }} Contre/Contre ·
+              {{ summary.doubleAbstainCount | number }} Abst./Abst.
+            </span>
+          </div>
+          <div class="breakdown-kpi opposition">
+            <span class="kpi-label">Oppositions frontales (Pour ↔ Contre)</span>
+            <strong class="number">{{ summary.strictOppositionCount | number }}</strong>
+            <span class="small muted">
+              {{
+                cellPercent(summary.strictOppositionCount, summary.commonVoteCount)
+                  | number: '1.1-1'
+              }}
+              % des votes comparables
+            </span>
+          </div>
+          <div class="breakdown-kpi reserve">
+            <span class="kpi-label">Écarts par abstention (Pour/Contre ↔ Abst.)</span>
+            <strong class="number">{{ summary.abstentionDivergenceCount | number }}</strong>
+            <span class="small muted">
+              {{
+                cellPercent(summary.abstentionDivergenceCount, summary.commonVoteCount)
+                  | number: '1.1-1'
+              }}
+              % des votes comparables
+            </span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table
+            class="breakdown-matrix"
+            aria-label="Croisement des positions Pour, Contre et Abstention"
+          >
+            <thead>
+              <tr>
+                <th scope="col" class="matrix-corner">
+                  <span>{{ activeComp.countryA.name }} ↓</span>
+                  <span>{{ activeComp.countryB.name }} →</span>
+                </th>
+                @for (colChoice of explicitChoices; track colChoice) {
+                  <th scope="col">
+                    <span class="tag" [class]="'tag ' + voteClass(colChoice)">
+                      {{ activeComp.countryB.name }} : {{ voteLabel(colChoice) }}
+                    </span>
+                  </th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (rowChoice of explicitChoices; track rowChoice) {
+                <tr>
+                  <th scope="row">
+                    <span class="tag" [class]="'tag ' + voteClass(rowChoice)">
+                      {{ activeComp.countryA.name }} : {{ voteLabel(rowChoice) }}
+                    </span>
+                  </th>
+                  @for (colChoice of explicitChoices; track colChoice) {
+                    @let count = summary.matrix[rowChoice][colChoice];
+                    @let kind = cellKind(rowChoice, colChoice);
+                    <td [class]="'matrix-cell cell-' + kind">
+                      @if (count > 0) {
+                        <button
+                          type="button"
+                          class="matrix-cell-button"
+                          [class.is-selected]="isPairSelected(rowChoice, colChoice)"
+                          [attr.aria-pressed]="isPairSelected(rowChoice, colChoice)"
+                          (click)="toggleDivergencePair(rowChoice, colChoice)"
+                        >
+                          <span class="cell-head">
+                            <span class="cell-badge">{{
+                              cellKindLabel(rowChoice, colChoice)
+                            }}</span>
+                            <span class="cell-percent number"
+                              >{{
+                                cellPercent(count, summary.commonVoteCount) | number: '1.1-1'
+                              }}
+                              %</span
+                            >
+                          </span>
+                          <strong class="cell-count number">{{ count | number }}</strong>
+                          <span class="cell-cta">
+                            {{
+                              isPairSelected(rowChoice, colChoice)
+                                ? 'Filtre actif ✓'
+                                : rowChoice === colChoice
+                                  ? 'Voir ces accords →'
+                                  : 'Filtrer ces écarts →'
+                            }}
+                          </span>
+                        </button>
+                      } @else {
+                        <div class="matrix-cell-static">
+                          <span class="cell-head">
+                            <span class="cell-badge">{{
+                              cellKindLabel(rowChoice, colChoice)
+                            }}</span>
+                            <span class="cell-percent number"
+                              >{{
+                                cellPercent(count, summary.commonVoteCount) | number: '1.1-1'
+                              }}
+                              %</span
+                            >
+                          </span>
+                          <strong class="cell-count number">{{ count | number }}</strong>
+                          <span class="cell-cta muted">Aucun scrutin</span>
+                        </div>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+  } @else if (activeComp.commonVoteCount > 0) {
+    <section class="panel breakdown-panel" aria-label="Matrice 3x3 en attente du serveur API">
+      <span class="eyebrow">MATRICE DE CONFUSION 3 × 3</span>
+      <h2>Redémarrage du serveur API local requis</h2>
+      <p class="small muted">
+        L’instance actuelle de <code>node server/index.mjs</code> tourne avec l’ancienne version en
+        mémoire. Arrêtez <code>npm start</code> (<code>Ctrl+C</code>) puis relancez
+        <code>npm start</code> dans votre terminal pour activer la matrice 3 × 3 et le profil de
+        majorité.
+      </p>
+    </section>
+  }
 }
 
 <section class="panel trend-panel" aria-labelledby="trend-title">
@@ -174,6 +439,9 @@
         evolution.to
       }}
       · {{ themeLabel(evolution.theme) }}
+      @if (evolution.search?.trim()) {
+        · Mot-clé : <strong>« {{ evolution.search }} »</strong>
+      }
     </p>
     @if (!hasTrendData()) {
       <p class="status status-empty">
@@ -215,22 +483,185 @@
       }
       @for (point of plottedPoints(); track point.year) {
         @if (point.y !== null) {
+          @if (focusedYear() === point.year) {
+            <circle
+              [attr.cx]="point.x"
+              [attr.cy]="point.y"
+              r="8"
+              fill="none"
+              stroke="#405fa0"
+              stroke-width="2"
+            />
+          }
           <circle
+            class="trend-point"
             [attr.cx]="point.x"
             [attr.cy]="point.y"
-            r="3.5"
-            fill="#166d5b"
+            [attr.r]="focusedYear() === point.year ? 5 : 3.5"
+            [attr.fill]="focusedYear() === point.year ? '#405fa0' : '#166d5b'"
             stroke="white"
             stroke-width="1.5"
+            tabindex="0"
+            role="button"
+            [attr.aria-pressed]="focusedYear() === point.year"
+            [attr.aria-label]="
+              'Inspecter la période ' +
+              periodLabel(point.year, evolution) +
+              ' (' +
+              (point.agreementPercent | number: '1.1-1') +
+              ' %, ' +
+              point.commonVoteCount +
+              ' votes comparables)'
+            "
+            (click)="focusTrendYear(point.year)"
+            (keydown.enter)="focusTrendYear(point.year)"
+            (keydown.space)="$event.preventDefault(); focusTrendYear(point.year)"
           >
             <title>
-              {{ point.year }} : {{ point.agreementPercent | number: '1.1-1' }} %,
-              {{ point.commonVoteCount }} votes comparables
+              {{ periodLabel(point.year, evolution) }} :
+              {{ point.agreementPercent | number: '1.1-1' }} %, {{ point.commonVoteCount }} votes
+              comparables — cliquer pour inspecter
             </title>
           </circle>
         }
       }
     </svg>
+    @if (inflections(); as inf) {
+      @if (inf.eligiblePeriodCount > 0) {
+        <div class="inflections-section" aria-label="Points d’inflexion et extrêmes de la période">
+          <div class="inflections-header">
+            <span class="eyebrow">REPÈRES AUTOMATIQUES SUR LA COURBE</span>
+            <span class="small muted">
+              @if (inf.limitedSample) {
+                Calculé sur les périodes avec au moins 1 vote comparable (aucune période n’atteint
+                20 votes).
+              } @else {
+                Calculé sur les {{ inf.eligiblePeriodCount | number }} périodes comptant au moins
+                {{ inf.minVotesUsed }} votes comparables.
+              }
+            </span>
+          </div>
+          <div class="inflections-grid">
+            @if (inf.highest; as high) {
+              <article
+                class="inflection-card"
+                [class.is-focused]="focusedYear() === high.year"
+              >
+                <span class="inflection-label">Pic de concordance</span>
+                <strong class="inflection-value number"
+                  >{{ high.agreementPercent | number: '1.1-1' }} %</strong
+                >
+                <p class="small">
+                  <strong>{{ periodLabel(high.year, evolution) }}</strong> ·
+                  {{ high.matchingVoteCount | number }} /
+                  {{ high.commonVoteCount | number }} votes identiques
+                </p>
+                <button
+                  type="button"
+                  class="button-link small"
+                  (click)="focusTrendYear(high.year)"
+                >
+                  {{
+                    focusedYear() === high.year
+                      ? 'Masquer le focus'
+                      : 'Inspecter ' + periodLabel(high.year, evolution) + ' →'
+                  }}
+                </button>
+              </article>
+            }
+            @if (inf.lowest; as low) {
+              <article
+                class="inflection-card"
+                [class.is-focused]="focusedYear() === low.year"
+              >
+                <span class="inflection-label">Point le plus bas</span>
+                <strong class="inflection-value number low"
+                  >{{ low.agreementPercent | number: '1.1-1' }} %</strong
+                >
+                <p class="small">
+                  <strong>{{ periodLabel(low.year, evolution) }}</strong> ·
+                  {{ low.matchingVoteCount | number }} /
+                  {{ low.commonVoteCount | number }} votes identiques
+                </p>
+                <button
+                  type="button"
+                  class="button-link small"
+                  (click)="focusTrendYear(low.year)"
+                >
+                  {{
+                    focusedYear() === low.year
+                      ? 'Masquer le focus'
+                      : 'Inspecter ' + periodLabel(low.year, evolution) + ' →'
+                  }}
+                </button>
+              </article>
+            }
+            @if (inf.biggestRise; as rise) {
+              <article
+                class="inflection-card"
+                [class.is-focused]="focusedYear() === rise.toYear"
+              >
+                <span class="inflection-label">Plus fort rapprochement</span>
+                <strong class="inflection-value number rise"
+                  >+{{ rise.deltaPoints | number: '1.1-1' }} pts</strong
+                >
+                <p class="small">
+                  <strong>{{ periodLabel(rise.fromYear, evolution) }}</strong> ({{
+                    rise.fromPercent | number: '1.1-1'
+                  }}
+                  %) → <strong>{{ periodLabel(rise.toYear, evolution) }}</strong> ({{
+                    rise.toPercent | number: '1.1-1'
+                  }}
+                  %)
+                </p>
+                <button
+                  type="button"
+                  class="button-link small"
+                  (click)="focusTrendYear(rise.toYear)"
+                >
+                  {{
+                    focusedYear() === rise.toYear
+                      ? 'Masquer le focus'
+                      : 'Inspecter ' + periodLabel(rise.toYear, evolution) + ' →'
+                  }}
+                </button>
+              </article>
+            }
+            @if (inf.biggestDrop; as drop) {
+              <article
+                class="inflection-card"
+                [class.is-focused]="focusedYear() === drop.toYear"
+              >
+                <span class="inflection-label">Plus fort décrochage</span>
+                <strong class="inflection-value number drop"
+                  >{{ drop.deltaPoints | number: '1.1-1' }} pts</strong
+                >
+                <p class="small">
+                  <strong>{{ periodLabel(drop.fromYear, evolution) }}</strong> ({{
+                    drop.fromPercent | number: '1.1-1'
+                  }}
+                  %) → <strong>{{ periodLabel(drop.toYear, evolution) }}</strong> ({{
+                    drop.toPercent | number: '1.1-1'
+                  }}
+                  %)
+                </p>
+                <button
+                  type="button"
+                  class="button-link small"
+                  (click)="focusTrendYear(drop.toYear)"
+                >
+                  {{
+                    focusedYear() === drop.toYear
+                      ? 'Masquer le focus'
+                      : 'Inspecter ' + periodLabel(drop.toYear, evolution) + ' →'
+                  }}
+                </button>
+              </article>
+            }
+          </div>
+        </div>
+      }
+    }
     <details class="chart-data">
       <summary>Consulter les chiffres du graphique</summary>
       <div
@@ -249,11 +680,12 @@
               <th>Votes comparables</th>
               <th>Votes identiques</th>
               <th>Concordance</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
             @for (point of evolution.points; track point.year) {
-              <tr>
+              <tr [class.is-focused-row]="focusedYear() === point.year">
                 <td>{{ periodLabel(point.year, evolution) }}</td>
                 <td>{{ point.commonVoteCount | number }}</td>
                 <td>{{ point.matchingVoteCount | number }}</td>
@@ -267,6 +699,19 @@
                     }
                   }
                 </td>
+                <td>
+                  @if (point.commonVoteCount > 0) {
+                    <button
+                      type="button"
+                      class="button-link small"
+                      (click)="focusTrendYear(point.year)"
+                    >
+                      {{ focusedYear() === point.year ? 'Réinitialiser' : 'Inspecter' }}
+                    </button>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
               </tr>
             }
           </tbody>
@@ -275,33 +720,113 @@
     </details>
   }
 </section>
-@if (result(); as comparison) {
-  <div class="section-heading">
-    <h2>Là où les votes divergent</h2>
-    <span class="small muted">Dernières résolutions · votes explicites</span>
+@if (activeComparison(); as comparison) {
+  <div class="section-heading resolution-explorer-heading">
+    <div>
+      <h2>
+        @if (selectedDivergencePair(); as pair) {
+          {{
+            pair.choiceA === pair.choiceB
+              ? 'Là où les deux États votent ' + voteLabel(pair.choiceA)
+              : 'Écarts : ' +
+                comparison.countryA.name +
+                ' (' +
+                voteLabel(pair.choiceA) +
+                ') vs ' +
+                comparison.countryB.name +
+                ' (' +
+                voteLabel(pair.choiceB) +
+                ')'
+          }}
+        } @else if (resolutionTab() === 'agreements') {
+          Là où les deux États sont d’accord
+        } @else if (resolutionTab() === 'all') {
+          Tous les votes explicites comparés
+        } @else {
+          Là où les votes divergent
+        }
+      </h2>
+      <p class="small muted">
+        {{ comparison.from }}–{{ comparison.to }} · {{ themeLabel(comparison.theme) }}
+        @if (comparison.search?.trim()) {
+          · Mot-clé : <strong>« {{ comparison.search }} »</strong>
+        }
+        @if (selectedDivergencePair(); as pair) {
+          · Filtre 3 × 3 :
+          <strong>{{ comparison.countryA.name }} = {{ voteLabel(pair.choiceA) }}</strong>
+          &amp; <strong>{{ comparison.countryB.name }} = {{ voteLabel(pair.choiceB) }}</strong>
+        }
+      </p>
+    </div>
+    <div class="resolution-tabs" role="tablist" aria-label="Filtrer par accord ou divergence">
+      <button
+        type="button"
+        role="tab"
+        class="resolution-tab"
+        [class.is-active]="!selectedDivergencePair() && resolutionTab() === 'agreements'"
+        [attr.aria-selected]="!selectedDivergencePair() && resolutionTab() === 'agreements'"
+        (click)="setResolutionTab('agreements')"
+      >
+        <span class="legend-dot same"></span>
+        D’accord ({{ comparison.matchingVoteCount | number }})
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="resolution-tab"
+        [class.is-active]="!selectedDivergencePair() && resolutionTab() === 'divergences'"
+        [attr.aria-selected]="!selectedDivergencePair() && resolutionTab() === 'divergences'"
+        (click)="setResolutionTab('divergences')"
+      >
+        <span class="legend-dot different"></span>
+        Divergences ({{ comparison.differingVoteCount | number }})
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="resolution-tab"
+        [class.is-active]="!selectedDivergencePair() && resolutionTab() === 'all'"
+        [attr.aria-selected]="!selectedDivergencePair() && resolutionTab() === 'all'"
+        (click)="setResolutionTab('all')"
+      >
+        Tous ({{ comparison.commonVoteCount | number }})
+      </button>
+    </div>
   </div>
   <section class="panel divergence-panel">
-    @if (comparison.divergences.length === 0) {
-      <p class="empty-note">Aucune divergence parmi les votes comparables de cette période.</p>
+    @if (displayedResolutions().length === 0) {
+      <p class="empty-note">
+        Aucune résolution parmi les votes comparables de cette sélection.
+        @if (selectedDivergencePair()) {
+          <button
+            type="button"
+            class="button-link"
+            (click)="selectedDivergencePair.set(null)"
+          >
+            Réinitialiser le filtre 3 × 3
+          </button>
+        }
+      </p>
     } @else {
       <p class="mobile-table-note small muted">
         Faites défiler le tableau pour voir les deux votes.
       </p>
-      <div class="table-wrap" tabindex="0" role="region" aria-label="Tableau des votes divergents">
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Tableau des votes comparés">
         <table class="data-table">
           <caption class="sr-only">
-            Exemples de votes différents et liens vers les résolutions
+            Liste des résolutions comparées et positions des deux États
           </caption>
           <thead>
             <tr>
               <th>Résolution</th>
               <th>Date</th>
+              <th>Position</th>
               <th>{{ comparison.countryA.name }}</th>
               <th>{{ comparison.countryB.name }}</th>
             </tr>
           </thead>
           <tbody>
-            @for (item of comparison.divergences; track item.resolution.id) {
+            @for (item of displayedResolutions(); track item.resolution.id) {
               <tr>
                 <td>
                   <a [routerLink]="['/resolutions', item.resolution.id]"
@@ -310,6 +835,14 @@
                   <p class="resolution-title">{{ item.resolution.title }}</p>
                 </td>
                 <td class="date-cell">{{ item.resolution.date | date: 'dd/MM/yyyy' }}</td>
+                <td>
+                  <span
+                    class="tag"
+                    [class]="item.choiceA === item.choiceB ? 'tag tag-yes' : 'tag tag-abstain'"
+                  >
+                    {{ item.choiceA === item.choiceB ? 'Accord' : 'Écart' }}
+                  </span>
+                </td>
                 <td>
                   <span class="tag" [class]="'tag ' + voteClass(item.choiceA)">{{
                     voteLabel(item.choiceA)
@@ -325,6 +858,21 @@
           </tbody>
         </table>
       </div>
+      @if (matchingPoolResolutions().length > displayedResolutions().length) {
+        <div class="table-footer-actions">
+          <span class="small muted">
+            Affichage de {{ displayedResolutions().length | number }} sur
+            {{ matchingPoolResolutions().length | number }} résolutions.
+          </span>
+          <button
+            type="button"
+            class="button button-ghost"
+            (click)="showAllResolutions.set(true)"
+          >
+            Afficher les {{ matchingPoolResolutions().length | number }} résolutions
+          </button>
+        </div>
+      }
     }
   </section>
 }

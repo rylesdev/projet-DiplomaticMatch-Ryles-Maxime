@@ -1,5 +1,5 @@
 import { ConcordanceMatrix, Country } from '../../core/models/api.models';
-import { concordanceColor } from '../matrix/matrix-colors';
+import { concordanceColor } from './concordance-colors';
 
 export interface WorldMap {
   width: number;

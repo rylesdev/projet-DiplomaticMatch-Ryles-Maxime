@@ -35,8 +35,8 @@
 
 - [x] Classement demandé : top 3 des taux de concordance les plus élevés et les plus faibles dans une fiche pays, avec période et minimum de votes, calculé par l'API. Vérifié par tests métier, HTTP et navigateur (ordinateur, mobile, clavier, erreur et période vide).
 - [x] Filtrage thématique des comparaisons, tendances et classements à partir des sujets documentaires conservés, avec règles propres au projet documentées et états sans données.
-- [x] Matrice des 202 pays en double entrée : bleu/rouge, effectifs sous le seuil en gris, lecture des cases, navigation clavier et ouverture des comparaisons détaillées.
-- [x] Vérifier indépendamment les résultats écologie et sécurité, la symétrie de la matrice et la distinction entre 0 % et absence de données.
+- [x] Carte des concordances intégrée à l'accueil : sélection du pays de référence, couleurs bleu/rouge, effectifs sous le seuil en gris, filtres et ouverture des comparaisons détaillées.
+- [x] Vérifier indépendamment les résultats écologie et sécurité, la symétrie des concordances et la distinction entre 0 % et absence de données.
 
 - [x] Ajouter un atelier de groupes de pays : création, modification et suppression via API, avec stockage SQLite local ignoré par Git.
 - [x] Analyser la concordance interne pondérée, l'évolution et les résolutions qui divisent le groupe, avec seuil et couverture visibles.

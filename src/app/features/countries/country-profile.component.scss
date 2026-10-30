@@ -1,0 +1,228 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.profile-panel {
+  padding: 28px;
+}
+.profile-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 22px;
+  margin-bottom: 24px;
+}
+.profile-heading .eyebrow {
+  margin-bottom: 9px;
+}
+.profile-heading h2 {
+  font-size: 23px;
+  margin: 0;
+}
+.profile-heading > p {
+  font-size: 12px;
+  line-height: 1.7;
+  max-width: 240px;
+  margin: 0;
+}
+.profile-form {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.4fr) minmax(85px, 1fr) minmax(85px, 1fr) auto;
+  align-items: end;
+  gap: 13px;
+}
+.profile-form label {
+  font-size: 11px;
+}
+.profile-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 20px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  margin: 22px 0 20px;
+}
+.profile-summary p {
+  margin: 0;
+  font-size: 11px;
+}
+.low-sample {
+  font-size: 11px;
+  line-height: 1.8;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #faf1df;
+  color: #80622b;
+  margin: 0 0 20px;
+}
+.profile-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.metric-card {
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.metric-card.highlight {
+  background: var(--accent-light);
+}
+.metric-label {
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+}
+.metric-value {
+  font-size: 36px;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+}
+.metric-card.highlight .metric-value {
+  color: var(--accent);
+}
+.metric-value > span {
+  font-size: 20px;
+}
+.metric-card p {
+  margin: 0;
+  line-height: 1.5;
+}
+.distribution-box {
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+.distribution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.distribution-header .eyebrow {
+  margin-bottom: 0;
+}
+.distribution-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #edf1f5;
+  margin-bottom: 14px;
+}
+.bar-segment.yes {
+  background: #3b8668;
+}
+.bar-segment.no {
+  background: #c56246;
+}
+.bar-segment.abstain {
+  background: #c8a951;
+}
+.distribution-legend {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.distribution-legend > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.distribution-legend dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.minority-section {
+  margin-top: 22px;
+}
+.minority-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.minority-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.resolution-link {
+  color: var(--accent);
+  font-weight: 650;
+  font-size: 12px;
+}
+.resolution-title {
+  margin: 5px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 400px;
+}
+.date-cell {
+  white-space: nowrap;
+  font-size: 12px;
+}
+.isolation-badge {
+  display: block;
+  font-size: 12px;
+  color: var(--ink);
+}
+.assembly-breakdown {
+  display: block;
+  font-size: 10px;
+  margin-top: 3px;
+}
+.profile-source {
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 22px 0 0;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.profile-source a {
+  color: inherit;
+}
+@media (max-width: 950px) {
+  .profile-form {
+    grid-template-columns: 1fr 1fr;
+  }
+  .theme-field,
+  .profile-form .button {
+    grid-column: 1 / -1;
+  }
+  .profile-heading {
+    display: block;
+  }
+  .profile-heading > p {
+    margin-top: 10px;
+    max-width: none;
+  }
+  .distribution-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .profile-panel {
+    padding: 20px;
+  }
+  .profile-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+

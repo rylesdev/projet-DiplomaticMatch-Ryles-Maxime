@@ -6,9 +6,50 @@ const EXPLICIT_CHOICES = new Set(['YES', 'NO', 'ABSTAIN']);
 const MATRIX_CACHE_LIMIT = 6;
 const matrixCaches = new WeakMap();
 
-function inScope(resolution, from, to, theme) {
+// Correspondances bilingues FR -> terminologie documentaire anglaise de l'ONU.
+const SEARCH_SYNONYMS = {
+  taiwan: ['china', '2758'],
+  'republique de chine': ['republic of china', 'representation of china'],
+  chine: ['china'],
+  palestine: ['palestine', 'palestinian', 'unrwa'],
+  israel: ['israel', 'israeli', 'occupied territories'],
+  ukraine: ['ukraine', 'ukrainian', 'es-11'],
+  nucleaire: ['nuclear', 'atomic'],
+  'droits humains': ['human rights'],
+  'droits de l homme': ['human rights'],
+  climat: ['climate'],
+  'moyen-orient': ['middle east'],
+  'moyen orient': ['middle east'],
+  desarmement: ['disarmament'],
+  coree: ['korea', 'korean'],
+  'afrique du sud': ['south africa', 'apartheid'],
+  apartheid: ['apartheid'],
+  cuba: ['cuba', 'embargo'],
+  syrie: ['syria', 'syrian'],
+  irak: ['iraq'],
+  iran: ['iran'],
+  russie: ['russian', 'soviet'],
+  urss: ['soviet', 'ussr'],
+  decolonisation: ['decolonization', 'colonial', 'non-self-governing'],
+  colonisation: ['colonial', 'decolonization'],
+};
+
+function matchesQuery(resolution, normalizedQuery) {
+  if (!normalizedQuery) return true;
+  if (resolution.searchText.includes(normalizedQuery)) return true;
+  const synonyms = SEARCH_SYNONYMS[normalizedQuery];
+  if (synonyms) return synonyms.some((term) => resolution.searchText.includes(term));
+  return false;
+}
+
+function inScope(resolution, from, to, theme, normalizedQuery = '') {
   const year = Number(resolution.date.slice(0, 4));
-  return year >= from && year <= to && (theme === 'all' || resolution.themeIds.includes(theme));
+  return (
+    year >= from &&
+    year <= to &&
+    (theme === 'all' || resolution.themeIds.includes(theme)) &&
+    matchesQuery(resolution, normalizedQuery)
+  );
 }
 
 export function normalizeVote(raw) {
@@ -53,7 +94,11 @@ export function createStore(dataset) {
   for (const item of orderedItems) {
     const { votes: rawVotes, ...info } = item;
     const themeIds = assignThemes(info.subjects ?? []);
-    const resolution = { ...info, themeIds, voteMap: new Map() };
+    const searchText = normalizeSearch(
+      [info.symbol, info.title, ...(info.subjects ?? [])].join(' '),
+    );
+    const resolution = { ...info, themeIds, searchText, voteMap: new Map() };
+    const assemblyTotals = { YES: 0, NO: 0, ABSTAIN: 0, NOT_VOTED: 0, UNKNOWN: 0 };
     for (const themeId of ['all', ...new Set(themeIds)]) {
       const theme = themeById.get(themeId);
       theme.resolutionCount++;
@@ -63,9 +108,21 @@ export function createStore(dataset) {
       const country = dataset.countries[countryIndex];
       if (!country) throw new Error(`Index de pays invalide pour ${item.id}.`);
       const choice = normalizeVote(rawChoice);
+      assemblyTotals[choice]++;
       resolution.voteMap.set(country.id, { choice, rawChoice });
       countryVotes.get(country.id).push({ resolution, choice, rawChoice });
     }
+    const explicitTotal = assemblyTotals.YES + assemblyTotals.NO + assemblyTotals.ABSTAIN;
+    const explicitPairs = [
+      ['YES', assemblyTotals.YES],
+      ['NO', assemblyTotals.NO],
+      ['ABSTAIN', assemblyTotals.ABSTAIN],
+    ].sort((a, b) => b[1] - a[1]);
+    const majorityChoice =
+      explicitPairs[0][1] > 0 && explicitPairs[0][1] > explicitPairs[1][1]
+        ? explicitPairs[0][0]
+        : null;
+    resolution.assemblyTotals = { ...assemblyTotals, explicitTotal, majorityChoice };
     resolutions.set(item.id, resolution);
     orderedResolutions.push(resolution);
   }
@@ -81,15 +138,53 @@ export function createStore(dataset) {
 
 // La présence d'une abstention est explicite ; une non-participation ne l'est pas.
 // Les résolutions sans vote de l'un OU des deux pays ne sont pas au dénominateur.
-export function compareCountries(store, countryAId, countryBId, from, to, theme = 'all') {
+export function compareCountries(
+  store,
+  countryAId,
+  countryBId,
+  from,
+  to,
+  theme = 'all',
+  search = '',
+) {
+  const rawSearch = String(search ?? '').trim();
+  const normalizedQuery = normalizeSearch(rawSearch);
+  const maxList = normalizedQuery ? 40 : 12;
+  const maxPerCell = normalizedQuery ? 15 : 6;
   let commonVoteCount = 0;
   let matchingVoteCount = 0;
   let nonComparableCount = 0;
   let firstDate = null;
   let lastDate = null;
+  let archiveCommonVoteCount = 0;
+  let archiveFromYear = null;
+  let archiveToYear = null;
+  const breakdown = {
+    YES: { YES: 0, NO: 0, ABSTAIN: 0 },
+    NO: { YES: 0, NO: 0, ABSTAIN: 0 },
+    ABSTAIN: { YES: 0, NO: 0, ABSTAIN: 0 },
+  };
+  const pairAgreementCounts = new Map();
+  const pairDivergenceCounts = new Map();
+  const agreements = [];
   const divergences = [];
   for (const resolution of store.orderedResolutions) {
-    if (!inScope(resolution, from, to, theme)) continue;
+    if (
+      normalizedQuery &&
+      (theme === 'all' || resolution.themeIds.includes(theme)) &&
+      matchesQuery(resolution, normalizedQuery)
+    ) {
+      const vA = resolution.voteMap.get(countryAId);
+      const vB = resolution.voteMap.get(countryBId);
+      if (EXPLICIT_CHOICES.has(vA?.choice) && EXPLICIT_CHOICES.has(vB?.choice)) {
+        const resYear = Number(resolution.date.slice(0, 4));
+        archiveCommonVoteCount++;
+        archiveFromYear =
+          archiveFromYear === null || resYear < archiveFromYear ? resYear : archiveFromYear;
+        archiveToYear = archiveToYear === null || resYear > archiveToYear ? resYear : archiveToYear;
+      }
+    }
+    if (!inScope(resolution, from, to, theme, normalizedQuery)) continue;
     const voteA = resolution.voteMap.get(countryAId);
     const voteB = resolution.voteMap.get(countryBId);
     // Les résolutions sans aucun vote de ces deux pays n'entrent pas dans l'univers observé.
@@ -99,15 +194,33 @@ export function compareCountries(store, countryAId, countryBId, from, to, theme 
       continue;
     }
     commonVoteCount++;
+    breakdown[voteA.choice][voteB.choice]++;
     firstDate = firstDate === null || resolution.date < firstDate ? resolution.date : firstDate;
     lastDate = lastDate === null || resolution.date > lastDate ? resolution.date : lastDate;
-    if (voteA.choice === voteB.choice) matchingVoteCount++;
-    else if (divergences.length < 12)
-      divergences.push({
-        resolution: publicResolution(resolution),
-        choiceA: voteA.choice,
-        choiceB: voteB.choice,
-      });
+    if (voteA.choice === voteB.choice) {
+      matchingVoteCount++;
+      const pairKey = `${voteA.choice}:${voteB.choice}`;
+      const pairCount = pairAgreementCounts.get(pairKey) ?? 0;
+      if (agreements.length < maxList || pairCount < maxPerCell) {
+        agreements.push({
+          resolution: publicResolution(resolution),
+          choiceA: voteA.choice,
+          choiceB: voteB.choice,
+        });
+        pairAgreementCounts.set(pairKey, pairCount + 1);
+      }
+    } else {
+      const pairKey = `${voteA.choice}:${voteB.choice}`;
+      const pairCount = pairDivergenceCounts.get(pairKey) ?? 0;
+      if (divergences.length < maxList || pairCount < maxPerCell) {
+        divergences.push({
+          resolution: publicResolution(resolution),
+          choiceA: voteA.choice,
+          choiceB: voteB.choice,
+        });
+        pairDivergenceCounts.set(pairKey, pairCount + 1);
+      }
+    }
   }
   return {
     countryA: store.countries.get(countryAId),
@@ -115,13 +228,25 @@ export function compareCountries(store, countryAId, countryBId, from, to, theme 
     from,
     to,
     theme,
+    ...(rawSearch ? { search: rawSearch } : {}),
+    ...(normalizedQuery
+      ? {
+          archiveSearchHint: {
+            archiveCommonVoteCount,
+            fromYear: archiveFromYear,
+            toYear: archiveToYear,
+          },
+        }
+      : {}),
     commonVoteCount,
     matchingVoteCount,
     differingVoteCount: commonVoteCount - matchingVoteCount,
     nonComparableCount,
     agreementPercent: commonVoteCount === 0 ? null : (100 * matchingVoteCount) / commonVoteCount,
+    breakdown,
     coverage: { from: firstDate, to: lastDate },
     dataVersion: store.metadata.version,
+    agreements,
     divergences,
   };
 }
@@ -196,6 +321,94 @@ export function rankCountries(store, countryId, from, to, minVotes = 20, theme =
   };
 }
 
+function computeTrendInflections(points) {
+  const highSample = points.filter(
+    (point) => point.commonVoteCount >= 20 && point.agreementPercent !== null,
+  );
+  const anySample = points.filter(
+    (point) => point.commonVoteCount >= 1 && point.agreementPercent !== null,
+  );
+  const minVotesUsed = highSample.length > 0 ? 20 : 1;
+  const limitedSample = highSample.length === 0 && anySample.length > 0;
+  const eligible = highSample.length > 0 ? highSample : anySample;
+  if (eligible.length === 0) {
+    return {
+      minVotesUsed,
+      limitedSample: false,
+      eligiblePeriodCount: 0,
+      highest: null,
+      lowest: null,
+      biggestRise: null,
+      biggestDrop: null,
+    };
+  }
+  const byRateDesc = eligible
+    .slice()
+    .sort(
+      (a, b) =>
+        b.matchingVoteCount * a.commonVoteCount - a.matchingVoteCount * b.commonVoteCount ||
+        b.commonVoteCount - a.commonVoteCount ||
+        b.year - a.year,
+    );
+  const highest = byRateDesc[0];
+  const lowestCandidates = eligible
+    .filter((point) => point.year !== highest.year)
+    .sort(
+      (a, b) =>
+        a.matchingVoteCount * b.commonVoteCount - b.matchingVoteCount * a.commonVoteCount ||
+        b.commonVoteCount - a.commonVoteCount ||
+        b.year - a.year,
+    );
+  const lowest = lowestCandidates[0] ?? null;
+  let biggestRise = null;
+  let biggestDrop = null;
+  for (let i = 1; i < eligible.length; i++) {
+    const prev = eligible[i - 1];
+    const next = eligible[i];
+    const deltaPoints = next.agreementPercent - prev.agreementPercent;
+    const transition = {
+      fromYear: prev.year,
+      toYear: next.year,
+      fromPercent: prev.agreementPercent,
+      toPercent: next.agreementPercent,
+      deltaPoints,
+      fromCommonVoteCount: prev.commonVoteCount,
+      toCommonVoteCount: next.commonVoteCount,
+    };
+    if (
+      deltaPoints > 0 &&
+      (!biggestRise ||
+        deltaPoints > biggestRise.deltaPoints ||
+        (deltaPoints === biggestRise.deltaPoints &&
+          (next.commonVoteCount + prev.commonVoteCount >
+            biggestRise.toCommonVoteCount + biggestRise.fromCommonVoteCount ||
+            next.year > biggestRise.toYear)))
+    ) {
+      biggestRise = transition;
+    }
+    if (
+      deltaPoints < 0 &&
+      (!biggestDrop ||
+        deltaPoints < biggestDrop.deltaPoints ||
+        (deltaPoints === biggestDrop.deltaPoints &&
+          (next.commonVoteCount + prev.commonVoteCount >
+            biggestDrop.toCommonVoteCount + biggestDrop.fromCommonVoteCount ||
+            next.year > biggestDrop.toYear)))
+    ) {
+      biggestDrop = transition;
+    }
+  }
+  return {
+    minVotesUsed,
+    limitedSample,
+    eligiblePeriodCount: eligible.length,
+    highest,
+    lowest,
+    biggestRise,
+    biggestDrop,
+  };
+}
+
 export function compareTrend(
   store,
   countryAId,
@@ -204,7 +417,9 @@ export function compareTrend(
   to,
   interval = 'year',
   theme = 'all',
+  search = '',
 ) {
+  const rawSearch = String(search ?? '').trim();
   const step = interval === 'decade' ? 10 : 1;
   const firstYear = interval === 'decade' ? Math.floor(from / 10) * 10 : from;
   const points = [];
@@ -216,6 +431,7 @@ export function compareTrend(
       Math.max(from, year),
       Math.min(to, year + step - 1),
       theme,
+      rawSearch,
     );
     points.push({
       year,
@@ -230,8 +446,81 @@ export function compareTrend(
     from,
     to,
     theme,
+    ...(rawSearch ? { search: rawSearch } : {}),
     interval,
     points,
+    inflections: computeTrendInflections(points),
+    dataVersion: store.metadata.version,
+  };
+}
+
+export function countryProfile(store, countryId, from, to, theme = 'all') {
+  const totals = Object.fromEntries(VOTE_CHOICES.map((choice) => [choice, 0]));
+  let recordedResolutionCount = 0;
+  let explicitVoteCount = 0;
+  let comparableWithMajorityCount = 0;
+  let alignedWithMajorityCount = 0;
+  let tiedMajorityCount = 0;
+  let strictMinorityVoteCount = 0;
+  let firstDate = null;
+  let lastDate = null;
+  const dissenting = [];
+  for (const { resolution, choice } of store.countryVotes.get(countryId)) {
+    if (!inScope(resolution, from, to, theme)) continue;
+    recordedResolutionCount++;
+    totals[choice]++;
+    if (!EXPLICIT_CHOICES.has(choice)) continue;
+    explicitVoteCount++;
+    firstDate = firstDate === null || resolution.date < firstDate ? resolution.date : firstDate;
+    lastDate = lastDate === null || resolution.date > lastDate ? resolution.date : lastDate;
+    const { majorityChoice, explicitTotal, YES, NO, ABSTAIN } = resolution.assemblyTotals;
+    if (majorityChoice === null) {
+      tiedMajorityCount++;
+      continue;
+    }
+    comparableWithMajorityCount++;
+    if (choice === majorityChoice) {
+      alignedWithMajorityCount++;
+    } else {
+      const sameChoiceCount = resolution.assemblyTotals[choice];
+      if (sameChoiceCount <= 5) strictMinorityVoteCount++;
+      dissenting.push({
+        resolution: publicResolution(resolution),
+        choice,
+        majorityChoice,
+        sameChoiceCount,
+        assemblyExplicitTotal: explicitTotal,
+        assemblyTotals: { YES, NO, ABSTAIN },
+      });
+    }
+  }
+  const symbolCollator = new Intl.Collator('en', { numeric: true });
+  dissenting.sort(
+    (a, b) =>
+      a.sameChoiceCount - b.sameChoiceCount ||
+      b.assemblyExplicitTotal - a.assemblyExplicitTotal ||
+      b.resolution.date.localeCompare(a.resolution.date) ||
+      symbolCollator.compare(b.resolution.symbol, a.resolution.symbol),
+  );
+  return {
+    country: store.countries.get(countryId),
+    from,
+    to,
+    theme,
+    totals,
+    recordedResolutionCount,
+    explicitVoteCount,
+    comparableWithMajorityCount,
+    alignedWithMajorityCount,
+    dissentingVoteCount: comparableWithMajorityCount - alignedWithMajorityCount,
+    tiedMajorityCount,
+    majorityAlignmentPercent:
+      comparableWithMajorityCount === 0
+        ? null
+        : (100 * alignedWithMajorityCount) / comparableWithMajorityCount,
+    strictMinorityVoteCount,
+    coverage: { from: firstDate, to: lastDate },
+    minorityVotes: dissenting.slice(0, 8),
     dataVersion: store.metadata.version,
   };
 }
