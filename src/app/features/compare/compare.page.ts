@@ -39,8 +39,9 @@ export class ComparePage {
   private readonly api = inject(DiplomaticApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
-  private readonly comparisons = new Subject<Filters>();
-  private readonly trends = new Subject<Filters & { interval: 'year' | 'decade' }>();
+  // null efface le résultat affiché et annule la requête en cours (formulaire invalide).
+  private readonly comparisons = new Subject<Filters | null>();
+  private readonly trends = new Subject<(Filters & { interval: 'year' | 'decade' }) | null>();
   readonly countries = signal<Country[]>([]);
   readonly themes = signal<Theme[]>([]);
   readonly metadata = signal<DataMetadata | null>(null);
@@ -90,9 +91,10 @@ export class ComparePage {
     this.comparisons
       .pipe(
         switchMap((filters) => {
-          this.loading.set(true);
           this.error.set('');
           this.result.set(null);
+          if (!filters) return of(null);
+          this.loading.set(true);
           return this.api
             .compare(filters.countryA, filters.countryB, filters.from, filters.to, filters.theme)
             .pipe(
@@ -109,9 +111,10 @@ export class ComparePage {
     this.trends
       .pipe(
         switchMap((filters) => {
-          this.trendLoading.set(true);
           this.trendError.set('');
           this.trend.set(null);
+          if (!filters) return of(null);
+          this.trendLoading.set(true);
           return this.api
             .trend(
               filters.countryA,
@@ -166,7 +169,12 @@ export class ComparePage {
   compare(): void {
     this.submitted.set(true);
     this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.activeFilters.set(null);
+      this.comparisons.next(null);
+      this.trends.next(null);
+      return;
+    }
     const filters = this.form.getRawValue();
     this.activeFilters.set(filters);
     this.comparisons.next(filters);

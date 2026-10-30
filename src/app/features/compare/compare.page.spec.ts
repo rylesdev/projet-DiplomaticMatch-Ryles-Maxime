@@ -141,4 +141,16 @@ describe('ComparePage theme filters', () => {
     expect(compare).toHaveBeenLastCalledWith('FRA', 'IND', 1946, 2100, 'security');
     expect(fixture.componentInstance.result()?.agreementPercent).toBeNull();
   });
+
+  it('removes the previous result when the same country is chosen twice', () => {
+    fixture = TestBed.createComponent(ComparePage);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.result()).not.toBeNull();
+    const calls = compare.mock.calls.length;
+    fixture.componentInstance.form.patchValue({ countryB: 'FRA' });
+    fixture.componentInstance.compare();
+    expect(compare.mock.calls.length).toBe(calls);
+    expect(fixture.componentInstance.result()).toBeNull();
+    expect(fixture.componentInstance.trend()).toBeNull();
+  });
 });

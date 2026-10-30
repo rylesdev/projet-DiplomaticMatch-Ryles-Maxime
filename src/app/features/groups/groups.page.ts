@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { periodValidator } from '../../core/period.validator';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
@@ -33,6 +33,12 @@ import { GroupCountryPickerComponent } from './group-country-picker.component';
 import { GroupAnalysisViewComponent } from './group-analysis-view.component';
 import { GroupScenariosComponent } from './group-scenarios.component';
 import { GroupReportsComponent } from './group-reports.component';
+
+// Même règle que le serveur : 2 à 80 caractères une fois les espaces retirés.
+const groupNameValidator = (control: AbstractControl) => {
+  const length = String(control.value ?? '').trim().length;
+  return length >= 2 && length <= 80 ? null : { groupName: true };
+};
 
 interface AnalysisRequest {
   group: CountryGroup;
@@ -90,7 +96,7 @@ export class GroupsPage {
   readonly reportRefresh = signal(0);
   readonly busy = computed(() => this.saving() || this.deleting() || this.reportSaving());
   readonly editor = this.formBuilder.nonNullable.group({
-    name: ['', [Validators.required, Validators.maxLength(80)]],
+    name: ['', groupNameValidator],
     description: ['', Validators.maxLength(500)],
   });
   private readonly editorValue = toSignal(
@@ -230,7 +236,6 @@ export class GroupsPage {
       this.busy() ||
       this.conflict() ||
       this.editor.invalid ||
-      !draft.name.trim() ||
       draft.memberIds.length < 2 ||
       draft.memberIds.length > 12
     )

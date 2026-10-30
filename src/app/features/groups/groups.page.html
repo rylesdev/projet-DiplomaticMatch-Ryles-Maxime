@@ -99,14 +99,10 @@
             (memberIdsChange)="changeMembers($event)"
           />
           @if (
-            submitted() &&
-            (editor.invalid ||
-              !draft().name.trim() ||
-              memberIds().length < 2 ||
-              memberIds().length > 12)
+            submitted() && (editor.invalid || memberIds().length < 2 || memberIds().length > 12)
           ) {
             <p class="validation-message" role="alert">
-              Renseignez un nom et choisissez entre 2 et 12 pays distincts.
+              Renseignez un nom de 2 à 80 caractères et choisissez entre 2 et 12 pays distincts.
             </p>
           }
           <div class="editor-actions">

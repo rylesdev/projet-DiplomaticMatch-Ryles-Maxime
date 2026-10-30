@@ -252,6 +252,18 @@ describe('GroupsPage saved-state actions', () => {
     expect(navigate).toHaveBeenLastCalledWith(['/groupes', 'created']);
   });
 
+  it('refuses a name shorter than 2 characters once trimmed, like the server', () => {
+    create();
+    page.startNew();
+    page.changeMembers(['TST', 'OTHER']);
+    page.editor.controls.name.setValue('  A  ');
+    page.save();
+    expect(api.createGroup).not.toHaveBeenCalled();
+    page.editor.controls.name.setValue('AB');
+    page.save();
+    expect(api.createGroup).toHaveBeenCalled();
+  });
+
   it('requires the inline delete confirmation and announces removal of saved reports', () => {
     create();
     const compiled = fixture.nativeElement as HTMLElement;

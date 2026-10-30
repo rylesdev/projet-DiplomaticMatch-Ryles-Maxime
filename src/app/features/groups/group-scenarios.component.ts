@@ -21,7 +21,7 @@ import {
   GroupSuggestions,
   GroupSuggestionsRequest,
 } from '../../core/models/groups.models';
-import { DiplomaticApiService } from '../../core/services/diplomatic-api.service';
+import { apiErrorMessage, DiplomaticApiService } from '../../core/services/diplomatic-api.service';
 import { GroupsApiService, groupErrorMessage } from '../../core/services/groups-api.service';
 
 @Component({
@@ -115,7 +115,7 @@ export class GroupScenariosComponent implements OnChanges {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (countries) => this.countries.set(countries),
-        error: (error: unknown) => this.optionsError.set(groupErrorMessage(error)),
+        error: (error: unknown) => this.optionsError.set(apiErrorMessage(error)),
       });
   }
 
