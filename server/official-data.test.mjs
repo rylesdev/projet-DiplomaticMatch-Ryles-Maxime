@@ -1,14 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import {
-  compareCountries,
-  compareMatrix,
-  compareTrend,
-  countryProfile,
-  createStore,
-  rankCountries,
-} from './domain.mjs';
+import { compareCountries, compareMatrix, createStore, rankCountries } from './domain.mjs';
 
 // Jeu réel version 6, conservé dans le dépôt pour une démo indépendante du réseau.
 // La référence FRA/IND a été calculée séparément sur les CSV bruts avant l'import.
@@ -105,33 +98,4 @@ test('écologie et sécurité France / Inde correspondent aux décomptes indépe
   assert.equal(security.commonVoteCount, 647);
   assert.equal(security.matchingVoteCount, 193);
   assert.equal(security.agreementPercent, (100 * 193) / 647);
-});
-
-test('la matrice 3x3, les inflexions et le profil de majorité France / Inde 2000–2025 sont exacts', () => {
-  const comp = compareCountries(store, 'FRA', 'IND', 2000, 2025);
-  assert.deepEqual(comp.breakdown, {
-    YES: { YES: 936, NO: 89, ABSTAIN: 229 },
-    NO: { YES: 362, NO: 35, ABSTAIN: 95 },
-    ABSTAIN: { YES: 432, NO: 6, ABSTAIN: 34 },
-  });
-  const trend = compareTrend(store, 'FRA', 'IND', 2000, 2025, 'year', 'all');
-  assert.equal(trend.inflections.minVotesUsed, 20);
-  assert.equal(trend.inflections.limitedSample, false);
-  assert.equal(trend.inflections.highest.year, 2025);
-  assert.equal(trend.inflections.highest.commonVoteCount, 192);
-  assert.equal(trend.inflections.highest.matchingVoteCount, 129);
-  assert.equal(trend.inflections.lowest.year, 2009);
-  assert.equal(trend.inflections.lowest.commonVoteCount, 68);
-  assert.equal(trend.inflections.lowest.matchingVoteCount, 24);
-  assert.equal(trend.inflections.biggestRise.fromYear, 2024);
-  assert.equal(trend.inflections.biggestRise.toYear, 2025);
-  assert.equal(trend.inflections.biggestDrop.fromYear, 2018);
-  assert.equal(trend.inflections.biggestDrop.toYear, 2019);
-
-  const profileFra = countryProfile(store, 'FRA', 2000, 2026);
-  assert.equal(profileFra.explicitVoteCount, 2260);
-  assert.equal(profileFra.comparableWithMajorityCount, 2260);
-  assert.equal(profileFra.alignedWithMajorityCount, 1284);
-  assert.equal(profileFra.strictMinorityVoteCount, 175);
-  assert.equal(profileFra.minorityVotes[0].sameChoiceCount, 1);
 });

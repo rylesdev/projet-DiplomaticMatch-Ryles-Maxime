@@ -35,7 +35,7 @@ probe.on('error', () => {
 });
 probe.listen(3001, '127.0.0.1', () => {
   probe.close(() => {
-    launch(['--watch-path=server', 'server/index.mjs']);
+    launch(['server/index.mjs']);
     launch(['node_modules/@angular/cli/bin/ng.js', 'serve', ...process.argv.slice(2)]);
   });
 });

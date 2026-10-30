@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   compareCountries,
   compareTrend,
-  countryProfile,
   createStore,
   normalizeVote,
   resolutionDetail,
@@ -123,95 +122,4 @@ test('le détail de résolution distingue les cinq choix et conserve leur valeur
   const detail = resolutionDetail(store, store.resolutions.get('4'));
   assert.deepEqual(detail.totals, { YES: 0, NO: 0, ABSTAIN: 1, NOT_VOTED: 1, UNKNOWN: 0 });
   assert.deepEqual(new Set(detail.votes.map((vote) => vote.rawChoice)), new Set(['A', 'X']));
-});
-test('la matrice 3x3 décompose exactement les accords, oppositions frontales et réserves', () => {
-  const store = createStore(syntheticDataset());
-  const result = compareCountries(store, 'FRA', 'IND', 2020, 2024);
-  assert.deepEqual(result.breakdown, {
-    YES: { YES: 1, NO: 0, ABSTAIN: 0 },
-    NO: { YES: 1, NO: 0, ABSTAIN: 0 },
-    ABSTAIN: { YES: 0, NO: 0, ABSTAIN: 1 },
-  });
-});
-test('les inflexions de tendance identifient pic, creux et variations sur les périodes éligibles', () => {
-  const store = createStore(syntheticDataset());
-  const trend = compareTrend(store, 'FRA', 'IND', 2020, 2024);
-  assert.equal(trend.inflections.minVotesUsed, 1);
-  assert.equal(trend.inflections.limitedSample, true);
-  assert.equal(trend.inflections.eligiblePeriodCount, 2);
-  assert.equal(trend.inflections.highest.year, 2021);
-  assert.equal(trend.inflections.highest.agreementPercent, 100);
-  assert.equal(trend.inflections.lowest.year, 2020);
-  assert.equal(trend.inflections.lowest.agreementPercent, 50);
-  assert.equal(trend.inflections.biggestRise.fromYear, 2020);
-  assert.equal(trend.inflections.biggestRise.toYear, 2021);
-  assert.equal(trend.inflections.biggestRise.deltaPoints, 50);
-  assert.equal(trend.inflections.biggestDrop, null);
-});
-test('le profil de majorité exclut les égalités de séance et isole les votes à contre-courant', () => {
-  const dataset = syntheticDataset();
-  dataset.countries.push({
-    id: 'BRA',
-    name: 'Brésil',
-    nameEn: 'BRAZIL',
-    iso3: 'BRA',
-    voteCount: 3,
-    firstYear: 2020,
-    lastYear: 2024,
-  });
-  dataset.resolutions = [
-    // Résolution 1 : FRA=Y, IND=Y, BRA=Y -> majorité YES (3/3), FRA alignée
-    { ...dataset.resolutions[0], votes: [[0, 'Y'], [1, 'Y'], [2, 'Y']] },
-    // Résolution 2 : FRA=N, IND=Y, BRA=Y -> majorité YES (2 contre 1), FRA à contre-courant (sameChoiceCount = 1)
-    { ...dataset.resolutions[1], votes: [[0, 'N'], [1, 'Y'], [2, 'Y']] },
-    // Résolution 3 : FRA=Y, IND=N, BRA=X -> égalité 1 YES vs 1 NO, exclue du dénominateur de majorité
-    { ...dataset.resolutions[2], votes: [[0, 'Y'], [1, 'N'], [2, 'X']] },
-  ];
-  const store = createStore(dataset);
-  const profile = countryProfile(store, 'FRA', 2020, 2024);
-  assert.equal(profile.explicitVoteCount, 3);
-  assert.equal(profile.comparableWithMajorityCount, 2);
-  assert.equal(profile.alignedWithMajorityCount, 1);
-  assert.equal(profile.dissentingVoteCount, 1);
-  assert.equal(profile.tiedMajorityCount, 1);
-  assert.equal(profile.majorityAlignmentPercent, 50);
-  assert.equal(profile.strictMinorityVoteCount, 1);
-  assert.equal(profile.minorityVotes.length, 1);
-  assert.equal(profile.minorityVotes[0].resolution.id, '2');
-  assert.equal(profile.minorityVotes[0].choice, 'NO');
-  assert.equal(profile.minorityVotes[0].majorityChoice, 'YES');
-  assert.equal(profile.minorityVotes[0].sameChoiceCount, 1);
-  assert.equal(profile.minorityVotes[0].assemblyExplicitTotal, 3);
-});
-test('la comparaison filtre par mot-clé (avec synonymes FR/EN) et retourne aussi les résolutions en accord', () => {
-  const dataset = syntheticDataset();
-  dataset.resolutions.push({
-    id: '2758',
-    symbol: 'A/RES/2758(XXVI)',
-    title: 'Restoration of the lawful rights of the People’s Republic of China in the United Nations',
-    date: '1971-10-25',
-    year: 1971,
-    session: '26',
-    subjects: ['CHINA--REPRESENTATION'],
-    themes: ['governance'],
-    sourceUrl: 'https://digitallibrary.un.org/record/192054',
-    votes: [
-      [0, 'Y'],
-      [1, 'Y'],
-    ],
-  });
-  const store = createStore(dataset);
-  const on1971 = compareCountries(store, 'FRA', 'IND', 1950, 1975, 'all', 'taiwan');
-  assert.equal(on1971.commonVoteCount, 1);
-  assert.equal(on1971.matchingVoteCount, 1);
-  assert.equal(on1971.agreements.length, 1);
-  assert.equal(on1971.agreements[0].resolution.symbol, 'A/RES/2758(XXVI)');
-
-  const on2000 = compareCountries(store, 'FRA', 'IND', 2000, 2025, 'all', 'taiwan');
-  assert.equal(on2000.commonVoteCount, 0);
-  assert.deepEqual(on2000.archiveSearchHint, {
-    archiveCommonVoteCount: 1,
-    fromYear: 1971,
-    toYear: 1971,
-  });
 });

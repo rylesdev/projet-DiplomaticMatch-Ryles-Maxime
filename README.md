@@ -1,15 +1,13 @@
 ﻿# Diplomatic Match
 
-Application universitaire Angular pour explorer les votes enregistrés à l'Assemblée générale des Nations unies : recherche de pays, historique, comparaison, classements, évolution, résolutions et carte des concordances. Un atelier permet aussi de créer des groupes de pays, tester leur composition et enregistrer leurs analyses. Les comparaisons peuvent être filtrées par thématique. Interface originale en français, responsive, sans template de site préconstruit.
-
-La vue d'ensemble intègre directement la carte interactive des concordances, avec un composant réutilisé sur la page Carte. Une présentation sobre et une navigation unifiée accompagnent l'exploration des données sur ordinateur et mobile.
+Application universitaire Angular pour explorer les votes enregistrés à l'Assemblée générale des Nations unies : recherche de pays, historique, comparaison, classements, évolution, résolutions et matrice de concordance. Un atelier permet aussi de créer des groupes de pays, tester leur composition et enregistrer leurs analyses. Les comparaisons peuvent être filtrées par thématique. Interface originale en français, responsive, sans template de site préconstruit.
 
 ## Installer et démarrer
 
 Prérequis : Git, Node.js 24 LTS et npm. Environnement vérifié : Node.js 24.21.0 et npm 12.0.2.
 
 ```bash
-git clone https://github.com/rylesdev/projet-DiplomaticMatch-Ryles-Maxime..git diplomatic-match
+git clone https://github.com/rylesdev/projet-NOMDUPROJET-Ryles-Maxime..git diplomatic-match
 cd diplomatic-match
 npm ci
 npm start
@@ -33,7 +31,7 @@ Autre port Angular : `npm start -- --port 4201`. Pour lancer séparément les de
 
 Le classement des pays est disponible dans chaque fiche : `GET /api/countries/FRA/rankings?from=2000&to=2025&minVotes=20` renvoie les trois pays les plus concordants et les trois moins concordants sur cette période.
 
-Le catalogue `GET /api/themes` fournit les thèmes et leurs effectifs. Le paramètre `theme=environment`, par exemple, filtre de manière identique comparaison, classement et tendance. La **Carte** utilise `GET /api/matrix?from=2000&to=2025&theme=all&minVotes=20` pour obtenir les concordances entre les 202 pays et entités historiques et colorer les territoires représentés.
+Le catalogue `GET /api/themes` fournit les thèmes et leurs effectifs. Le paramètre `theme=environment`, par exemple, filtre de manière identique comparaison, classement et tendance. La page **Matrice** utilise `GET /api/matrix?from=2000&to=2025&theme=all&minVotes=20` pour comparer les 202 pays et entités historiques sur les deux axes.
 
 Les recherches utilisent le debounce et annulent les requêtes obsolètes. Les filtres et pages déclenchent de nouvelles requêtes HTTP. Le service Angular valide les réponses avant leur affichage. Chargement, erreur, absence de résultats et succès sont traités. Les détails des votes renvoient vers la bibliothèque de l'ONU ; les titres des textes restent dans la langue de la source, généralement l'anglais.
 
@@ -58,6 +56,12 @@ Le tri utilise le taux exact, avant tout arrondi. À taux égal, le plus grand n
 Les regroupements écologie/environnement, sécurité/paix, droits, développement, décolonisation et institutions sont **propres au projet**, à partir du champ `subjects` de l'ONU. Ils ne constituent pas une classification officielle. Les sujets exacts sont conservés ; aucune thématique n'est inventée à partir du titre ou du pays. Une résolution peut relever de plusieurs thèmes. Sans sujet reconnu, elle reste dans « Sans thème attribué » et demeure incluse dans « Tous les sujets ». Règles, exemples et effectifs sont documentés dans [data/README.md](data/README.md) et le manifeste.
 
 Le jeu v6 contient 272 résolutions classées en écologie, mais seulement 21 avec des votes individuels enregistrés. Sur 2000–2025, France/Inde ont 15 votes comparables et 8 identiques en écologie (53,3 %), contre 647 comparables et 193 identiques en sécurité (29,8 %). Les seuils 1, 5 et 10 sont disponibles pour explorer les petits effectifs, avec un avertissement sous 20. Un résultat vide au seuil 20 reste un résultat vide : aucune position n'est ajoutée pour le remplir.
+
+### Matrice de concordance
+
+La matrice conserve tous les pays sur les deux axes, avec période, thème et seuil réglables. Bleu = forte concordance (100 %), rouge = faible concordance (0 %), gris = aucun vote commun ou minimum non atteint. Un véritable taux de 0 % est rouge et n'est jamais assimilé à une donnée manquante. La diagonale vaut 100 % uniquement si l'effectif du pays atteint le seuil. Les tableaux d'effectifs et de votes identiques utilisent la même formule que les comparaisons individuelles, de manière symétrique.
+
+Survoler une case affiche pays, taux et effectif ; cliquer ouvre la comparaison détaillée avec les filtres appliqués. Les sélecteurs de pays permettent une lecture précise, y compris au clavier. Flèches, Début/Fin, Page précédente/suivante et Entrée sont pris en charge. Trois tailles de cases sont proposées ; en vue globale, certaines étiquettes sont espacées pour rester lisibles. Les en-têtes restent visibles pendant le défilement interne. Le dessin canvas évite de créer plus de 40 000 éléments HTML ; le panneau de lecture et les sélecteurs fournissent les valeurs sous forme textuelle.
 
 ### Carte des concordances
 
@@ -144,7 +148,7 @@ src/app/
   features/home/              Accueil et comparaison rapide
   features/countries/         Recherche, fiche et historique
   features/compare/           Concordance et évolution SVG/tableau
-  features/map/               Carte interactive réutilisée sur l'accueil et sa page dédiée
+  features/matrix/            Matrice canvas, axes et lecture accessible
   features/groups/            Groupes, simulations et rapports enregistrés
   features/resolutions/       Recherche et détail
   features/methodology/       Sources, formule et limites

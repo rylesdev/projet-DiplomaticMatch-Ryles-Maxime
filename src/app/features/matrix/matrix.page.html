@@ -1,0 +1,251 @@
+<header class="page-heading">
+  <span class="eyebrow">MATRICE DES VOTES</span>
+  <h1>Tous les pays,<br />deux à deux.</h1>
+  <p>
+    Explorez la concordance des votes entre chaque paire de pays. Les deux axes présentent les mêmes
+    États et entités historiques.
+  </p>
+</header>
+<section class="panel matrix-filters">
+  <form [formGroup]="form" (ngSubmit)="apply()" class="form-grid">
+    <div>
+      <label for="matrix-theme">Thématique</label
+      ><select id="matrix-theme" formControlName="theme">
+        @if (!themes().length) {
+          <option value="all">Tous les thèmes</option>
+        }
+        @for (theme of themes(); track theme.id) {
+          <option [value]="theme.id">{{ theme.label }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="matrix-from">De l’année</label
+      ><input
+        id="matrix-from"
+        type="number"
+        formControlName="from"
+        min="1946"
+        max="2100"
+        step="1"
+        required
+      />
+    </div>
+    <div>
+      <label for="matrix-to">À l’année</label
+      ><input
+        id="matrix-to"
+        type="number"
+        formControlName="to"
+        min="1946"
+        max="2100"
+        step="1"
+        required
+      />
+    </div>
+    <div>
+      <label for="matrix-min">Votes communs minimum</label
+      ><select id="matrix-min" formControlName="minVotes">
+        <option [ngValue]="1">1 vote</option>
+        <option [ngValue]="5">5 votes</option>
+        <option [ngValue]="10">10 votes</option>
+        <option [ngValue]="20">20 votes</option>
+        <option [ngValue]="50">50 votes</option>
+        <option [ngValue]="100">100 votes</option>
+        <option [ngValue]="200">200 votes</option>
+      </select>
+    </div>
+    <button type="submit" class="button button-primary" [disabled]="loading()">
+      {{ loading() ? 'Calcul…' : 'Afficher la matrice' }}
+    </button>
+  </form>
+  <p class="source-note">
+    Les thèmes sont des regroupements du projet à partir des sujets renseignés par l’ONU.
+    <a routerLink="/methodologie">Voir la méthode</a>.
+  </p>
+  @if (optionsError()) {
+    <p class="status status-error" role="alert">
+      {{ optionsError() }}
+      <button class="button button-ghost" (click)="loadThemes()">Recharger les thèmes</button>
+    </p>
+  }
+</section>
+@if (loading()) {
+  <p class="status" role="status">Calcul des concordances entre tous les pays…</p>
+}
+@if (error()) {
+  <p class="status status-error" role="alert">
+    {{ error() }} <button class="button button-ghost" (click)="apply()">Réessayer</button>
+  </p>
+}
+@if (data(); as matrix) {
+  <section class="panel matrix-panel" [attr.aria-busy]="loading()">
+    <div class="panel-heading">
+      <div>
+        <h2>{{ matrix.countries.length }} pays et entités historiques</h2>
+        <p class="small muted">
+          {{ selectedTheme()?.label ?? matrix.theme }} · {{ matrix.from }}–{{ matrix.to }} · au
+          moins {{ matrix.minVotes }} votes communs
+        </p>
+      </div>
+      <div class="zoom-field">
+        <label for="matrix-zoom">Affichage</label
+        ><select id="matrix-zoom" #zoom [value]="cellSize()" (change)="cellSize.set(+zoom.value)">
+          <option value="4">Vue globale</option>
+          <option value="10">Détaillé</option>
+          <option value="16">Grandes cases</option>
+        </select>
+      </div>
+    </div>
+    <div class="matrix-legend" aria-label="Échelle de concordance">
+      <div>
+        <span>100 % · forte concordance</span><span>0 % · faible concordance</span>
+        <div class="color-scale"></div>
+      </div>
+      <span class="missing-key"
+        ><i aria-hidden="true"></i>Seuil non atteint ou aucun vote commun</span
+      >
+    </div>
+    @if (matrix.minVotes < 20) {
+      <p class="sample-note">
+        Seuil inférieur à 20 votes : les petits effectifs appellent une interprétation limitée.
+      </p>
+    }
+    @if (!usablePairs()) {
+      <p class="status">
+        Aucune paire de pays n’atteint le seuil choisi. Diminuez le minimum de votes ou élargissez
+        la période.
+      </p>
+    }
+    <div class="pair-picker" [formGroup]="focus">
+      <div>
+        <label for="matrix-row">Pays en ligne</label
+        ><select id="matrix-row" formControlName="row" (change)="inspectPair()">
+          @for (country of matrix.countries; track country.id) {
+            <option [value]="country.id">{{ country.name }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label for="matrix-column">Pays en colonne</label
+        ><select id="matrix-column" formControlName="column" (change)="inspectPair()">
+          @for (country of matrix.countries; track country.id) {
+            <option [value]="country.id">{{ country.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    @if (selected(); as cell) {
+      <div class="cell-readout" role="status" aria-live="polite">
+        <strong>{{ cell.a.name }} / {{ cell.b.name }}</strong
+        ><span>
+          @if (cell.percentage === null) {
+            {{ cell.common ? 'Seuil non atteint' : 'Aucun vote commun' }}
+          } @else {
+            {{ cell.percentage | number: '1.1-1' }} %
+          }</span
+        ><small
+          >{{ cell.common | number }} votes comparables ·
+          {{ cell.matching | number }} identiques</small
+        >
+        @if (cell.a.id !== cell.b.id) {
+          <a
+            [routerLink]="['/comparer']"
+            [queryParams]="{
+              countryA: cell.a.id,
+              countryB: cell.b.id,
+              from: matrix.from,
+              to: matrix.to,
+              theme: matrix.theme,
+            }"
+            >Ouvrir la comparaison →</a
+          >
+        } @else {
+          <small>Diagonale : un pays comparé à lui-même.</small>
+        }
+      </div>
+    }
+    <p class="small muted" id="matrix-help">
+      Survolez une case pour lire sa valeur, cliquez pour comparer. Au clavier : flèches pour
+      parcourir les cases, Entrée pour ouvrir la comparaison. En vue globale, une partie des
+      étiquettes est espacée pour rester lisible ; les sélecteurs donnent accès à chaque pays.
+    </p>
+    <div
+      class="matrix-scroll"
+      #viewport
+      role="grid"
+      tabindex="0"
+      aria-label="Matrice de concordance des pays"
+      aria-describedby="matrix-help"
+      [attr.aria-rowcount]="matrix.countries.length"
+      [attr.aria-colcount]="matrix.countries.length"
+      aria-activedescendant="matrix-active-cell"
+      (keydown)="onKey($event)"
+    >
+      <div
+        class="matrix-surface"
+        [style.grid-template-columns]="labelWidth + 'px ' + plotSize() + 'px'"
+        [style.grid-template-rows]="headerHeight + 'px ' + plotSize() + 'px'"
+        [style.width.px]="labelWidth + plotSize()"
+      >
+        <div class="axis-corner" aria-hidden="true">
+          Lignes / colonnes<br /><small>mêmes pays</small>
+        </div>
+        <div class="column-axis" aria-hidden="true">
+          @for (country of matrix.countries; track country.id; let index = $index) {
+            <div
+              [style.width.px]="cellSize()"
+              [title]="country.name"
+              [class.active-axis]="index === activeColumn()"
+            >
+              @if (showLabel(index, activeColumn())) {
+                <span>{{ country.id }}</span>
+              }
+            </div>
+          }
+        </div>
+        <div class="row-axis" aria-hidden="true">
+          @for (country of matrix.countries; track country.id; let index = $index) {
+            <div
+              [style.height.px]="cellSize()"
+              [title]="country.name"
+              [class.active-axis]="index === activeRow()"
+            >
+              @if (showLabel(index, activeRow())) {
+                <span>{{ country.id }} · {{ country.name }}</span>
+              }
+            </div>
+          }
+        </div>
+        <div class="matrix-data" [style.width.px]="plotSize()" [style.height.px]="plotSize()">
+          <canvas
+            #heatmap
+            aria-hidden="true"
+            [style.width.px]="plotSize()"
+            [style.height.px]="plotSize()"
+            (pointermove)="point($event)"
+            (click)="point($event); openComparison()"
+          ></canvas
+          ><span
+            class="selection-outline"
+            aria-hidden="true"
+            [style.left.px]="activeColumn() * cellSize()"
+            [style.top.px]="activeRow() * cellSize()"
+            [style.width.px]="cellSize()"
+            [style.height.px]="cellSize()"
+          ></span>
+        </div>
+      </div>
+      <div class="sr-only" role="row" [attr.aria-rowindex]="activeRow() + 1">
+        <span id="matrix-active-cell" role="gridcell" [attr.aria-colindex]="activeColumn() + 1">{{
+          selectedText()
+        }}</span>
+      </div>
+    </div>
+    <p class="source-note">
+      {{ matrix.dataVersion }} · {{ usablePairs() | number }} paires atteignent le seuil, hors
+      diagonale. Pour lire précisément les codes, utilisez l’affichage détaillé. Les données
+      manquantes et les effectifs sous le seuil sont gris.
+    </p>
+  </section>
+}

@@ -55,20 +55,6 @@ test('classement pays : seuil par défaut et seuil explicite, sans duplicata', (
   assert.deepEqual(result.furthest, []);
   assert.equal(result.dataVersion, 'test');
 });
-test('profil pays : distribution, majorité de séance et filtrage thématique', () => {
-  const profile = request('/api/countries/FRA/profile?from=2020&to=2024');
-  assert.equal(profile.country.id, 'FRA');
-  assert.equal(profile.recordedResolutionCount, 6);
-  assert.equal(profile.explicitVoteCount, 4);
-  assert.deepEqual(profile.totals, { YES: 1, NO: 1, ABSTAIN: 2, NOT_VOTED: 1, UNKNOWN: 1 });
-  assert.equal(profile.comparableWithMajorityCount, 3);
-  assert.equal(profile.alignedWithMajorityCount, 3);
-  assert.equal(profile.tiedMajorityCount, 1);
-  assert.equal(profile.majorityAlignmentPercent, 100);
-  const emptyTheme = request('/api/countries/FRA/profile?from=2020&to=2024&theme=environment');
-  assert.equal(emptyTheme.explicitVoteCount, 0);
-  assert.equal(emptyTheme.majorityAlignmentPercent, null);
-});
 test('API thèmes : catalogue explicite et absence de sujets classée sans inférence', () => {
   const themes = request('/api/themes');
   assert.equal(themes.length, 8);
@@ -137,8 +123,6 @@ for (const url of [
   '/api/compare?countryA=FRA&countryB=IND&theme=unknown',
   '/api/compare/trend?countryA=FRA&countryB=IND&theme=unknown',
   '/api/countries/FRA/rankings?theme=unknown',
-  '/api/countries/FRA/profile?theme=unknown',
-  '/api/countries/FRA/profile?from=2025&to=2020',
   '/api/matrix?theme=unknown',
   '/api/matrix?theme=',
   '/api/matrix?minVotes=0',
@@ -153,7 +137,6 @@ for (const url of [
 test('pays et résolutions inconnus donnent 404, les écritures 405', () => {
   assert.throws(() => request('/api/countries/ZZZ'), { status: 404 });
   assert.throws(() => request('/api/countries/ZZZ/rankings'), { status: 404 });
-  assert.throws(() => request('/api/countries/ZZZ/profile'), { status: 404 });
   assert.throws(() => request('/api/resolutions/99999'), { status: 404 });
   assert.throws(() => request('/api/metadata', 'POST'), { status: 405 });
 });

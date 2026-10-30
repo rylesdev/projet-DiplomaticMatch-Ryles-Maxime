@@ -6,28 +6,21 @@ import {
   ComparisonResult,
   ConcordanceMatrix,
   Country,
-  CountryMinorityVote,
-  CountryProfile,
   CountryRankingEntry,
   CountryRankings,
   CountryVote,
   DataMetadata,
-  ExplicitVoteChoice,
   Paginated,
   Resolution,
   ResolutionDetail,
-  TrendInflections,
   TrendPoint,
   TrendResult,
-  TrendTransition,
   Theme,
-  VoteBreakdownMatrix,
   VoteChoice,
 } from '../models/api.models';
 
 type JsonObject = Record<string, unknown>;
 const voteChoices: VoteChoice[] = ['YES', 'NO', 'ABSTAIN', 'NOT_VOTED', 'UNKNOWN'];
-const explicitVoteChoices: ExplicitVoteChoice[] = ['YES', 'NO', 'ABSTAIN'];
 
 function object(value: unknown): JsonObject {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
@@ -137,77 +130,26 @@ function comparedResolution(value: unknown): ComparedResolution {
   };
 }
 
-function explicitChoice(value: unknown): ExplicitVoteChoice {
-  if (!explicitVoteChoices.includes(value as ExplicitVoteChoice))
-    throw new Error('Un choix de vote explicite reçu est invalide.');
-  return value as ExplicitVoteChoice;
-}
-
-function voteBreakdown(
-  value: unknown,
-  commonVoteCount: number,
-  matchingVoteCount: number,
-): VoteBreakdownMatrix {
-  const outer = object(value);
-  const result = {} as VoteBreakdownMatrix;
-  let total = 0;
-  let diagonal = 0;
-  for (const rowKey of explicitVoteChoices) {
-    const row = object(outer[rowKey]);
-    result[rowKey] = {} as Record<ExplicitVoteChoice, number>;
-    for (const colKey of explicitVoteChoices) {
-      const cell = count(row[colKey]);
-      result[rowKey][colKey] = cell;
-      total += cell;
-      if (rowKey === colKey) diagonal += cell;
-    }
-  }
-  if (total !== commonVoteCount || diagonal !== matchingVoteCount) {
-    throw new Error('La matrice de répartition 3x3 reçue est incohérente avec les totaux.');
-  }
-  return result;
-}
-
 function comparison(value: unknown): ComparisonResult {
   const item = object(value);
   const coverage = object(item['coverage']);
-  const commonVoteCount = number(item['commonVoteCount']);
-  const matchingVoteCount = number(item['matchingVoteCount']);
-  const hintObj =
-    item['archiveSearchHint'] === undefined ? null : object(item['archiveSearchHint']);
   return {
     countryA: country(item['countryA']),
     countryB: country(item['countryB']),
     from: number(item['from']),
     to: number(item['to']),
-    commonVoteCount,
-    matchingVoteCount,
+    commonVoteCount: number(item['commonVoteCount']),
+    matchingVoteCount: number(item['matchingVoteCount']),
     differingVoteCount: number(item['differingVoteCount']),
     nonComparableCount: number(item['nonComparableCount']),
     agreementPercent: percentage(item['agreementPercent']),
-    ...(item['breakdown'] === undefined
-      ? {}
-      : { breakdown: voteBreakdown(item['breakdown'], commonVoteCount, matchingVoteCount) }),
     dataVersion: string(item['dataVersion']),
     coverage: {
       from: coverage['from'] === null ? null : string(coverage['from']),
       to: coverage['to'] === null ? null : string(coverage['to']),
     },
-    ...(item['agreements'] === undefined
-      ? {}
-      : { agreements: array(item['agreements'], comparedResolution) }),
     divergences: array(item['divergences'], comparedResolution),
     theme: responseTheme(item),
-    ...(item['search'] === undefined ? {} : { search: string(item['search']) }),
-    ...(hintObj === null
-      ? {}
-      : {
-          archiveSearchHint: {
-            archiveCommonVoteCount: count(hintObj['archiveCommonVoteCount']),
-            fromYear: hintObj['fromYear'] === null ? null : number(hintObj['fromYear']),
-            toYear: hintObj['toYear'] === null ? null : number(hintObj['toYear']),
-          },
-        }),
   };
 }
 
@@ -280,39 +222,6 @@ function trendPoint(value: unknown): TrendPoint {
   };
 }
 
-function trendTransition(value: unknown): TrendTransition | null {
-  if (value === null) return null;
-  const item = object(value);
-  const fromPercent = percentage(item['fromPercent']);
-  const toPercent = percentage(item['toPercent']);
-  if (fromPercent === null || toPercent === null)
-    throw new Error('Une variation temporelle reçue est invalide.');
-  return {
-    fromYear: number(item['fromYear']),
-    toYear: number(item['toYear']),
-    fromPercent,
-    toPercent,
-    deltaPoints: number(item['deltaPoints']),
-    fromCommonVoteCount: count(item['fromCommonVoteCount']),
-    toCommonVoteCount: count(item['toCommonVoteCount']),
-  };
-}
-
-function trendInflections(value: unknown): TrendInflections {
-  const item = object(value);
-  if (typeof item['limitedSample'] !== 'boolean')
-    throw new Error('L’indicateur d’effectif limité des inflexions est invalide.');
-  return {
-    minVotesUsed: count(item['minVotesUsed']),
-    limitedSample: item['limitedSample'],
-    eligiblePeriodCount: count(item['eligiblePeriodCount']),
-    highest: item['highest'] === null ? null : trendPoint(item['highest']),
-    lowest: item['lowest'] === null ? null : trendPoint(item['lowest']),
-    biggestRise: trendTransition(item['biggestRise']),
-    biggestDrop: trendTransition(item['biggestDrop']),
-  };
-}
-
 function trend(value: unknown): TrendResult {
   const item = object(value);
   const interval = item['interval'];
@@ -325,88 +234,8 @@ function trend(value: unknown): TrendResult {
     to: number(item['to']),
     interval,
     points: array(item['points'], trendPoint),
-    ...(item['inflections'] === undefined
-      ? {}
-      : { inflections: trendInflections(item['inflections']) }),
     dataVersion: string(item['dataVersion']),
     theme: responseTheme(item),
-    ...(item['search'] === undefined ? {} : { search: string(item['search']) }),
-  };
-}
-
-function minorityVoteEntry(value: unknown): CountryMinorityVote {
-  const item = object(value);
-  const rawAssembly = object(item['assemblyTotals']);
-  const assemblyTotals = {
-    YES: count(rawAssembly['YES']),
-    NO: count(rawAssembly['NO']),
-    ABSTAIN: count(rawAssembly['ABSTAIN']),
-  };
-  const sameChoiceCount = count(item['sameChoiceCount']);
-  const assemblyExplicitTotal = count(item['assemblyExplicitTotal']);
-  if (
-    sameChoiceCount < 1 ||
-    assemblyTotals.YES + assemblyTotals.NO + assemblyTotals.ABSTAIN !== assemblyExplicitTotal ||
-    sameChoiceCount > assemblyExplicitTotal
-  ) {
-    throw new Error('Un vote minoritaire reçu de l’API est incohérent.');
-  }
-  return {
-    resolution: resolution(item['resolution']),
-    choice: explicitChoice(item['choice']),
-    majorityChoice: explicitChoice(item['majorityChoice']),
-    sameChoiceCount,
-    assemblyExplicitTotal,
-    assemblyTotals,
-  };
-}
-
-function countryProfile(value: unknown): CountryProfile {
-  const item = object(value);
-  const rawTotals = object(item['totals']);
-  const totals = Object.fromEntries(
-    voteChoices.map((vote) => [vote, count(rawTotals[vote])]),
-  ) as Record<VoteChoice, number>;
-  const coverage = object(item['coverage']);
-  const recordedResolutionCount = count(item['recordedResolutionCount']);
-  const explicitVoteCount = count(item['explicitVoteCount']);
-  const comparableWithMajorityCount = count(item['comparableWithMajorityCount']);
-  const alignedWithMajorityCount = count(item['alignedWithMajorityCount']);
-  const dissentingVoteCount = count(item['dissentingVoteCount']);
-  const tiedMajorityCount = count(item['tiedMajorityCount']);
-  const strictMinorityVoteCount = count(item['strictMinorityVoteCount']);
-  const majorityAlignmentPercent = percentage(item['majorityAlignmentPercent']);
-  if (
-    totals.YES + totals.NO + totals.ABSTAIN !== explicitVoteCount ||
-    explicitVoteCount + totals.NOT_VOTED + totals.UNKNOWN !== recordedResolutionCount ||
-    alignedWithMajorityCount + dissentingVoteCount !== comparableWithMajorityCount ||
-    comparableWithMajorityCount + tiedMajorityCount !== explicitVoteCount ||
-    strictMinorityVoteCount > dissentingVoteCount ||
-    (comparableWithMajorityCount === 0 && majorityAlignmentPercent !== null) ||
-    (comparableWithMajorityCount > 0 && majorityAlignmentPercent === null)
-  ) {
-    throw new Error('Le profil de majorité reçu de l’API est incohérent.');
-  }
-  return {
-    country: country(item['country']),
-    from: number(item['from']),
-    to: number(item['to']),
-    theme: responseTheme(item),
-    totals,
-    recordedResolutionCount,
-    explicitVoteCount,
-    comparableWithMajorityCount,
-    alignedWithMajorityCount,
-    dissentingVoteCount,
-    tiedMajorityCount,
-    majorityAlignmentPercent,
-    strictMinorityVoteCount,
-    coverage: {
-      from: coverage['from'] === null ? null : string(coverage['from']),
-      to: coverage['to'] === null ? null : string(coverage['to']),
-    },
-    minorityVotes: array(item['minorityVotes'], minorityVoteEntry),
-    dataVersion: string(item['dataVersion']),
   };
 }
 
@@ -538,13 +367,6 @@ export class DiplomaticApiService {
   country(id: string): Observable<Country> {
     return this.get(`/countries/${encodeURIComponent(id)}`, country);
   }
-  profile(id: string, from: number, to: number, theme = 'all'): Observable<CountryProfile> {
-    return this.get(`/countries/${encodeURIComponent(id)}/profile`, countryProfile, {
-      from,
-      to,
-      theme,
-    });
-  }
   rankings(
     id: string,
     from: number,
@@ -578,17 +400,8 @@ export class DiplomaticApiService {
     from: number,
     to: number,
     theme = 'all',
-    search = '',
   ): Observable<ComparisonResult> {
-    const trimmed = search.trim();
-    return this.get('/compare', comparison, {
-      countryA,
-      countryB,
-      from,
-      to,
-      theme,
-      ...(trimmed ? { search: trimmed } : {}),
-    });
+    return this.get('/compare', comparison, { countryA, countryB, from, to, theme });
   }
   trend(
     countryA: string,
@@ -597,18 +410,8 @@ export class DiplomaticApiService {
     to: number,
     interval: 'year' | 'decade' = 'year',
     theme = 'all',
-    search = '',
   ): Observable<TrendResult> {
-    const trimmed = search.trim();
-    return this.get('/compare/trend', trend, {
-      countryA,
-      countryB,
-      from,
-      to,
-      interval,
-      theme,
-      ...(trimmed ? { search: trimmed } : {}),
-    });
+    return this.get('/compare/trend', trend, { countryA, countryB, from, to, interval, theme });
   }
   resolutions(
     search = '',

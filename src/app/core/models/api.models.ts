@@ -1,6 +1,4 @@
 export type VoteChoice = 'YES' | 'NO' | 'ABSTAIN' | 'NOT_VOTED' | 'UNKNOWN';
-export type ExplicitVoteChoice = 'YES' | 'NO' | 'ABSTAIN';
-export type VoteBreakdownMatrix = Record<ExplicitVoteChoice, Record<ExplicitVoteChoice, number>>;
 
 export interface Country {
   id: string;
@@ -41,12 +39,6 @@ export interface ComparedResolution {
   choiceB: VoteChoice;
 }
 
-export interface ArchiveSearchHint {
-  archiveCommonVoteCount: number;
-  fromYear: number | null;
-  toYear: number | null;
-}
-
 export interface ComparisonResult {
   countryA: Country;
   countryB: Country;
@@ -57,14 +49,10 @@ export interface ComparisonResult {
   differingVoteCount: number;
   nonComparableCount: number;
   agreementPercent: number | null;
-  breakdown?: VoteBreakdownMatrix;
   coverage: { from: string | null; to: string | null };
   dataVersion: string;
-  agreements?: ComparedResolution[];
   divergences: ComparedResolution[];
   theme?: string;
-  search?: string;
-  archiveSearchHint?: ArchiveSearchHint;
 }
 
 export interface TrendPoint {
@@ -72,54 +60,6 @@ export interface TrendPoint {
   commonVoteCount: number;
   matchingVoteCount: number;
   agreementPercent: number | null;
-}
-
-export interface TrendTransition {
-  fromYear: number;
-  toYear: number;
-  fromPercent: number;
-  toPercent: number;
-  deltaPoints: number;
-  fromCommonVoteCount: number;
-  toCommonVoteCount: number;
-}
-
-export interface TrendInflections {
-  minVotesUsed: number;
-  limitedSample: boolean;
-  eligiblePeriodCount: number;
-  highest: TrendPoint | null;
-  lowest: TrendPoint | null;
-  biggestRise: TrendTransition | null;
-  biggestDrop: TrendTransition | null;
-}
-
-export interface CountryMinorityVote {
-  resolution: Resolution;
-  choice: ExplicitVoteChoice;
-  majorityChoice: ExplicitVoteChoice;
-  sameChoiceCount: number;
-  assemblyExplicitTotal: number;
-  assemblyTotals: Record<ExplicitVoteChoice, number>;
-}
-
-export interface CountryProfile {
-  country: Country;
-  from: number;
-  to: number;
-  theme: string;
-  totals: Record<VoteChoice, number>;
-  recordedResolutionCount: number;
-  explicitVoteCount: number;
-  comparableWithMajorityCount: number;
-  alignedWithMajorityCount: number;
-  dissentingVoteCount: number;
-  tiedMajorityCount: number;
-  majorityAlignmentPercent: number | null;
-  strictMinorityVoteCount: number;
-  coverage: { from: string | null; to: string | null };
-  minorityVotes: CountryMinorityVote[];
-  dataVersion: string;
 }
 
 export interface CountryRankingEntry {
@@ -151,10 +91,8 @@ export interface TrendResult {
   to: number;
   interval: 'year' | 'decade';
   points: TrendPoint[];
-  inflections?: TrendInflections;
   dataVersion: string;
   theme?: string;
-  search?: string;
 }
 
 export interface Theme {

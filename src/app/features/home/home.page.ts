@@ -1,60 +1,47 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { AbstractControl, FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
 import { DiplomaticApiService, apiErrorMessage } from '../../core/services/diplomatic-api.service';
-import { Country, DataMetadata } from '../../core/models/api.models';
-import { MapExplorerComponent } from '../map/map-explorer.component';
+import { ComparisonResult, Country, DataMetadata } from '../../core/models/api.models';
 
 @Component({
   selector: 'app-home-page',
-  imports: [RouterLink, ReactiveFormsModule, DecimalPipe, DatePipe, MapExplorerComponent],
+  imports: [RouterLink, ReactiveFormsModule, DecimalPipe, DatePipe],
   templateUrl: './home.page.html',
   styleUrl: './home.page.scss',
 })
 export class HomePage {
   private readonly api = inject(DiplomaticApiService);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  readonly form = inject(FormBuilder).nonNullable.group(
-    { countryA: 'FRA', countryB: 'IND' },
-    {
-      validators: (control: AbstractControl) =>
-        control.value.countryA !== control.value.countryB ? null : { sameCountry: true },
-    },
-  );
+  readonly form = inject(FormBuilder).nonNullable.group({ countryA: 'FRA', countryB: 'IND' });
   readonly countries = signal<Country[]>([]);
   readonly metadata = signal<DataMetadata | null>(null);
+  readonly preview = signal<ComparisonResult | null>(null);
   readonly loading = signal(true);
   readonly error = signal('');
-  readonly metadataError = signal('');
 
   constructor() {
-    this.loadMetadata();
-    this.loadCountries();
+    this.load();
   }
 
-  loadMetadata(): void {
-    this.metadataError.set('');
-    this.api
-      .metadata()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (metadata) => this.metadata.set(metadata),
-        error: (error: unknown) => this.metadataError.set(apiErrorMessage(error)),
-      });
-  }
-
-  loadCountries(): void {
+  load(): void {
     this.loading.set(true);
     this.error.set('');
-    this.api
-      .countries()
+    this.preview.set(null);
+    forkJoin({
+      metadata: this.api.metadata(),
+      countries: this.api.countries(),
+      preview: this.api.compare('FRA', 'IND', 2000, 2025),
+    })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (countries) => {
-          this.countries.set(countries);
+        next: (data) => {
+          this.metadata.set(data.metadata);
+          this.countries.set(data.countries);
+          this.preview.set(data.preview);
           this.loading.set(false);
         },
         error: (error: unknown) => {
@@ -62,17 +49,5 @@ export class HomePage {
           this.loading.set(false);
         },
       });
-  }
-
-  compare(): void {
-    if (this.loading() || !this.countries().length) return;
-    if (this.form.invalid) {
-      this.error.set('Choisissez deux pays différents pour les comparer.');
-      return;
-    }
-    this.error.set('');
-    void this.router.navigate(['/comparer'], {
-      queryParams: { ...this.form.getRawValue(), from: 2000, to: 2025 },
-    });
   }
 }

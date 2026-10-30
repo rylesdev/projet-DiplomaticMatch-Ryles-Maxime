@@ -5,7 +5,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { of, Subject } from 'rxjs';
 import { ConcordanceMatrix, Country, Theme } from '../../core/models/api.models';
 import { DiplomaticApiService } from '../../core/services/diplomatic-api.service';
-import { MapExplorerComponent } from './map-explorer.component';
+import { MapPage } from './map.page';
 
 // Données entièrement synthétiques : ces scores ne décrivent pas les votes de l'ONU.
 const countries: Country[] = [
@@ -67,16 +67,16 @@ const world = {
   ],
 };
 
-describe('MapExplorerComponent interactions', () => {
-  let fixture: ComponentFixture<MapExplorerComponent>;
-  let page: MapExplorerComponent;
+describe('MapPage interactions', () => {
+  let fixture: ComponentFixture<MapPage>;
+  let page: MapPage;
   let http: HttpTestingController;
   let matrix: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     matrix = vi.fn().mockReturnValue(of(matrixData));
     await TestBed.configureTestingModule({
-      imports: [MapExplorerComponent],
+      imports: [MapPage],
       providers: [
         provideRouter([]),
         provideHttpClient(),
@@ -93,7 +93,7 @@ describe('MapExplorerComponent interactions', () => {
   });
 
   function createPage(): void {
-    fixture = TestBed.createComponent(MapExplorerComponent);
+    fixture = TestBed.createComponent(MapPage);
     page = fixture.componentInstance;
     http = TestBed.inject(HttpTestingController);
     http.expectOne('/maps/world.json').flush(world);
@@ -128,28 +128,6 @@ describe('MapExplorerComponent interactions', () => {
     expect(path('USA').getAttribute('fill')).toBe('rgb(142, 168, 207)');
     expect(matrix).toHaveBeenCalledTimes(1);
     http.expectNone('/maps/world.json');
-  });
-
-  it('embeds the complete map with collapsed filters while keeping the reference selector available', () => {
-    createPage();
-    const details = (fixture.nativeElement as HTMLElement).querySelector<HTMLDetailsElement>(
-      '.filter-panel',
-    )!;
-    expect(details.open).toBe(true);
-    fixture.componentRef.setInput('embedded', true);
-    fixture.detectChanges();
-    expect(details.open).toBe(false);
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>('#map-reference')!
-        .disabled,
-    ).toBe(false);
-    path('IND').dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    fixture.detectChanges();
-    expect(page.referenceId()).toBe('IND');
-    details.open = true;
-    page.form.patchValue({ from: 2010 });
-    page.apply();
-    expect(matrix).toHaveBeenLastCalledWith(2010, 2025, 20, 'all');
   });
 
   it('distinguishes a real zero score, an insufficient sample, and a territory without votes', () => {

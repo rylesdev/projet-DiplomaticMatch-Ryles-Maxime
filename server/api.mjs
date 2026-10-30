@@ -3,7 +3,6 @@ import {
   compareCountries,
   compareMatrix,
   compareTrend,
-  countryProfile,
   normalizeSearch,
   publicResolution,
   rankCountries,
@@ -110,7 +109,7 @@ export function handleApi(store, request) {
       )
       .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   }
-  const countryMatch = path.match(/^\/api\/countries\/([^/]+)(\/votes|\/rankings|\/profile)?$/);
+  const countryMatch = path.match(/^\/api\/countries\/([^/]+)(\/votes|\/rankings)?$/);
   if (countryMatch) {
     const id = decodeURIComponent(countryMatch[1]);
     const found = country(store, id);
@@ -119,9 +118,6 @@ export function handleApi(store, request) {
     if (countryMatch[2] === '/rankings') {
       const minVotes = integer(params, 'minVotes', 20, 1, 100000);
       return rankCountries(store, id, from, to, minVotes, themeParameter(params));
-    }
-    if (countryMatch[2] === '/profile') {
-      return countryProfile(store, id, from, to, themeParameter(params));
     }
     const votes = store.countryVotes
       .get(id)
@@ -135,16 +131,12 @@ export function handleApi(store, request) {
   if (path === '/api/compare' || path === '/api/compare/trend') {
     const { countryA, countryB, from, to } = comparisonParameters(store, params);
     const theme = themeParameter(params);
-    const rawSearch = params.get('search') ?? '';
-    if (rawSearch.length > 200)
-      throw new ApiError(400, 'La recherche est limitée à 200 caractères.');
-    const query = rawSearch.trim();
     if (path === '/api/compare')
-      return compareCountries(store, countryA, countryB, from, to, theme, query);
+      return compareCountries(store, countryA, countryB, from, to, theme);
     const interval = params.get('interval') ?? 'year';
     if (!['year', 'decade'].includes(interval))
       throw new ApiError(400, 'L’intervalle doit être year ou decade.');
-    return compareTrend(store, countryA, countryB, from, to, interval, theme, query);
+    return compareTrend(store, countryA, countryB, from, to, interval, theme);
   }
   if (path === '/api/resolutions') {
     const query = search(params);
