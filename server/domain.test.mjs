@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   compareCountries,
   compareTrend,
+  countryProfile,
   createStore,
   normalizeVote,
   resolutionDetail,
@@ -122,4 +123,60 @@ test('le détail de résolution distingue les cinq choix et conserve leur valeur
   const detail = resolutionDetail(store, store.resolutions.get('4'));
   assert.deepEqual(detail.totals, { YES: 0, NO: 0, ABSTAIN: 1, NOT_VOTED: 1, UNKNOWN: 0 });
   assert.deepEqual(new Set(detail.votes.map((vote) => vote.rawChoice)), new Set(['A', 'X']));
+});
+test('le profil de majorité exclut les égalités de séance et isole les votes à contre-courant', () => {
+  const dataset = syntheticDataset();
+  dataset.countries.push({
+    id: 'BRA',
+    name: 'Brésil',
+    nameEn: 'BRAZIL',
+    iso3: 'BRA',
+    voteCount: 3,
+    firstYear: 2020,
+    lastYear: 2024,
+  });
+  dataset.resolutions = [
+    // Résolution 1 : FRA=Y, IND=Y, BRA=Y -> majorité YES (3/3), FRA alignée
+    {
+      ...dataset.resolutions[0],
+      votes: [
+        [0, 'Y'],
+        [1, 'Y'],
+        [2, 'Y'],
+      ],
+    },
+    // Résolution 2 : FRA=N, IND=Y, BRA=Y -> majorité YES (2 contre 1), FRA à contre-courant
+    {
+      ...dataset.resolutions[1],
+      votes: [
+        [0, 'N'],
+        [1, 'Y'],
+        [2, 'Y'],
+      ],
+    },
+    // Résolution 3 : FRA=Y, IND=N, BRA=X -> égalité 1 YES / 1 NO, exclue du dénominateur
+    {
+      ...dataset.resolutions[2],
+      votes: [
+        [0, 'Y'],
+        [1, 'N'],
+        [2, 'X'],
+      ],
+    },
+  ];
+  const store = createStore(dataset);
+  const profile = countryProfile(store, 'FRA', 2020, 2024);
+  assert.equal(profile.explicitVoteCount, 3);
+  assert.equal(profile.comparableWithMajorityCount, 2);
+  assert.equal(profile.alignedWithMajorityCount, 1);
+  assert.equal(profile.dissentingVoteCount, 1);
+  assert.equal(profile.tiedMajorityCount, 1);
+  assert.equal(profile.majorityAlignmentPercent, 50);
+  assert.equal(profile.strictMinorityVoteCount, 1);
+  assert.equal(profile.minorityVotes.length, 1);
+  assert.equal(profile.minorityVotes[0].resolution.id, '2');
+  assert.equal(profile.minorityVotes[0].choice, 'NO');
+  assert.equal(profile.minorityVotes[0].majorityChoice, 'YES');
+  assert.equal(profile.minorityVotes[0].sameChoiceCount, 1);
+  assert.equal(profile.minorityVotes[0].assemblyExplicitTotal, 3);
 });

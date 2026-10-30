@@ -3,6 +3,7 @@ import {
   compareCountries,
   compareMatrix,
   compareTrend,
+  countryProfile,
   normalizeSearch,
   publicResolution,
   rankCountries,
@@ -144,7 +145,7 @@ export function handleApi(store, request) {
       )
       .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   }
-  const countryMatch = path.match(/^\/api\/countries\/([^/]+)(\/votes|\/rankings)?$/);
+  const countryMatch = path.match(/^\/api\/countries\/([^/]+)(\/votes|\/rankings|\/profile)?$/);
   if (countryMatch) {
     const id = decodeURIComponent(countryMatch[1]);
     const found = country(store, id);
@@ -154,6 +155,8 @@ export function handleApi(store, request) {
       const minVotes = integer(params, 'minVotes', 20, 1, 100000);
       return rankCountries(store, id, from, to, minVotes, themeParameter(params));
     }
+    if (countryMatch[2] === '/profile')
+      return countryProfile(store, id, from, to, themeParameter(params));
     const votes = store.countryVotes
       .get(id)
       .filter((item) => {

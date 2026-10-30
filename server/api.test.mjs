@@ -84,6 +84,14 @@ test('API comparaison, tendance et classement acceptent le thème et renvoient d
     3,
   );
 });
+test('API fiche pays : profil filtré par période et thème, 404 pour un pays inconnu', () => {
+  const profile = request('/api/countries/FRA/profile?from=2020&to=2024');
+  assert.equal(profile.country.id, 'FRA');
+  assert.equal(profile.from, 2020);
+  assert.equal(profile.theme, 'all');
+  assert.ok(profile.explicitVoteCount > 0);
+  assert.throws(() => request('/api/countries/ZZZ/profile'), { status: 404 });
+});
 test('API matrice : tous les pays, seuil par défaut et matrices numériques typées', () => {
   const matrix = request('/api/matrix?from=2020&to=2024&minVotes=1');
   assert.equal(matrix.theme, 'all');

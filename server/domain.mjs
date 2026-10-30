@@ -28,6 +28,14 @@ export function publicResolution(resolution) {
   return { id, symbol, title, date, sourceUrl };
 }
 
+// Choix explicite strictement majoritaire (Pour, Contre ou Abstention) ; null en cas d'égalité en tête.
+function majorityOf(totals) {
+  const explicitTotal = totals.YES + totals.NO + totals.ABSTAIN;
+  const [first, second] = ['YES', 'NO', 'ABSTAIN'].sort((a, b) => totals[b] - totals[a]);
+  const majorityChoice = totals[first] > 0 && totals[first] > totals[second] ? first : null;
+  return { explicitTotal, majorityChoice };
+}
+
 export function createStore(dataset) {
   if (
     dataset.schemaVersion !== 1 ||
@@ -60,6 +68,8 @@ export function createStore(dataset) {
     const { votes: rawVotes, ...info } = item;
     const themeIds = assignThemes(info.subjects ?? []);
     const resolution = { ...info, themeIds, voteMap: new Map() };
+    // Totaux de l'Assemblée pour la résolution : servent à trouver la « majorité de séance ».
+    const assemblyTotals = { YES: 0, NO: 0, ABSTAIN: 0, NOT_VOTED: 0, UNKNOWN: 0 };
     for (const themeId of ['all', ...new Set(themeIds)]) {
       const theme = themeById.get(themeId);
       theme.resolutionCount++;
@@ -69,9 +79,11 @@ export function createStore(dataset) {
       const country = localized[countryIndex];
       if (!country) throw new Error(`Index de pays invalide pour ${item.id}.`);
       const choice = normalizeVote(rawChoice);
+      assemblyTotals[choice]++;
       resolution.voteMap.set(country.id, { choice, rawChoice });
       countryVotes.get(country.id).push({ resolution, choice, rawChoice });
     }
+    resolution.assemblyTotals = { ...assemblyTotals, ...majorityOf(assemblyTotals) };
     resolutions.set(item.id, resolution);
     orderedResolutions.push(resolution);
   }
@@ -332,6 +344,78 @@ export function selectMatrix(store, countryIds, from, to, minVotes = 20, theme =
     agreementPercents: pick(full.agreementPercents),
     commonVoteCounts: pick(full.commonVoteCounts),
     matchingVoteCounts: pick(full.matchingVoteCounts),
+  };
+}
+
+// Fiche pays : répartition des votes et alignement sur la majorité de séance de l'Assemblée.
+export function countryProfile(store, countryId, from, to, theme = 'all') {
+  const totals = Object.fromEntries(VOTE_CHOICES.map((choice) => [choice, 0]));
+  let recordedResolutionCount = 0;
+  let explicitVoteCount = 0;
+  let comparableWithMajorityCount = 0;
+  let alignedWithMajorityCount = 0;
+  let tiedMajorityCount = 0;
+  let strictMinorityVoteCount = 0;
+  let firstDate = null;
+  let lastDate = null;
+  const dissenting = [];
+  for (const { resolution, choice } of store.countryVotes.get(countryId)) {
+    if (!inScope(resolution, from, to, theme)) continue;
+    recordedResolutionCount++;
+    totals[choice]++;
+    if (!EXPLICIT_CHOICES.has(choice)) continue;
+    explicitVoteCount++;
+    firstDate = firstDate === null || resolution.date < firstDate ? resolution.date : firstDate;
+    lastDate = lastDate === null || resolution.date > lastDate ? resolution.date : lastDate;
+    const { majorityChoice, explicitTotal, YES, NO, ABSTAIN } = resolution.assemblyTotals;
+    if (majorityChoice === null) {
+      tiedMajorityCount++;
+      continue;
+    }
+    comparableWithMajorityCount++;
+    if (choice === majorityChoice) {
+      alignedWithMajorityCount++;
+    } else {
+      const sameChoiceCount = resolution.assemblyTotals[choice];
+      if (sameChoiceCount <= 5) strictMinorityVoteCount++;
+      dissenting.push({
+        resolution: publicResolution(resolution),
+        choice,
+        majorityChoice,
+        sameChoiceCount,
+        assemblyExplicitTotal: explicitTotal,
+        assemblyTotals: { YES, NO, ABSTAIN },
+      });
+    }
+  }
+  const symbolCollator = new Intl.Collator('en', { numeric: true });
+  dissenting.sort(
+    (a, b) =>
+      a.sameChoiceCount - b.sameChoiceCount ||
+      b.assemblyExplicitTotal - a.assemblyExplicitTotal ||
+      b.resolution.date.localeCompare(a.resolution.date) ||
+      symbolCollator.compare(b.resolution.symbol, a.resolution.symbol),
+  );
+  return {
+    country: store.countries.get(countryId),
+    from,
+    to,
+    theme,
+    totals,
+    recordedResolutionCount,
+    explicitVoteCount,
+    comparableWithMajorityCount,
+    alignedWithMajorityCount,
+    dissentingVoteCount: comparableWithMajorityCount - alignedWithMajorityCount,
+    tiedMajorityCount,
+    majorityAlignmentPercent:
+      comparableWithMajorityCount === 0
+        ? null
+        : (100 * alignedWithMajorityCount) / comparableWithMajorityCount,
+    strictMinorityVoteCount,
+    coverage: { from: firstDate, to: lastDate },
+    minorityVotes: dissenting.slice(0, 8),
+    dataVersion: store.metadata.version,
   };
 }
 
