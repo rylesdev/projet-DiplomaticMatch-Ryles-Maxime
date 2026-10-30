@@ -2,6 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { periodValidator } from '../../core/period.validator';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   BehaviorSubject,
@@ -42,16 +43,19 @@ export class CountriesPage {
   private readonly voteRequest = new BehaviorSubject<VoteRequest | null>(null);
 
   readonly search = new FormControl('', { nonNullable: true });
-  readonly filters = new FormGroup({
-    from: new FormControl(2000, {
-      nonNullable: true,
-      validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
-    }),
-    to: new FormControl(2026, {
-      nonNullable: true,
-      validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
-    }),
-  });
+  readonly filters = new FormGroup(
+    {
+      from: new FormControl(2000, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
+      }),
+      to: new FormControl(2026, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
+      }),
+    },
+    { validators: periodValidator },
+  );
   readonly countries = signal<Country[]>([]);
   readonly selected = signal<Country | null>(null);
   readonly votes = signal<Paginated<CountryVote> | null>(null);
@@ -139,7 +143,7 @@ export class CountriesPage {
     const country = this.selected();
     const { from, to } = this.filters.getRawValue();
     if (!country) return;
-    if (this.filters.invalid || from > to) {
+    if (this.filters.invalid) {
       this.voteRequest.next(null);
       this.votesError.set(
         'Choisissez deux années valides, avec une année de début antérieure ou égale à la fin.',

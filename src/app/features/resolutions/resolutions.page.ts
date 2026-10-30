@@ -2,6 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { periodValidator } from '../../core/period.validator';
 import { RouterLink } from '@angular/router';
 import {
   BehaviorSubject,
@@ -38,17 +39,20 @@ export class ResolutionsPage {
     page: 1,
   });
   readonly Math = Math;
-  readonly form = new FormGroup({
-    search: new FormControl('', { nonNullable: true }),
-    from: new FormControl(1946, {
-      nonNullable: true,
-      validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
-    }),
-    to: new FormControl(2026, {
-      nonNullable: true,
-      validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
-    }),
-  });
+  readonly form = new FormGroup(
+    {
+      search: new FormControl('', { nonNullable: true }),
+      from: new FormControl(1946, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
+      }),
+      to: new FormControl(2026, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
+      }),
+    },
+    { validators: periodValidator },
+  );
   readonly result = signal<Paginated<Resolution> | null>(null);
   readonly metadata = signal<DataMetadata | null>(null);
   readonly loading = signal(false);
@@ -87,7 +91,7 @@ export class ResolutionsPage {
 
   applySearch(page = 1): void {
     const { search, from, to } = this.form.getRawValue();
-    if (this.form.invalid || from > to) {
+    if (this.form.invalid) {
       this.requests.next(null);
       this.error.set(
         'Choisissez une période valide : l’année de début doit précéder ou égaler l’année de fin.',

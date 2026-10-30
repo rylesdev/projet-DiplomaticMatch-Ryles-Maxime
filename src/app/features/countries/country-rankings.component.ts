@@ -2,6 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, Input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { periodValidator } from '../../core/period.validator';
 import { RouterLink } from '@angular/router';
 import { BehaviorSubject, catchError, finalize, of, switchMap } from 'rxjs';
 import { CountryRankings, Theme } from '../../core/models/api.models';
@@ -34,21 +35,24 @@ export class CountryRankingsComponent {
     this.apply();
   }
 
-  readonly form = new FormGroup({
-    from: new FormControl(2000, {
-      nonNullable: true,
-      validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
-    }),
-    to: new FormControl(2026, {
-      nonNullable: true,
-      validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
-    }),
-    minVotes: new FormControl(50, {
-      nonNullable: true,
-      validators: [Validators.required, Validators.min(1), Validators.max(100000)],
-    }),
-    theme: new FormControl('all', { nonNullable: true, validators: [Validators.required] }),
-  });
+  readonly form = new FormGroup(
+    {
+      from: new FormControl(2000, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
+      }),
+      to: new FormControl(2026, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
+      }),
+      minVotes: new FormControl(50, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(1), Validators.max(100000)],
+      }),
+      theme: new FormControl('all', { nonNullable: true, validators: [Validators.required] }),
+    },
+    { validators: periodValidator },
+  );
   readonly themes = signal<Theme[]>([]);
   readonly themesLoading = signal(false);
   readonly themesError = signal('');
@@ -105,7 +109,7 @@ export class CountryRankingsComponent {
   apply(): void {
     const { from, to, minVotes, theme } = this.form.getRawValue();
     if (!this.activeCountryId) return;
-    if (this.form.invalid || ![from, to, minVotes].every(Number.isInteger) || from > to) {
+    if (this.form.invalid) {
       this.requests.next(null);
       this.form.markAllAsTouched();
       this.error.set(

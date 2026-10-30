@@ -2,7 +2,8 @@ import { DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { periodValidator } from '../../core/period.validator';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, catchError, finalize, map, of, switchMap } from 'rxjs';
 import { ConcordanceMatrix, Theme } from '../../core/models/api.models';
@@ -53,12 +54,7 @@ export class MapPage {
         [Validators.required, Validators.min(1), Validators.max(100000)],
       ],
     },
-    {
-      validators: (control: AbstractControl) => {
-        const { from, to, minVotes } = control.value;
-        return [from, to, minVotes].every(Number.isInteger) && from <= to ? null : { period: true };
-      },
-    },
+    { validators: periodValidator },
   );
   readonly countries = computed(() =>
     mapCountries(this.geography(), this.data(), this.referenceId()),

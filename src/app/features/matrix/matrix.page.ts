@@ -10,7 +10,8 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { periodValidator } from '../../core/period.validator';
 import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, finalize, of, switchMap } from 'rxjs';
@@ -56,16 +57,7 @@ export class MatrixPage implements AfterViewInit {
       minVotes: [20, [Validators.required, Validators.min(1), Validators.max(100000)]],
       theme: ['all', Validators.required],
     },
-    {
-      validators: (control: AbstractControl) => {
-        const values = [
-          control.get('from')?.value,
-          control.get('to')?.value,
-          control.get('minVotes')?.value,
-        ];
-        return values.every(Number.isInteger) && values[0] <= values[1] ? null : { period: true };
-      },
-    },
+    { validators: periodValidator },
   );
   readonly focus = inject(FormBuilder).nonNullable.group({ row: 'FRA', column: 'IND' });
   readonly plotSize = computed(() => (this.data()?.countries.length ?? 0) * this.cellSize());

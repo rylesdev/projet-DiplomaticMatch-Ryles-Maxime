@@ -2,7 +2,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { periodValidator } from '../../core/period.validator';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   BehaviorSubject,
@@ -115,14 +116,7 @@ export class GroupsPage {
       theme: ['all', Validators.required],
       minVotes: [20, [Validators.required, Validators.min(1), Validators.max(100000)]],
     },
-    {
-      validators: (control: AbstractControl) => {
-        const from = control.get('from')?.value;
-        const to = control.get('to')?.value;
-        const min = control.get('minVotes')?.value;
-        return [from, to, min].every(Number.isInteger) && from <= to ? null : { period: true };
-      },
-    },
+    { validators: periodValidator },
   );
 
   constructor() {

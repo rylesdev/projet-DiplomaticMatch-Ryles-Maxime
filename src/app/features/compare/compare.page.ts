@@ -12,6 +12,7 @@ import {
   TrendResult,
   Theme,
 } from '../../core/models/api.models';
+import { periodValidator } from '../../core/period.validator';
 import { voteClass, voteLabel } from '../../core/vote-labels';
 
 interface Filters {
@@ -21,14 +22,8 @@ interface Filters {
   to: number;
   theme: string;
 }
-const periodValidator = (control: AbstractControl) => {
-  const from = Number(control.get('from')?.value);
-  const to = Number(control.get('to')?.value);
-  if (!Number.isInteger(from) || !Number.isInteger(to) || from > to) return { period: true };
-  if (control.get('countryA')?.value === control.get('countryB')?.value)
-    return { sameCountry: true };
-  return null;
-};
+const differentCountries = (control: AbstractControl) =>
+  control.get('countryA')?.value === control.get('countryB')?.value ? { sameCountry: true } : null;
 
 @Component({
   selector: 'app-compare-page',
@@ -65,7 +60,7 @@ export class ComparePage {
       from: [2000, [Validators.required, Validators.min(1946), Validators.max(2100)]],
       to: [2025, [Validators.required, Validators.min(1946), Validators.max(2100)]],
     },
-    { validators: periodValidator },
+    { validators: [periodValidator, differentCountries] },
   );
   readonly plottedPoints = computed(() => {
     const points = this.trend()?.points ?? [];
