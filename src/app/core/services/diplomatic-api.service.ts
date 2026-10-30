@@ -97,8 +97,6 @@ function resolution(value: unknown): Resolution {
     title: string(item['title']),
     date: string(item['date']),
     sourceUrl: sourceUrl(item['sourceUrl']),
-    ...(item['subjects'] === undefined ? {} : { subjects: array(item['subjects'], string) }),
-    ...(item['themeIds'] === undefined ? {} : { themeIds: array(item['themeIds'], string) }),
   };
 }
 
@@ -319,7 +317,7 @@ function metadata(value: unknown): DataMetadata {
   const item = object(value);
   const coverage = object(item['coverage']);
   const status = item['status'];
-  if (status !== 'official' && status !== 'verified-sample')
+  if (status !== 'official')
     throw new Error('La provenance des données est invalide.');
   return {
     name: string(item['name']),

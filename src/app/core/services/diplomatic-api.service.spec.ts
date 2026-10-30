@@ -317,21 +317,4 @@ describe('DiplomaticApiService', () => {
       }),
     );
   });
-
-  it('keeps optional source subjects and project theme identifiers on resolutions', () => {
-    const next = vi.fn();
-    api.resolution('test/resolution').subscribe(next);
-    http
-      .expectOne('/api/resolutions/test%2Fresolution')
-      .flush({
-        ...testResolution,
-        subjects: ['ENVIRONMENT'],
-        themeIds: ['environment'],
-        votes: [],
-        totals: { YES: 0, NO: 0, ABSTAIN: 0, NOT_VOTED: 0, UNKNOWN: 0 },
-      });
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ subjects: ['ENVIRONMENT'], themeIds: ['environment'] }),
-    );
-  });
 });

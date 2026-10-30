@@ -16,8 +16,6 @@ export interface Resolution {
   title: string;
   date: string;
   sourceUrl: string;
-  subjects?: string[];
-  themeIds?: string[];
 }
 
 export interface Paginated<T> {
@@ -132,5 +130,5 @@ export interface DataMetadata {
   voteCount: number;
   license: string;
   scope: string;
-  status: 'official' | 'verified-sample';
+  status: 'official';
 }

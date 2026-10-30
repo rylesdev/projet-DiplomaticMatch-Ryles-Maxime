@@ -80,8 +80,6 @@ function resolution(value: unknown): Resolution {
     title: text(item['title']),
     date: text(item['date']),
     sourceUrl,
-    ...(item['subjects'] === undefined ? {} : { subjects: groupList(item['subjects'], text) }),
-    ...(item['themeIds'] === undefined ? {} : { themeIds: groupList(item['themeIds'], text) }),
   };
 }
 export function groupFilters(value: unknown): GroupAnalysisFilters {
