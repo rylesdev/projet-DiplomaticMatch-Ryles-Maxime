@@ -35,7 +35,7 @@
 
 - [x] Classement demandé : top 3 des taux de concordance les plus élevés et les plus faibles dans une fiche pays, avec période et minimum de votes, calculé par l'API. Vérifié par tests métier, HTTP et navigateur (ordinateur, mobile, clavier, erreur et période vide).
 - [x] Filtrage thématique des comparaisons, tendances et classements à partir des sujets documentaires conservés, avec règles propres au projet documentées et états sans données.
-- [x] Matrice des 202 pays en double entrée : bleu/rouge, effectifs sous le seuil en gris, lecture des cases, navigation clavier et ouverture des comparaisons détaillées.
+- [x] Matrice des pays choisis (2 à 15) : taux et votes communs par case, bleu/rouge, effectifs sous le seuil en gris, ouverture des comparaisons détaillées. La vue des 202 pays a été retirée.
 - [x] Vérifier indépendamment les résultats écologie et sécurité, la symétrie de la matrice et la distinction entre 0 % et absence de données.
 
 - [x] Ajouter un atelier de groupes de pays : création, modification et suppression via API, avec stockage SQLite local ignoré par Git.

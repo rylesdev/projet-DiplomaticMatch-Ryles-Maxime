@@ -29,11 +29,30 @@
       <p>
         La courbe applique exactement le même calcul à chaque année ou décennie. Les périodes sans
         vote commun restent vides, sans interpolation. Un effectif inférieur à 20 appelle une
-        interprétation limitée.
+        interprétation limitée. Les repères automatiques (pic, point le plus bas, plus fort
+        rapprochement et plus fort décrochage) sont calculés sur les périodes atteignant au moins 20
+        votes comparables, ou signalent un effectif limité lorsqu’aucune période n’atteint ce seuil.
+      </p>
+      <h3>Matrice 3 × 3 : distinguer opposition frontale et réserve</h3>
+      <p>
+        Tous les désaccords n’ont pas la même nature. La grille 3 × 3 croise les choix explicites
+        (Pour, Contre, Abstention) des deux États sur les votes communs : la diagonale détaille les
+        accords (double Pour, double Contre, double Abstention), tandis que les cases hors diagonale
+        séparent les oppositions frontales (Pour contre Contre) des écarts liés à une abstention.
+      </p>
+      <h3>Majorité de séance et votes à contre-courant</h3>
+      <p>
+        Dans chaque fiche État, les votes explicites du pays sont aussi comparés au choix explicite
+        majoritaire de l’Assemblée générale sur chaque résolution. Lorsqu’il existe une majorité
+        stricte entre Pour, Contre et Abstention, le scrutin entre dans le taux d’alignement avec la
+        majorité de séance ; les rares égalités strictes en tête sont exclues du dénominateur. Les
+        votes à contre-courant isolent les scrutins où l’État a voté autrement que la majorité, en
+        distinguant les minorités strictes (5 États ou moins ayant exprimé ce choix dans toute
+        l’Assemblée).
       </p>
       <h3>Comment les pays sont-ils classés ?</h3>
       <p>
-        Le classement réutilise cette formule et exige au moins 20 votes communs par défaut. Les
+        Le classement réutilise cette formule et exige au moins 50 votes communs par défaut. Les
         taux exacts déterminent l’ordre ; à égalité, le nombre de votes communs, le nom puis le code
         pays départagent les résultats. Chaque pays est affiché une seule fois : avec moins de six
         candidats éligibles, les listes restent incomplètes. Les dates et les effectifs sont propres
@@ -76,15 +95,17 @@
       </p>
       <p>
         Chaque filtre utilise le même ensemble de résolutions pour les comparaisons, tendances,
-        classements et cases de la matrice. Le jeu v6 comprend 272 résolutions classées en écologie,
-        dont seulement 21 avec des votes individuels enregistrés. Les faibles effectifs restent
-        visibles ; diminuer le seuil permet de les explorer, avec une interprétation limitée.
+        classements, couleurs de la carte et cases de la matrice. Le jeu v6 comprend 272 résolutions
+        classées en écologie, dont seulement 21 avec des votes individuels enregistrés. Les faibles
+        effectifs restent visibles ; diminuer le seuil permet de les explorer, avec une
+        interprétation limitée.
       </p>
       <p>
-        Dans la matrice, le bleu correspond à une concordance élevée, le rouge à une concordance
-        faible. Le gris indique un minimum non atteint ou aucun vote commun ; il ne signifie pas 0
-        %. La diagonale compare un pays à lui-même et n’affiche 100 % que si le seuil est atteint.
-        Les deux axes conservent les entités historiques séparément.
+        Sur la carte et dans la matrice des pays choisis (2 à 15), le bleu correspond à une
+        concordance élevée, le rouge à une concordance faible. Le gris indique un minimum non
+        atteint ou aucun vote commun ; il ne signifie pas 0 %. Chaque case de la matrice affiche le
+        taux et le nombre de votes communs ; la diagonale (un pays face à lui-même) reste vide. Les
+        entités historiques restent distinctes des États actuels.
       </p>
       <a routerLink="/matrice" class="button button-ghost">Explorer la matrice →</a>
     </section>

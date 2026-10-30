@@ -1,6 +1,6 @@
 ﻿# Diplomatic Match — projet-diplomaticmatch-ryles-maxime
 
-Application universitaire Angular pour explorer les votes enregistrés à l'Assemblée générale des Nations unies : recherche de pays, historique, comparaison, classements, évolution, résolutions et matrice de concordance. Un atelier permet aussi de créer des groupes de pays, tester leur composition et enregistrer leurs analyses. Les comparaisons peuvent être filtrées par thématique. Interface originale en français, responsive, sans template de site préconstruit.
+Application universitaire Angular pour explorer les votes enregistrés à l'Assemblée générale des Nations unies : recherche de pays, historique, comparaison, classements, évolution, résolutions, fiche de positionnement, carte et matrice des pays choisis. Un atelier permet aussi de créer des groupes de pays, tester leur composition et enregistrer leurs analyses. Les comparaisons peuvent être filtrées par thématique. Interface originale en français, responsive, sans template de site préconstruit.
 
 ## Installer et démarrer
 
@@ -31,9 +31,11 @@ Autre port Angular : `npm start -- --port 4201`. Pour lancer séparément les de
 
 Le classement des pays est disponible dans chaque fiche : `GET /api/countries/FRA/rankings?from=2000&to=2025&minVotes=50` renvoie les trois pays les plus concordants et les trois moins concordants sur cette période.
 
-Le catalogue `GET /api/themes` fournit les thèmes et leurs effectifs. Le paramètre `theme=environment`, par exemple, filtre de manière identique comparaison, classement et tendance. La page **Matrice** utilise `GET /api/matrix?from=2000&to=2025&theme=all&minVotes=20` pour comparer les 202 pays et entités historiques sur les deux axes.
+La fiche pays affiche aussi son positionnement en séance : `GET /api/countries/FRA/profile?from=2000&to=2025` compare chaque vote au choix majoritaire de l’Assemblée. La comparaison accepte un mot-clé facultatif, cherché dans le symbole, le titre et les sujets avec quelques synonymes français : `GET /api/compare?countryA=FRA&countryB=IND&search=Palestine`.
 
-Les recherches utilisent le debounce et annulent les requêtes obsolètes. Les filtres et pages déclenchent de nouvelles requêtes HTTP. Le service Angular valide les réponses avant leur affichage. Chargement, erreur, absence de résultats et succès sont traités. Les détails des votes renvoient vers la bibliothèque de l'ONU ; les titres des textes restent dans la langue de la source, généralement l'anglais.
+Le catalogue `GET /api/themes` fournit les thèmes et leurs effectifs. Le paramètre `theme=environment`, par exemple, filtre de manière identique comparaison, classement et tendance. La page **Matrice** utilise `GET /api/matrix/selection?countries=FRA,IND,USA&from=2000&to=2025&theme=all&minVotes=20` pour comparer de 2 à 15 pays choisis.
+
+Les recherches utilisent le debounce et annulent les requêtes obsolètes. Les filtres et pages déclenchent de nouvelles requêtes HTTP. Les réponses sont typées par les interfaces TypeScript du projet, et une requête sans réponse au bout de 15 secondes affiche un message d’erreur. Chargement, erreur, absence de résultats et succès sont traités. Les détails des votes renvoient vers la bibliothèque de l'ONU ; les titres des textes restent dans la langue de la source, généralement l'anglais.
 
 Le graphique possède un tableau accessible des valeurs et effectifs. Les États historiques sont distincts : les codes du jeu source sont conservés, sans fusion de l'URSS avec la Russie, par exemple.
 
@@ -57,17 +59,15 @@ Les regroupements écologie/environnement, sécurité/paix, droits, développeme
 
 Le jeu v6 contient 272 résolutions classées en écologie, mais seulement 21 avec des votes individuels enregistrés. Sur 2000–2025, France/Inde ont 15 votes comparables et 8 identiques en écologie (53,3 %), contre 647 comparables et 193 identiques en sécurité (29,8 %). Les seuils 1, 5 et 10 sont disponibles pour explorer les petits effectifs, avec un avertissement sous 20. Un résultat vide au seuil 20 reste un résultat vide : aucune position n'est ajoutée pour le remplir.
 
-### Matrice de concordance
+### Matrice des pays choisis
 
-La matrice conserve tous les pays sur les deux axes, avec période, thème et seuil réglables. Bleu = forte concordance (100 %), rouge = faible concordance (0 %), gris = aucun vote commun ou minimum non atteint. Un véritable taux de 0 % est rouge et n'est jamais assimilé à une donnée manquante. La diagonale vaut 100 % uniquement si l'effectif du pays atteint le seuil. Les tableaux d'effectifs et de votes identiques utilisent la même formule que les comparaisons individuelles, de manière symétrique.
-
-Survoler une case affiche pays, taux et effectif ; cliquer ouvre la comparaison détaillée avec les filtres appliqués. Les sélecteurs de pays permettent une lecture précise, y compris au clavier. Flèches, Début/Fin, Page précédente/suivante et Entrée sont pris en charge. Trois tailles de cases sont proposées ; en vue globale, certaines étiquettes sont espacées pour rester lisibles. Les en-têtes restent visibles pendant le défilement interne. Le dessin canvas évite de créer plus de 40 000 éléments HTML ; le panneau de lecture et les sélecteurs fournissent les valeurs sous forme textuelle.
+La page **Matrice** (`/matrice`) compare de 2 à 15 pays choisis, avec période, thème et seuil réglables. Chaque case affiche le taux de concordance et le nombre de votes communs ; bleu = forte concordance (100 %), rouge = faible concordance (0 %), gris = aucun vote commun ou minimum non atteint. Cliquer sur une case ouvre la comparaison détaillée avec les filtres appliqués. La vue de l'ensemble des 202 pays a été retirée.
 
 ### Carte des concordances
 
 La page **Carte** (`/carte`) permet de choisir un pays en cliquant sur son territoire ou avec le sélecteur. Les autres pays sont colorés selon leur concordance avec ce pays de référence : **rouge à 0 %**, **bleu à 100 %**, **gris si aucun vote commun ou si le seuil n'est pas atteint**. La période, le thème et le minimum de votes communs sont réglables. Le survol permet de consulter les valeurs ; la comparaison détaillée reste accessible.
 
-La carte réutilise `GET /api/matrix?from=2000&to=2025&theme=all&minVotes=20`. Une fois cette réponse chargée, changer le pays de référence recolore la carte localement, sans nouvelle requête. Modifier les filtres et les appliquer déclenche une nouvelle demande à l'API.
+La carte et l'accueil utilisent `GET /api/countries/FRA/concordances?from=2000&to=2025&theme=all&minVotes=20`, qui renvoie la concordance du pays de référence avec chacun des autres (environ 25 Ko). Changer de pays de référence ou de filtres déclenche une nouvelle demande à l'API. La carte ne charge plus la matrice complète (1,1 Mo), que le proxy de développement d'Angular ne relayait pas toujours en entier sur certaines machines.
 
 Le fond géographique est simplifié : tous les petits territoires et les entités historiques du jeu de votes ne sont pas nécessairement représentés. Les frontières de ce fond ne reconstituent pas les frontières de chaque période historique. Les entités historiques ne sont pas fusionnées avec les pays actuels. La source et la licence du fond sont documentées dans `public/maps/README.md`.
 
@@ -148,7 +148,8 @@ src/app/
   features/home/              Accueil et comparaison rapide
   features/countries/         Recherche, fiche et historique
   features/compare/           Concordance et évolution SVG/tableau
-  features/matrix/            Matrice canvas, axes et lecture accessible
+  features/matrix/            Matrice des pays choisis (2 à 15)
+  features/map/               Carte, réutilisée sur l’accueil
   features/groups/            Groupes, simulations et rapports enregistrés
   features/resolutions/       Recherche et détail
   features/methodology/       Sources, formule et limites
