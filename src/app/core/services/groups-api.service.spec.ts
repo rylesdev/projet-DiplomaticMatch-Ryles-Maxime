@@ -96,7 +96,7 @@ describe('GroupsApiService', () => {
     expect(selected).toHaveBeenCalledWith(fixtureGroup);
   });
 
-  it('creates a group with a JSON draft and validates the created DTO', () => {
+  it('creates a group with a JSON draft and returns the created group', () => {
     const next = vi.fn();
     const draft = {
       name: 'Nouveau groupe',
@@ -151,7 +151,7 @@ describe('GroupsApiService', () => {
     expect(next).toHaveBeenCalledTimes(2);
   });
 
-  it('validates report history summaries', () => {
+  it('loads report history summaries', () => {
     const next = vi.fn();
     api.reports(fixtureGroup.id).subscribe(next);
     const summary = {
@@ -174,7 +174,7 @@ describe('GroupsApiService', () => {
     expect(next).toHaveBeenCalledWith([summary]);
   });
 
-  it('sends the historical-candidate choice and validates its response flag', () => {
+  it('sends the historical-candidate choice and returns its response flag', () => {
     const next = vi.fn();
     const input = { ...fixtureInput, includeHistorical: true };
     api.suggestions(fixtureGroup.id, input).subscribe(next);
@@ -195,15 +195,6 @@ describe('GroupsApiService', () => {
     expect(next).toHaveBeenCalledWith(
       expect.objectContaining({ includeHistorical: true, suggestions: [] }),
     );
-  });
-
-  it('rejects malformed revisions and duplicate group members at the API boundary', () => {
-    const error = vi.fn();
-    api.getGroup('bad').subscribe({ error });
-    http
-      .expectOne('/api/groups/bad')
-      .flush({ ...fixtureGroup, revision: 0, memberIds: ['TST', 'TST'] });
-    expect(error).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it('turns a conflict into an explicit reload instruction without retrying the write', () => {

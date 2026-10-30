@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   CountryGroup,
   GroupAnalysis,
@@ -12,14 +12,6 @@ import {
   GroupSuggestions,
   GroupSuggestionsRequest,
 } from '../models/groups.models';
-import {
-  countryGroup,
-  groupAnalysis,
-  groupList,
-  groupReport,
-  groupReportSummary,
-  groupSuggestions,
-} from './groups-api.validation';
 
 export function groupErrorMessage(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
@@ -41,24 +33,21 @@ export function groupErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'La demande concernant ce groupe a échoué.';
 }
 
+// Groupes de pays et rapports. Les réponses sont typées par les interfaces de groups.models.ts.
 @Injectable({ providedIn: 'root' })
 export class GroupsApiService {
   private readonly http = inject(HttpClient);
   getGroups(): Observable<CountryGroup[]> {
-    return this.http
-      .get<unknown>('/api/groups')
-      .pipe(map((value) => groupList(value, countryGroup)));
+    return this.http.get<CountryGroup[]>('/api/groups');
   }
   getGroup(id: string): Observable<CountryGroup> {
-    return this.http.get<unknown>(this.path(id)).pipe(map(countryGroup));
+    return this.http.get<CountryGroup>(this.path(id));
   }
   createGroup(draft: GroupDraft): Observable<CountryGroup> {
-    return this.http.post<unknown>('/api/groups', draft).pipe(map(countryGroup));
+    return this.http.post<CountryGroup>('/api/groups', draft);
   }
   updateGroup(id: string, draft: GroupDraft, expectedRevision: number): Observable<CountryGroup> {
-    return this.http
-      .patch<unknown>(this.path(id), { ...draft, expectedRevision })
-      .pipe(map(countryGroup));
+    return this.http.patch<CountryGroup>(this.path(id), { ...draft, expectedRevision });
   }
   deleteGroup(id: string, expectedRevision: number): Observable<void> {
     return this.http.delete<void>(this.path(id), {
@@ -66,25 +55,19 @@ export class GroupsApiService {
     });
   }
   preview(id: string, input: GroupPreviewRequest): Observable<GroupAnalysis> {
-    return this.http.post<unknown>(`${this.path(id)}/preview`, input).pipe(map(groupAnalysis));
+    return this.http.post<GroupAnalysis>(`${this.path(id)}/preview`, input);
   }
   saveReport(id: string, input: GroupAnalysisRequest): Observable<GroupReport> {
-    return this.http.post<unknown>(`${this.path(id)}/reports`, input).pipe(map(groupReport));
+    return this.http.post<GroupReport>(`${this.path(id)}/reports`, input);
   }
   reports(id: string): Observable<GroupReportSummary[]> {
-    return this.http
-      .get<unknown>(`${this.path(id)}/reports`)
-      .pipe(map((value) => groupList(value, groupReportSummary)));
+    return this.http.get<GroupReportSummary[]>(`${this.path(id)}/reports`);
   }
   report(id: string, reportId: string): Observable<GroupReport> {
-    return this.http
-      .get<unknown>(`${this.path(id)}/reports/${encodeURIComponent(reportId)}`)
-      .pipe(map(groupReport));
+    return this.http.get<GroupReport>(`${this.path(id)}/reports/${encodeURIComponent(reportId)}`);
   }
   suggestions(id: string, input: GroupSuggestionsRequest): Observable<GroupSuggestions> {
-    return this.http
-      .post<unknown>(`${this.path(id)}/suggestions`, input)
-      .pipe(map(groupSuggestions));
+    return this.http.post<GroupSuggestions>(`${this.path(id)}/suggestions`, input);
   }
   private path(id: string): string {
     return `/api/groups/${encodeURIComponent(id)}`;
