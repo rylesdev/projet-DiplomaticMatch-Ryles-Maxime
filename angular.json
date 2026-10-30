@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "inf1-projet-angular": {
+    "projet-diplomaticmatch-ryles-maxime": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -64,10 +64,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "inf1-projet-angular:build:production"
+              "buildTarget": "projet-diplomaticmatch-ryles-maxime:build:production"
             },
             "development": {
-              "buildTarget": "inf1-projet-angular:build:development"
+              "buildTarget": "projet-diplomaticmatch-ryles-maxime:build:development"
             }
           },
           "defaultConfiguration": "development"

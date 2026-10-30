@@ -1,4 +1,4 @@
-﻿# Diplomatic Match
+﻿# Diplomatic Match — projet-diplomaticmatch-ryles-maxime
 
 Application universitaire Angular pour explorer les votes enregistrés à l'Assemblée générale des Nations unies : recherche de pays, historique, comparaison, classements, évolution, résolutions et matrice de concordance. Un atelier permet aussi de créer des groupes de pays, tester leur composition et enregistrer leurs analyses. Les comparaisons peuvent être filtrées par thématique. Interface originale en français, responsive, sans template de site préconstruit.
 
@@ -7,8 +7,8 @@ Application universitaire Angular pour explorer les votes enregistrés à l'Asse
 Prérequis : Git, Node.js 24 LTS et npm. Environnement vérifié : Node.js 24.21.0 et npm 12.0.2.
 
 ```bash
-git clone https://github.com/rylesdev/projet-NOMDUPROJET-Ryles-Maxime..git diplomatic-match
-cd diplomatic-match
+git clone https://github.com/rylesdev/projet-diplomaticmatch-ryles-maxime.git
+cd projet-diplomaticmatch-ryles-maxime
 npm ci
 npm start
 ```
@@ -135,7 +135,7 @@ npm test -- --watch=false
 npm run test:api
 ```
 
-Ou `npm run check` pour les trois vérifications. Compilation dans `dist/inf1-projet-angular/browser/`.
+Ou `npm run check` pour les trois vérifications. Compilation dans `dist/projet-diplomaticmatch-ryles-maxime/browser/`.
 
 Les tests Angular couvrent le démarrage et les contrats HTTP. Les tests Node couvrent les calculs, les votes inconnus, les abstentions/absences, les périodes et bornes, le CSV, la validation des paramètres et les routes HTTP. Des tests de référence relisent aussi les données livrées : **France / Inde, 2000–2025 : 2 218 comparables, 1 005 identiques, 1 213 différents, 14 non comparables, soit 45,311091073 %**. Les petites fixtures des tests sont séparées des données officielles de production.
 
