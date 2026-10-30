@@ -192,18 +192,6 @@ describe('DiplomaticApiService', () => {
     trend.flush({});
   });
 
-  it('requests the matrix with its filters and keeps null cells below the threshold', () => {
-    const next = vi.fn();
-    api.matrix(2000, 2026, 20, 'environment').subscribe(next);
-    const request = http.expectOne((request) => request.url === '/api/matrix');
-    expect(request.request.params.get('theme')).toBe('environment');
-    expect(request.request.params.get('from')).toBe('2000');
-    expect(request.request.params.get('to')).toBe('2026');
-    expect(request.request.params.get('minVotes')).toBe('20');
-    request.flush(testMatrix);
-    expect(next).toHaveBeenCalledWith(testMatrix);
-  });
-
   it('requests a matrix limited to the chosen countries, in their order', () => {
     api.matrixSelection(['IND', 'FRA', 'USA'], 2000, 2025, 50, 'security').subscribe();
     const request = http.expectOne((request) => request.url === '/api/matrix/selection');

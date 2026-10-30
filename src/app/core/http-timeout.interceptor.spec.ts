@@ -24,8 +24,8 @@ describe('timeoutInterceptor', () => {
 
   it('fails a request that gets no answer, with a clear French message', () => {
     const error = vi.fn();
-    http.get('/api/matrix').subscribe({ error });
-    const request = controller.expectOne('/api/matrix');
+    http.get('/api/themes').subscribe({ error });
+    const request = controller.expectOne('/api/themes');
     vi.advanceTimersByTime(REQUEST_TIMEOUT_MS - 1);
     expect(error).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);

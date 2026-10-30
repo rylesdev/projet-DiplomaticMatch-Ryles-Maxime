@@ -39,11 +39,6 @@ export const routes: Routes = [
   {
     path: 'matrice',
     title: 'Matrice des concordances — Diplomatic Match',
-    loadComponent: () => import('./features/matrix/matrix.page').then((m) => m.MatrixPage),
-  },
-  {
-    path: 'matrice/selection',
-    title: 'Matrice des pays choisis — Diplomatic Match',
     loadComponent: () =>
       import('./features/matrix/matrix-selection.page').then((m) => m.MatrixSelectionPage),
   },

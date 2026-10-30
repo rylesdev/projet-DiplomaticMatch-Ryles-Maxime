@@ -44,9 +44,6 @@ export class DiplomaticApiService {
   themes(): Observable<Theme[]> {
     return this.get<Theme[]>('/themes');
   }
-  matrix(from: number, to: number, minVotes = 20, theme = 'all'): Observable<ConcordanceMatrix> {
-    return this.get<ConcordanceMatrix>('/matrix', { from, to, minVotes, theme });
-  }
   // Matrice limitée aux pays choisis (2 à 15), dans l'ordre de la liste.
   matrixSelection(
     countries: string[],

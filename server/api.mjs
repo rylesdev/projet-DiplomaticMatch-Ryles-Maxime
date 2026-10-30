@@ -1,7 +1,6 @@
 import { createServer } from 'node:http';
 import {
   compareCountries,
-  compareMatrix,
   compareTrend,
   concordanceRow,
   countryProfile,
@@ -114,11 +113,6 @@ export function handleApi(store, request) {
   if (path === '/api/health') return { status: 'ok', version: store.metadata.version };
   if (path === '/api/metadata') return store.metadata;
   if (path === '/api/themes') return store.themes;
-  if (path === '/api/matrix') {
-    const { from, to } = period(params, store);
-    const minVotes = integer(params, 'minVotes', 20, 1, 100000);
-    return compareMatrix(store, from, to, minVotes, themeParameter(params));
-  }
   if (path === '/api/matrix/selection') {
     const ids = selectedCountries(store, params);
     const { from, to } = period(params, store);

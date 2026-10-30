@@ -107,28 +107,10 @@ test('API carte : ligne de concordance du pays de référence', () => {
   assert.throws(() => request('/api/countries/ZZZ/concordances'), { status: 404 });
   assert.throws(() => request('/api/countries/FRA/concordances?minVotes=0'), { status: 400 });
 });
-test('API matrice : tous les pays, seuil par défaut et matrices numériques typées', () => {
-  const matrix = request('/api/matrix?from=2020&to=2024&minVotes=1');
-  assert.equal(matrix.theme, 'all');
-  assert.deepEqual(
-    matrix.countries.map((country) => country.id),
-    ['FRA', 'IND'],
-  );
-  assert.deepEqual(matrix.commonVoteCounts, [
-    [4, 3],
-    [3, 4],
-  ]);
-  assert.deepEqual(matrix.matchingVoteCounts, [
-    [4, 2],
-    [2, 4],
-  ]);
-  assert.equal(matrix.agreementPercents[0][1], (100 * 2) / 3);
-  const defaultThreshold = request('/api/matrix');
-  assert.equal(defaultThreshold.minVotes, 20);
-  assert.equal(defaultThreshold.agreementPercents[0][1], null);
-  assert.equal(defaultThreshold.commonVoteCounts[0][1], 3);
+test('la matrice complète n’est plus servie : seules la sélection et la ligne de la carte le sont', () => {
+  assert.throws(() => request('/api/matrix'), { status: 404 });
 });
-test('API matrice sélectionnée : pays choisis dans l’ordre, sans toucher à /api/matrix', () => {
+test('API matrice sélectionnée : pays choisis dans l’ordre, seuil 20 par défaut', () => {
   const selection = request('/api/matrix/selection?countries=IND,FRA&from=2020&to=2024&minVotes=1');
   assert.deepEqual(
     selection.countries.map((country) => country.id),
@@ -171,13 +153,13 @@ for (const url of [
   '/api/compare?countryA=FRA&countryB=IND&theme=unknown',
   '/api/compare/trend?countryA=FRA&countryB=IND&theme=unknown',
   '/api/countries/FRA/rankings?theme=unknown',
-  '/api/matrix?theme=unknown',
-  '/api/matrix?theme=',
-  '/api/matrix?minVotes=0',
-  '/api/matrix?minVotes=100001',
-  '/api/matrix?minVotes=1.5',
-  '/api/matrix?from=2025&to=2020',
-  '/api/matrix?from=invalid',
+  '/api/matrix/selection?countries=FRA,IND&theme=unknown',
+  '/api/matrix/selection?countries=FRA,IND&theme=',
+  '/api/matrix/selection?countries=FRA,IND&minVotes=0',
+  '/api/matrix/selection?countries=FRA,IND&minVotes=100001',
+  '/api/matrix/selection?countries=FRA,IND&minVotes=1.5',
+  '/api/matrix/selection?countries=FRA,IND&from=2025&to=2020',
+  '/api/matrix/selection?countries=FRA,IND&from=invalid',
   '/api/countries/FRA/profile?theme=unknown',
   '/api/countries/FRA/profile?from=2025&to=2020',
   `/api/compare?countryA=FRA&countryB=IND&search=${'x'.repeat(201)}`,
@@ -187,7 +169,7 @@ for (const url of [
 }
 for (const value of ['invalid', '1.5', '-3', '100001']) {
   test(`message unique pour un entier invalide : minVotes=${value}`, () =>
-    assert.throws(() => request(`/api/matrix?minVotes=${value}`), {
+    assert.throws(() => request(`/api/matrix/selection?countries=FRA,IND&minVotes=${value}`), {
       status: 400,
       message: 'Le paramètre minVotes doit être un entier compris entre 1 et 100000.',
     }));
@@ -214,7 +196,7 @@ test('le véritable serveur HTTP renvoie JSON, statuts et erreurs lisibles', asy
   const ranking = await fetch(`${base}/api/countries/FRA/rankings?minVotes=1`);
   assert.equal(ranking.status, 200);
   assert.equal((await ranking.json()).closest[0].country.id, 'IND');
-  const matrixResponse = await fetch(`${base}/api/matrix?minVotes=1&theme=all`);
+  const matrixResponse = await fetch(`${base}/api/matrix/selection?countries=FRA,IND&minVotes=1`);
   assert.equal(matrixResponse.status, 200);
   assert.equal((await matrixResponse.json()).commonVoteCounts[0][1], 3);
   const themesResponse = await fetch(`${base}/api/themes`);
