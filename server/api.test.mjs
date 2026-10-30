@@ -84,13 +84,19 @@ test('API comparaison, tendance et classement acceptent le thème et renvoient d
     3,
   );
 });
-test('API fiche pays : profil filtré par période et thème, 404 pour un pays inconnu', () => {
+test('profil pays : distribution, majorité de séance et filtrage thématique', () => {
   const profile = request('/api/countries/FRA/profile?from=2020&to=2024');
   assert.equal(profile.country.id, 'FRA');
-  assert.equal(profile.from, 2020);
-  assert.equal(profile.theme, 'all');
-  assert.ok(profile.explicitVoteCount > 0);
-  assert.throws(() => request('/api/countries/ZZZ/profile'), { status: 404 });
+  assert.equal(profile.recordedResolutionCount, 6);
+  assert.equal(profile.explicitVoteCount, 4);
+  assert.deepEqual(profile.totals, { YES: 1, NO: 1, ABSTAIN: 2, NOT_VOTED: 1, UNKNOWN: 1 });
+  assert.equal(profile.comparableWithMajorityCount, 3);
+  assert.equal(profile.alignedWithMajorityCount, 3);
+  assert.equal(profile.tiedMajorityCount, 1);
+  assert.equal(profile.majorityAlignmentPercent, 100);
+  const emptyTheme = request('/api/countries/FRA/profile?from=2020&to=2024&theme=environment');
+  assert.equal(emptyTheme.explicitVoteCount, 0);
+  assert.equal(emptyTheme.majorityAlignmentPercent, null);
 });
 test('API matrice : tous les pays, seuil par défaut et matrices numériques typées', () => {
   const matrix = request('/api/matrix?from=2020&to=2024&minVotes=1');
@@ -163,6 +169,9 @@ for (const url of [
   '/api/matrix?minVotes=1.5',
   '/api/matrix?from=2025&to=2020',
   '/api/matrix?from=invalid',
+  '/api/countries/FRA/profile?theme=unknown',
+  '/api/countries/FRA/profile?from=2025&to=2020',
+  `/api/compare?countryA=FRA&countryB=IND&search=${'x'.repeat(201)}`,
 ]) {
   test(`paramètres invalides refusés : ${url}`, () =>
     assert.throws(() => request(url), { status: 400 }));
@@ -177,6 +186,7 @@ for (const value of ['invalid', '1.5', '-3', '100001']) {
 test('pays et résolutions inconnus donnent 404, les écritures 405', () => {
   assert.throws(() => request('/api/countries/ZZZ'), { status: 404 });
   assert.throws(() => request('/api/countries/ZZZ/rankings'), { status: 404 });
+  assert.throws(() => request('/api/countries/ZZZ/profile'), { status: 404 });
   assert.throws(() => request('/api/resolutions/99999'), { status: 404 });
   assert.throws(() => request('/api/metadata', 'POST'), { status: 405 });
 });

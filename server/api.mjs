@@ -169,12 +169,16 @@ export function handleApi(store, request) {
   if (path === '/api/compare' || path === '/api/compare/trend') {
     const { countryA, countryB, from, to } = comparisonParameters(store, params);
     const theme = themeParameter(params);
+    // Mot-clé facultatif : seules les résolutions qui le contiennent sont comparées.
+    const keyword = (params.get('search') ?? '').trim();
+    if (keyword.length > 200)
+      throw new HttpError(400, 'La recherche est limitée à 200 caractères.');
     if (path === '/api/compare')
-      return compareCountries(store, countryA, countryB, from, to, theme);
+      return compareCountries(store, countryA, countryB, from, to, theme, keyword);
     const interval = params.get('interval') ?? 'year';
     if (!['year', 'decade'].includes(interval))
       throw new HttpError(400, 'L’intervalle doit être year ou decade.');
-    return compareTrend(store, countryA, countryB, from, to, interval, theme);
+    return compareTrend(store, countryA, countryB, from, to, interval, theme, keyword);
   }
   if (path === '/api/resolutions') {
     const query = search(params);

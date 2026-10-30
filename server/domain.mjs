@@ -7,9 +7,50 @@ export const EXPLICIT_CHOICES = new Set(['YES', 'NO', 'ABSTAIN']);
 const MATRIX_CACHE_LIMIT = 6;
 const matrixCaches = new WeakMap();
 
-export function inScope(resolution, from, to, theme) {
+// Correspondances bilingues FR -> terminologie documentaire anglaise de l'ONU.
+const SEARCH_SYNONYMS = {
+  taiwan: ['china', '2758'],
+  'republique de chine': ['republic of china', 'representation of china'],
+  chine: ['china'],
+  palestine: ['palestine', 'palestinian', 'unrwa'],
+  israel: ['israel', 'israeli', 'occupied territories'],
+  ukraine: ['ukraine', 'ukrainian', 'es-11'],
+  nucleaire: ['nuclear', 'atomic'],
+  'droits humains': ['human rights'],
+  'droits de l homme': ['human rights'],
+  climat: ['climate'],
+  'moyen-orient': ['middle east'],
+  'moyen orient': ['middle east'],
+  desarmement: ['disarmament'],
+  coree: ['korea', 'korean'],
+  'afrique du sud': ['south africa', 'apartheid'],
+  apartheid: ['apartheid'],
+  cuba: ['cuba', 'embargo'],
+  syrie: ['syria', 'syrian'],
+  irak: ['iraq'],
+  iran: ['iran'],
+  russie: ['russian', 'soviet'],
+  urss: ['soviet', 'ussr'],
+  decolonisation: ['decolonization', 'colonial', 'non-self-governing'],
+  colonisation: ['colonial', 'decolonization'],
+};
+
+function matchesQuery(resolution, normalizedQuery) {
+  if (!normalizedQuery) return true;
+  if (resolution.searchText.includes(normalizedQuery)) return true;
+  const synonyms = SEARCH_SYNONYMS[normalizedQuery];
+  if (synonyms) return synonyms.some((term) => resolution.searchText.includes(term));
+  return false;
+}
+
+export function inScope(resolution, from, to, theme, normalizedQuery = '') {
   const year = Number(resolution.date.slice(0, 4));
-  return year >= from && year <= to && (theme === 'all' || resolution.themeIds.includes(theme));
+  return (
+    year >= from &&
+    year <= to &&
+    (theme === 'all' || resolution.themeIds.includes(theme)) &&
+    matchesQuery(resolution, normalizedQuery)
+  );
 }
 
 export function normalizeVote(raw) {
@@ -67,7 +108,11 @@ export function createStore(dataset) {
   for (const item of orderedItems) {
     const { votes: rawVotes, ...info } = item;
     const themeIds = assignThemes(info.subjects ?? []);
-    const resolution = { ...info, themeIds, voteMap: new Map() };
+    // Texte normalisé (symbole, titre, sujets) pour la recherche par mot-clé de la comparaison.
+    const searchText = normalizeSearch(
+      [info.symbol, info.title, ...(info.subjects ?? [])].join(' '),
+    );
+    const resolution = { ...info, themeIds, searchText, voteMap: new Map() };
     // Totaux de l'Assemblée pour la résolution : servent à trouver la « majorité de séance ».
     const assemblyTotals = { YES: 0, NO: 0, ABSTAIN: 0, NOT_VOTED: 0, UNKNOWN: 0 };
     for (const themeId of ['all', ...new Set(themeIds)]) {
@@ -99,15 +144,52 @@ export function createStore(dataset) {
 
 // La présence d'une abstention est explicite ; une non-participation ne l'est pas.
 // Les résolutions sans vote de l'un OU des deux pays ne sont pas au dénominateur.
-export function compareCountries(store, countryAId, countryBId, from, to, theme = 'all') {
+export function compareCountries(
+  store,
+  countryAId,
+  countryBId,
+  from,
+  to,
+  theme = 'all',
+  search = '',
+) {
+  const rawSearch = String(search ?? '').trim();
+  const normalizedQuery = normalizeSearch(rawSearch);
+  // Exemples de résolutions gardés pour chaque case de la grille 3 × 3 (réponse légère).
+  const examplesPerCell = normalizedQuery ? 6 : 4;
+  const examplesByCell = new Map();
   let commonVoteCount = 0;
   let matchingVoteCount = 0;
   let nonComparableCount = 0;
   let firstDate = null;
   let lastDate = null;
+  let archiveCommonVoteCount = 0;
+  let archiveFromYear = null;
+  let archiveToYear = null;
+  const breakdown = {
+    YES: { YES: 0, NO: 0, ABSTAIN: 0 },
+    NO: { YES: 0, NO: 0, ABSTAIN: 0 },
+    ABSTAIN: { YES: 0, NO: 0, ABSTAIN: 0 },
+  };
+  const agreements = [];
   const divergences = [];
   for (const resolution of store.orderedResolutions) {
-    if (!inScope(resolution, from, to, theme)) continue;
+    if (
+      normalizedQuery &&
+      (theme === 'all' || resolution.themeIds.includes(theme)) &&
+      matchesQuery(resolution, normalizedQuery)
+    ) {
+      const vA = resolution.voteMap.get(countryAId);
+      const vB = resolution.voteMap.get(countryBId);
+      if (EXPLICIT_CHOICES.has(vA?.choice) && EXPLICIT_CHOICES.has(vB?.choice)) {
+        const resYear = Number(resolution.date.slice(0, 4));
+        archiveCommonVoteCount++;
+        archiveFromYear =
+          archiveFromYear === null || resYear < archiveFromYear ? resYear : archiveFromYear;
+        archiveToYear = archiveToYear === null || resYear > archiveToYear ? resYear : archiveToYear;
+      }
+    }
+    if (!inScope(resolution, from, to, theme, normalizedQuery)) continue;
     const voteA = resolution.voteMap.get(countryAId);
     const voteB = resolution.voteMap.get(countryBId);
     // Les résolutions sans aucun vote de ces deux pays n'entrent pas dans l'univers observé.
@@ -117,15 +199,20 @@ export function compareCountries(store, countryAId, countryBId, from, to, theme 
       continue;
     }
     commonVoteCount++;
+    breakdown[voteA.choice][voteB.choice]++;
     firstDate = firstDate === null || resolution.date < firstDate ? resolution.date : firstDate;
     lastDate = lastDate === null || resolution.date > lastDate ? resolution.date : lastDate;
     if (voteA.choice === voteB.choice) matchingVoteCount++;
-    else if (divergences.length < 12)
-      divergences.push({
+    const cell = `${voteA.choice}:${voteB.choice}`;
+    const examples = examplesByCell.get(cell) ?? 0;
+    if (examples < examplesPerCell) {
+      examplesByCell.set(cell, examples + 1);
+      (voteA.choice === voteB.choice ? agreements : divergences).push({
         resolution: publicResolution(resolution),
         choiceA: voteA.choice,
         choiceB: voteB.choice,
       });
+    }
   }
   return {
     countryA: store.countries.get(countryAId),
@@ -133,13 +220,25 @@ export function compareCountries(store, countryAId, countryBId, from, to, theme 
     from,
     to,
     theme,
+    ...(rawSearch ? { search: rawSearch } : {}),
+    ...(normalizedQuery
+      ? {
+          archiveSearchHint: {
+            archiveCommonVoteCount,
+            fromYear: archiveFromYear,
+            toYear: archiveToYear,
+          },
+        }
+      : {}),
     commonVoteCount,
     matchingVoteCount,
     differingVoteCount: commonVoteCount - matchingVoteCount,
     nonComparableCount,
     agreementPercent: commonVoteCount === 0 ? null : (100 * matchingVoteCount) / commonVoteCount,
+    breakdown,
     coverage: { from: firstDate, to: lastDate },
     dataVersion: store.metadata.version,
+    agreements,
     divergences,
   };
 }
@@ -214,6 +313,94 @@ export function rankCountries(store, countryId, from, to, minVotes = 20, theme =
   };
 }
 
+function computeTrendInflections(points) {
+  const highSample = points.filter(
+    (point) => point.commonVoteCount >= 20 && point.agreementPercent !== null,
+  );
+  const anySample = points.filter(
+    (point) => point.commonVoteCount >= 1 && point.agreementPercent !== null,
+  );
+  const minVotesUsed = highSample.length > 0 ? 20 : 1;
+  const limitedSample = highSample.length === 0 && anySample.length > 0;
+  const eligible = highSample.length > 0 ? highSample : anySample;
+  if (eligible.length === 0) {
+    return {
+      minVotesUsed,
+      limitedSample: false,
+      eligiblePeriodCount: 0,
+      highest: null,
+      lowest: null,
+      biggestRise: null,
+      biggestDrop: null,
+    };
+  }
+  const byRateDesc = eligible
+    .slice()
+    .sort(
+      (a, b) =>
+        b.matchingVoteCount * a.commonVoteCount - a.matchingVoteCount * b.commonVoteCount ||
+        b.commonVoteCount - a.commonVoteCount ||
+        b.year - a.year,
+    );
+  const highest = byRateDesc[0];
+  const lowestCandidates = eligible
+    .filter((point) => point.year !== highest.year)
+    .sort(
+      (a, b) =>
+        a.matchingVoteCount * b.commonVoteCount - b.matchingVoteCount * a.commonVoteCount ||
+        b.commonVoteCount - a.commonVoteCount ||
+        b.year - a.year,
+    );
+  const lowest = lowestCandidates[0] ?? null;
+  let biggestRise = null;
+  let biggestDrop = null;
+  for (let i = 1; i < eligible.length; i++) {
+    const prev = eligible[i - 1];
+    const next = eligible[i];
+    const deltaPoints = next.agreementPercent - prev.agreementPercent;
+    const transition = {
+      fromYear: prev.year,
+      toYear: next.year,
+      fromPercent: prev.agreementPercent,
+      toPercent: next.agreementPercent,
+      deltaPoints,
+      fromCommonVoteCount: prev.commonVoteCount,
+      toCommonVoteCount: next.commonVoteCount,
+    };
+    if (
+      deltaPoints > 0 &&
+      (!biggestRise ||
+        deltaPoints > biggestRise.deltaPoints ||
+        (deltaPoints === biggestRise.deltaPoints &&
+          (next.commonVoteCount + prev.commonVoteCount >
+            biggestRise.toCommonVoteCount + biggestRise.fromCommonVoteCount ||
+            next.year > biggestRise.toYear)))
+    ) {
+      biggestRise = transition;
+    }
+    if (
+      deltaPoints < 0 &&
+      (!biggestDrop ||
+        deltaPoints < biggestDrop.deltaPoints ||
+        (deltaPoints === biggestDrop.deltaPoints &&
+          (next.commonVoteCount + prev.commonVoteCount >
+            biggestDrop.toCommonVoteCount + biggestDrop.fromCommonVoteCount ||
+            next.year > biggestDrop.toYear)))
+    ) {
+      biggestDrop = transition;
+    }
+  }
+  return {
+    minVotesUsed,
+    limitedSample,
+    eligiblePeriodCount: eligible.length,
+    highest,
+    lowest,
+    biggestRise,
+    biggestDrop,
+  };
+}
+
 export function compareTrend(
   store,
   countryAId,
@@ -222,7 +409,9 @@ export function compareTrend(
   to,
   interval = 'year',
   theme = 'all',
+  search = '',
 ) {
+  const rawSearch = String(search ?? '').trim();
   const step = interval === 'decade' ? 10 : 1;
   const firstYear = interval === 'decade' ? Math.floor(from / 10) * 10 : from;
   const points = [];
@@ -234,6 +423,7 @@ export function compareTrend(
       Math.max(from, year),
       Math.min(to, year + step - 1),
       theme,
+      rawSearch,
     );
     points.push({
       year,
@@ -248,8 +438,10 @@ export function compareTrend(
     from,
     to,
     theme,
+    ...(rawSearch ? { search: rawSearch } : {}),
     interval,
     points,
+    inflections: computeTrendInflections(points),
     dataVersion: store.metadata.version,
   };
 }
