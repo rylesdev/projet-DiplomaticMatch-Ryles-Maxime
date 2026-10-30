@@ -1,34 +1,63 @@
 <a class="skip-link" href="#main-content">Aller au contenu</a>
 <header class="site-header">
   <div class="header-inner">
-    <a class="brand" routerLink="/" aria-label="Diplomatic Match, accueil"> Diplomatic Match </a>
+    <a class="brand" routerLink="/" aria-label="Diplomatic Match, accueil">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <circle cx="20" cy="20" r="15" />
+        <ellipse cx="20" cy="20" rx="7" ry="15" transform="rotate(35 20 20)" />
+        <path d="M6 15c8 7 18 11 28 10M10 8c3 13 12 23 21 25" />
+        <circle class="brand-node" cx="32" cy="10" r="3" />
+      </svg>
+      <span>Diplomatic Match<span class="brand-caption">EXPLORER LES VOTES À L’ONU</span></span>
+    </a>
     <nav aria-label="Navigation principale">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+      <a
+        routerLink="/"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        ariaCurrentWhenActive="page"
         >Vue d’ensemble</a
       >
-      <a routerLink="/pays" routerLinkActive="active">Les pays</a>
-      <a routerLink="/comparer" routerLinkActive="active">Comparer</a>
-      <a routerLink="/carte" routerLinkActive="active">Carte</a>
-      <a routerLink="/matrice" routerLinkActive="active">Matrice</a>
-      <a routerLink="/groupes" routerLinkActive="active">Groupes</a>
-      <a routerLink="/resolutions" routerLinkActive="active">Résolutions</a>
-      <a routerLink="/methodologie" routerLinkActive="active"
+      <a routerLink="/pays" routerLinkActive="active" ariaCurrentWhenActive="page">Pays</a>
+      <a routerLink="/comparer" routerLinkActive="active" ariaCurrentWhenActive="page">Comparer</a>
+      <a routerLink="/carte" routerLinkActive="active" ariaCurrentWhenActive="page">Carte</a>
+      <a routerLink="/matrice" routerLinkActive="active" ariaCurrentWhenActive="page">Matrice</a>
+      <a routerLink="/groupes" routerLinkActive="active" ariaCurrentWhenActive="page">Groupes</a>
+      <a routerLink="/resolutions" routerLinkActive="active" ariaCurrentWhenActive="page"
+        >Résolutions</a
+      >
+      <a
+        class="nav-method"
+        routerLink="/methodologie"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
         >La méthode <span aria-hidden="true">↗</span></a
       >
     </nav>
-    <span class="header-label">Votes à l’ONU</span>
   </div>
 </header>
 <main id="main-content" class="site-main" tabindex="-1"><router-outlet /></main>
 <footer class="site-footer">
   <div class="footer-inner">
-    <a class="footer-brand" routerLink="/">Diplomatic Match</a>
-    <p>Les votes, dans leur contexte.</p>
-    <a routerLink="/methodologie">Sources & méthodologie <span aria-hidden="true">↗</span></a>
+    <div class="footer-about">
+      <a class="footer-brand" routerLink="/">Diplomatic Match<span aria-hidden="true">.</span></a>
+      <p>Observer les votes.<br />Ouvrir les perspectives.</p>
+      <span class="footer-independent">Un projet indépendant à partir des archives de l’ONU.</span>
+    </div>
+    <nav class="footer-nav" aria-label="Explorer le projet">
+      <span class="footer-label">EXPLORER</span><a routerLink="/pays">Les pays</a
+      ><a routerLink="/comparer">Comparer les votes</a
+      ><a routerLink="/matrice">La matrice des concordances</a
+      ><a routerLink="/groupes">L’atelier des groupes</a>
+    </nav>
+    <nav class="footer-nav" aria-label="Consulter les données">
+      <span class="footer-label">COMPRENDRE</span><a routerLink="/resolutions">Les résolutions</a
+      ><a routerLink="/carte">La carte des concordances</a
+      ><a routerLink="/methodologie">Sources & méthodologie <span aria-hidden="true">↗</span></a>
+    </nav>
   </div>
   <div class="footer-bottom">
-    Données : © Nations unies · Projet universitaire, usage non commercial.<span
-      >Un outil d’exploration des votes enregistrés à l’Assemblée générale.</span
-    >
+    <span>Données : © Nations unies · Usage non commercial.</span
+    ><span>Les votes décrivent des positions, pas des alliances.</span>
   </div>
 </footer>
