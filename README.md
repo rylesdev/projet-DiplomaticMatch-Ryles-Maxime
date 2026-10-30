@@ -6,6 +6,11 @@ La vue d'ensemble intègre directement la carte interactive des concordances, av
 
 ## Installer et démarrer
 
+Le module **Commerce et diplomatie** (`/commerce`) rapproche les votes annuels des échanges
+bilatéraux de marchandises du **FMI / IMTS**. Le snapshot livré contient **524 840 flux pour
+190 pays, de 2000 à 2024**, avec les statuts d’estimation. Les deux directions utilisent les
+exportations FOB en dollars courants. Sources, calculs et reproduction : [data/TRADE.md](data/TRADE.md).
+
 Prérequis : Git, Node.js 24 LTS et npm. Environnement vérifié : Node.js 24.21.0 et npm 12.0.2.
 
 ```bash

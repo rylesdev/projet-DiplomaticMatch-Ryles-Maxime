@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "url": "https://api.imf.org/external/sdmx/2.1/data/IMF.STA,IMTS,1.0.0/.XG_FOB_USD..A?startPeriod=2000&endPeriod=2024",
+    "retrievedAt": "2026-10-30T09:18:43.3201824Z",
+    "sha256": "32bd8dedbdfc856060a9c25ba5d26fd3d8f0bebef2130011f6c3586c3272496c",
+    "bytes": 58724902,
+    "observationCount": 792827
+  },
+  "metadata": {
+    "sourceName": "FMI — International Trade in Goods by partner country (IMTS)",
+    "sourceUrl": "https://data.imf.org/Datasets/IMTS",
+    "version": "IMTS 1.0.0 · extrait du 2026-10-30",
+    "retrievedAt": "2026-10-30T09:18:43.3201824Z",
+    "unit": "USD",
+    "priceBasis": "current",
+    "valuation": "FOB",
+    "measure": "goods_exports",
+    "coverage": {
+      "from": 2000,
+      "to": 2024
+    },
+    "countryCount": 190,
+    "observationCount": 524840,
+    "derivationTypes": {
+      "SEME": "Staff estimates using group mean imputation methods",
+      "SEHI": "Staff estimates using historical imputation methods",
+      "R": "Raw data (no derivation)",
+      "SC": "IMF Staff calculations (derived value)",
+      "SCC": "IMF Staff calculations (derived from counterpart data)",
+      "SE": "IMF Staff estimates",
+      "SP": "IMF Staff projections",
+      "M": "Mixed-type data",
+      "O": "Reported official data",
+      "OU": "Reported official data converted to US dollar",
+      "FA": "Adjusted using Fund records",
+      "TPD": "Third party data"
+    },
+    "licenseUrl": "https://www.imf.org/en/About/copyright-and-terms",
+    "attribution": "Source : Fonds monétaire international, IMTS. Extraction et mise en regard avec les votes : Diplomatic Match."
+  },
+  "transformations": [
+    "XG_FOB_USD annuel : valeurs USD de l’API conservées sans multiplication par SCALE.",
+    "Correspondance exacte ISO3 ou code pays source ; neuf entités historiques et les agrégats sont exclus.",
+    "Aucune substitution par une importation miroir, aucun remplissage ni interpolation des valeurs manquantes.",
+    "DERIVATION_TYPE et STATUS conservés pour chaque observation ; STATUS=e identifie les estimations signalées par le FMI."
+  ],
+  "counts": {
+    "source": 792827,
+    "retained": 524840,
+    "outsideCountryScope": 267987,
+    "selfFlows": 0,
+    "missingValues": 0,
+    "outsidePeriod": 0
+  },
+  "derivations": {
+    "M": 524840
+  },
+  "statuses": {
+    "unspecified": 487474,
+    "e": 37366
+  },
+  "output": {
+    "path": "data/trade-dataset.json",
+    "sha256": "554cd55888b77fff91db76650e7a2a5d4170fe637661d6516191a358ada05b97",
+    "bytes": 18835470
+  }
+}

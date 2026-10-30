@@ -22,6 +22,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/compare/compare.page').then((m) => m.ComparePage),
   },
   {
+    path: 'commerce',
+    title: 'Commerce et diplomatie — Diplomatic Match',
+    loadComponent: () => import('./features/trade/trade.page').then((m) => m.TradePage),
+  },
+  {
     path: 'groupes',
     title: 'Groupes de pays — Diplomatic Match',
     loadComponent: () => import('./features/groups/groups.page').then((m) => m.GroupsPage),

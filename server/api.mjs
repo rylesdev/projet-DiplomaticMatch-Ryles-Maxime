@@ -13,6 +13,7 @@ import { THEMES } from './themes.mjs';
 import { GroupError } from './group-domain.mjs';
 import { createGroupRepository } from './group-repository.mjs';
 import { handleGroupsRequest, isGroupsPath } from './groups-api.mjs';
+import { compareTrade, tradePartners, TradeError } from './trade-domain.mjs';
 
 const THEME_IDS = new Set(THEMES.map((theme) => theme.id));
 
@@ -86,7 +87,7 @@ function comparisonParameters(store, params) {
   return { countryA, countryB, ...period(params, store) };
 }
 
-export function handleApi(store, request) {
+export function handleApi(store, request, options = {}) {
   const url = new URL(request.url, 'http://127.0.0.1');
   const path = url.pathname;
   const params = url.searchParams;
@@ -95,6 +96,33 @@ export function handleApi(store, request) {
   if (path === '/api/health') return { status: 'ok', version: store.metadata.version };
   if (path === '/api/metadata') return store.metadata;
   if (path === '/api/themes') return store.themes;
+  if (['/api/trade/metadata', '/api/trade/compare', '/api/trade/partners'].includes(path)) {
+    const tradeStore = options.tradeStore;
+    if (!tradeStore)
+      throw new ApiError(
+        503,
+        'Les données de commerce ne sont pas disponibles sur cette installation.',
+      );
+    if (path === '/api/trade/metadata') return tradeStore.metadata;
+    const theme = themeParameter(params);
+    const minVotes = integer(params, 'minVotes', 20, 1, 100000);
+    if (path === '/api/trade/partners') {
+      const id = params.get('country');
+      if (!id) throw new ApiError(400, 'Choisissez le pays de référence.');
+      country(store, id);
+      const year = integer(params, 'year', tradeStore.metadata.coverage.to, 1900, 2100);
+      return tradePartners(store, tradeStore, { country: id, year, theme, minVotes });
+    }
+    const countryA = params.get('countryA');
+    const countryB = params.get('countryB');
+    if (!countryA || !countryB) throw new ApiError(400, 'Choisissez les deux États à comparer.');
+    country(store, countryA);
+    country(store, countryB);
+    if (countryA === countryB) throw new ApiError(400, 'Choisissez deux États différents.');
+    const from = integer(params, 'from', tradeStore.metadata.coverage.from, 1900, 2100);
+    const to = integer(params, 'to', tradeStore.metadata.coverage.to, 1900, 2100);
+    return compareTrade(store, tradeStore, { countryA, countryB, from, to, theme, minVotes });
+  }
   if (path === '/api/matrix') {
     const { from, to } = period(params, store);
     const minVotes = integer(params, 'minVotes', 20, 1, 100000);
@@ -183,12 +211,12 @@ export function createApiServer(store, options = {}) {
         response.end(result.status === 204 ? undefined : JSON.stringify(result.body));
         return;
       }
-      const body = handleApi(store, request);
+      const body = handleApi(store, request, options);
       response.writeHead(200);
       response.end(JSON.stringify(body));
     } catch (error) {
       const status =
-        error instanceof ApiError || error instanceof GroupError
+        error instanceof ApiError || error instanceof GroupError || error instanceof TradeError
           ? error.status
           : error instanceof URIError
             ? 400

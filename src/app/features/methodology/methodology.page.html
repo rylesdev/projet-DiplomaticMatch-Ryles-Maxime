@@ -3,7 +3,8 @@
   <h1>Une méthode ouverte.<br />Des limites explicites.</h1>
   <p>
     Diplomatic Match permet d’explorer les comportements de vote à l’Assemblée générale des Nations
-    unies. Le résultat est descriptif, jamais un indice officiel de relations diplomatiques.
+    unies et de les mettre en regard des échanges de marchandises publiés par le FMI. Le résultat
+    est descriptif, jamais un indice officiel de relations diplomatiques.
   </p>
 </header>
 <div class="method-grid">
@@ -58,6 +59,57 @@
         candidats éligibles, les listes restent incomplètes. Les dates et les effectifs sont propres
         à chaque comparaison et peuvent donc varier d’un candidat à l’autre.
       </p>
+    </section>
+    <section class="panel">
+      <span class="eyebrow" id="commerce">COMMERCE ET DIPLOMATIE</span>
+      <h2>Deux directions, une même année</h2>
+      <p>
+        Les flux proviennent du jeu
+        <a href="https://data.imf.org/Datasets/IMTS" target="_blank" rel="noopener noreferrer"
+          >FMI / IMTS</a
+        >
+        (anciennement DOTS). L’extraction locale couvre 2000–2024, avec 524 840 observations pour
+        190 pays présents dans nos archives de votes. Elle porte uniquement sur les marchandises,
+        sans services ni détail par produit.
+      </p>
+      <p>
+        Nous utilisons les exportations de A vers B et de B vers A, toutes deux évaluées FOB (à la
+        frontière de l’exportateur), en dollars américains courants. Leur somme représente les
+        échanges observés dans les deux sens ; leur différence est un écart des flux FOB, pas un
+        solde commercial officiel calculé avec les importations CIF. Les variations en dollars
+        courants reflètent aussi les prix et les taux de change, pas seulement les volumes.
+      </p>
+      <p>
+        Une valeur absente reste absente, même si le flux inverse existe. Les totaux et écarts
+        exigent deux valeurs observées sur la même année. Aucun flux n’est reconstitué à partir
+        d’une importation miroir. Les estimations et données mixtes déjà publiées par le FMI sont
+        conservées : le statut source « e » signale une estimation. Son absence ne garantit pas une
+        déclaration brute. Les codes de dérivation restent consultables dans l’export CSV.
+      </p>
+      <p>
+        La concordance diplomatique est recalculée sur les votes de l’année du flux commercial, avec
+        un minimum de votes communs réglable. Le thème agit uniquement sur les votes. Le nuage des
+        partenaires emploie une échelle logarithmique pour les montants et exclut les points sans
+        deux flux connus ou sans assez de votes ; le tableau conserve les données partielles. La
+        proximité des points n’établit aucun lien causal entre commerce et votes.
+      </p>
+      <p>
+        Les agrégats régionaux et mondiaux sont exclus pour éviter les doubles comptes. Les
+        identifiants des deux sources sont rapprochés exactement ; aucune entité historique n’est
+        fusionnée avec un État actuel. Les partenaires affichés appartiennent au périmètre commun
+        documenté, qui ne couvre pas tous les territoires commerciaux.
+      </p>
+      <p class="small">
+        Source : Fonds monétaire international, IMTS. Extraction et calculs : Diplomatic Match. Les
+        données restent soumises aux
+        <a
+          href="https://www.imf.org/en/About/copyright-and-terms"
+          target="_blank"
+          rel="noopener noreferrer"
+          >conditions du FMI pour les données statistiques</a
+        >. Le manifeste livré documente acquisition, exclusions et empreintes SHA-256.
+      </p>
+      <a routerLink="/commerce" class="button button-ghost">Explorer commerce et diplomatie →</a>
     </section>
     <section class="panel">
       <span class="eyebrow">GROUPES DE PAYS</span>

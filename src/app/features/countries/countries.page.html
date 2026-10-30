@@ -108,6 +108,15 @@
       >
 
       <app-country-profile [countryId]="country.id" />
+      <a
+        class="button button-ghost"
+        routerLink="/commerce"
+        [queryParams]="{
+          countryA: country.id,
+          countryB: country.id === 'IND' ? 'FRA' : 'IND',
+        }"
+        >Explorer ses échanges et ses positions diplomatiques →</a
+      >
 
       <app-country-rankings [countryId]="country.id" />
 
