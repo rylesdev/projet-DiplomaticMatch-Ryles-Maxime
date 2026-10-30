@@ -4,6 +4,7 @@ import { of, Subject, throwError } from 'rxjs';
 import { CountryRankings } from '../../core/models/api.models';
 import { DiplomaticApiService } from '../../core/services/diplomatic-api.service';
 import { CountryRankingsComponent } from './country-rankings.component';
+import { DataPeriodService } from '../../core/services/data-period.service';
 
 // Données fictives isolées : aucun résultat de test ne rejoint le jeu officiel.
 function testResult(id: string): CountryRankings {
@@ -55,6 +56,7 @@ describe('CountryRankingsComponent', () => {
     await TestBed.configureTestingModule({
       imports: [CountryRankingsComponent],
       providers: [
+        { provide: DataPeriodService, useValue: { firstYear: 1946, lastYear: 2025 } },
         provideRouter([]),
         { provide: DiplomaticApiService, useValue: { rankings, themes } },
       ],
@@ -65,7 +67,7 @@ describe('CountryRankingsComponent', () => {
   it('requests rankings with a default minimum of 50 common votes', () => {
     fixture.componentRef.setInput('countryId', 'TST');
     fixture.detectChanges();
-    expect(rankings).toHaveBeenLastCalledWith('TST', 2000, 2026, 50, 'all');
+    expect(rankings).toHaveBeenLastCalledWith('TST', 2000, 2025, 50, 'all');
   });
 
   it('cancels the old country request when the selection changes', () => {
@@ -122,7 +124,7 @@ describe('CountryRankingsComponent', () => {
     fixture.componentInstance.apply();
     expect(first.observed).toBe(false);
     expect(second.observed).toBe(true);
-    expect(rankings).toHaveBeenLastCalledWith('TST', 2000, 2026, 5, 'environment');
+    expect(rankings).toHaveBeenLastCalledWith('TST', 2000, 2025, 5, 'environment');
   });
 
   it('keeps the returned theme in comparison links and warns on a low threshold', () => {

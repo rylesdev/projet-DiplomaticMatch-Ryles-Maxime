@@ -104,18 +104,16 @@ describe('GroupsPage saved-state actions', () => {
       createGroup: vi.fn().mockReturnValue(of({ ...savedGroup, id: 'created' })),
       updateGroup: vi.fn().mockReturnValue(of({ ...savedGroup, revision: 2 })),
       deleteGroup: vi.fn().mockReturnValue(of(undefined)),
-      preview: vi
-        .fn()
-        .mockImplementation((_id, request) =>
-          of(
-            analysis({
-              from: request.from,
-              to: request.to,
-              theme: request.theme,
-              minVotes: request.minVotes,
-            }),
-          ),
+      preview: vi.fn().mockImplementation((_id, request) =>
+        of(
+          analysis({
+            from: request.from,
+            to: request.to,
+            theme: request.theme,
+            minVotes: request.minVotes,
+          }),
         ),
+      ),
       saveReport: vi.fn().mockReturnValue(of({ id: 'report' })),
     };
     TestBed.configureTestingModule({

@@ -27,6 +27,7 @@ import {
   GroupDraft,
 } from '../../core/models/groups.models';
 import { DiplomaticApiService, apiErrorMessage } from '../../core/services/diplomatic-api.service';
+import { DataPeriodService, DEFAULT_FROM } from '../../core/services/data-period.service';
 import { GroupsApiService, groupErrorMessage } from '../../core/services/groups-api.service';
 import { GroupCountryPickerComponent } from './group-country-picker.component';
 import { GroupAnalysisViewComponent } from './group-analysis-view.component';
@@ -53,6 +54,7 @@ interface AnalysisRequest {
   styleUrl: './groups.page.scss',
 })
 export class GroupsPage {
+  private readonly period = inject(DataPeriodService);
   private readonly api = inject(GroupsApiService);
   private readonly dataApi = inject(DiplomaticApiService);
   private readonly route = inject(ActivatedRoute);
@@ -111,8 +113,8 @@ export class GroupsPage {
   });
   readonly filters = this.formBuilder.nonNullable.group(
     {
-      from: [2000, [Validators.required, Validators.min(1946), Validators.max(2100)]],
-      to: [2025, [Validators.required, Validators.min(1946), Validators.max(2100)]],
+      from: [DEFAULT_FROM, [Validators.required, Validators.min(1946), Validators.max(2100)]],
+      to: [this.period.lastYear, [Validators.required, Validators.min(1946), Validators.max(2100)]],
       theme: ['all', Validators.required],
       minVotes: [20, [Validators.required, Validators.min(1), Validators.max(100000)]],
     },

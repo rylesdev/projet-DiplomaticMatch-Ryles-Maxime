@@ -17,6 +17,7 @@ import {
 } from 'rxjs';
 import { Country, CountryVote, DataMetadata, Paginated } from '../../core/models/api.models';
 import { apiErrorMessage, DiplomaticApiService } from '../../core/services/diplomatic-api.service';
+import { DataPeriodService, DEFAULT_FROM } from '../../core/services/data-period.service';
 import { CountryRankingsComponent } from './country-rankings.component';
 import { voteClass, voteLabel } from '../../core/vote-labels';
 
@@ -34,6 +35,7 @@ interface VoteRequest {
   styleUrl: './countries.page.scss',
 })
 export class CountriesPage {
+  private readonly period = inject(DataPeriodService);
   readonly voteLabel = voteLabel;
   readonly voteClass = voteClass;
   readonly Math = Math;
@@ -45,11 +47,11 @@ export class CountriesPage {
   readonly search = new FormControl('', { nonNullable: true });
   readonly filters = new FormGroup(
     {
-      from: new FormControl(2000, {
+      from: new FormControl(DEFAULT_FROM, {
         nonNullable: true,
         validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
       }),
-      to: new FormControl(2026, {
+      to: new FormControl(this.period.lastYear, {
         nonNullable: true,
         validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
       }),

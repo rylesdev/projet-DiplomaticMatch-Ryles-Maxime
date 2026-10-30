@@ -8,6 +8,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, catchError, finalize, map, of, switchMap } from 'rxjs';
 import { ConcordanceMatrix, Theme } from '../../core/models/api.models';
 import { DiplomaticApiService, apiErrorMessage } from '../../core/services/diplomatic-api.service';
+import { DataPeriodService, DEFAULT_FROM } from '../../core/services/data-period.service';
 import { MapCountry, WorldMap, mapCountries, parseWorldMap } from './map-data';
 
 @Component({
@@ -17,6 +18,7 @@ import { MapCountry, WorldMap, mapCountries, parseWorldMap } from './map-data';
   styleUrl: './map.page.scss',
 })
 export class MapPage {
+  private readonly period = inject(DataPeriodService);
   private readonly api = inject(DiplomaticApiService);
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
@@ -41,11 +43,11 @@ export class MapPage {
   readonly form = inject(FormBuilder).nonNullable.group(
     {
       from: [
-        Number(this.query.get('from') ?? 2000),
+        Number(this.query.get('from') ?? DEFAULT_FROM),
         [Validators.required, Validators.min(1946), Validators.max(2100)],
       ],
       to: [
-        Number(this.query.get('to') ?? 2025),
+        Number(this.query.get('to') ?? this.period.lastYear),
         [Validators.required, Validators.min(1946), Validators.max(2100)],
       ],
       theme: [this.query.get('theme') ?? 'all', Validators.required],

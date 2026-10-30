@@ -15,6 +15,7 @@ import {
 } from 'rxjs';
 import { DataMetadata, Paginated, Resolution } from '../../core/models/api.models';
 import { apiErrorMessage, DiplomaticApiService } from '../../core/services/diplomatic-api.service';
+import { DataPeriodService } from '../../core/services/data-period.service';
 
 interface ResolutionRequest {
   search: string;
@@ -30,23 +31,24 @@ interface ResolutionRequest {
   styleUrl: './resolutions.page.scss',
 })
 export class ResolutionsPage {
+  private readonly period = inject(DataPeriodService);
   private readonly api = inject(DiplomaticApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly requests = new BehaviorSubject<ResolutionRequest | null>({
     search: '',
-    from: 1946,
-    to: 2026,
+    from: this.period.firstYear,
+    to: this.period.lastYear,
     page: 1,
   });
   readonly Math = Math;
   readonly form = new FormGroup(
     {
       search: new FormControl('', { nonNullable: true }),
-      from: new FormControl(1946, {
+      from: new FormControl(this.period.firstYear, {
         nonNullable: true,
         validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
       }),
-      to: new FormControl(2026, {
+      to: new FormControl(this.period.lastYear, {
         nonNullable: true,
         validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
       }),

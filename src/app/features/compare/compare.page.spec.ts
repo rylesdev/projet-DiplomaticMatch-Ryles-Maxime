@@ -4,6 +4,7 @@ import { of, Subject } from 'rxjs';
 import { ComparisonResult } from '../../core/models/api.models';
 import { DiplomaticApiService } from '../../core/services/diplomatic-api.service';
 import { ComparePage } from './compare.page';
+import { DataPeriodService } from '../../core/services/data-period.service';
 
 // Fixtures fictives pour les parcours du formulaire, jamais affichées dans l’application réelle.
 const fixtureCountry = {
@@ -51,6 +52,7 @@ describe('ComparePage theme filters', () => {
     await TestBed.configureTestingModule({
       imports: [ComparePage],
       providers: [
+        { provide: DataPeriodService, useValue: { firstYear: 1946, lastYear: 2025 } },
         provideRouter([]),
         {
           provide: ActivatedRoute,

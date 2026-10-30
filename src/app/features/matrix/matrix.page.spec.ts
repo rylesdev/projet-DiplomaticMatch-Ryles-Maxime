@@ -4,6 +4,7 @@ import { of, Subject } from 'rxjs';
 import { ConcordanceMatrix, Country, Theme } from '../../core/models/api.models';
 import { DiplomaticApiService } from '../../core/services/diplomatic-api.service';
 import { MatrixPage } from './matrix.page';
+import { DataPeriodService } from '../../core/services/data-period.service';
 
 // Fixtures synthétiques de test : elles ne proviennent pas de l’ONU.
 const fixtureCountries: Country[] = [
@@ -64,6 +65,7 @@ describe('MatrixPage interaction', () => {
     await TestBed.configureTestingModule({
       imports: [MatrixPage],
       providers: [
+        { provide: DataPeriodService, useValue: { firstYear: 1946, lastYear: 2025 } },
         provideRouter([]),
         { provide: DiplomaticApiService, useValue: { matrix, themes: () => of(fixtureThemes) } },
       ],

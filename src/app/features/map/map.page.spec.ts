@@ -6,6 +6,7 @@ import { of, Subject } from 'rxjs';
 import { ConcordanceMatrix, Country, Theme } from '../../core/models/api.models';
 import { DiplomaticApiService } from '../../core/services/diplomatic-api.service';
 import { MapPage } from './map.page';
+import { DataPeriodService } from '../../core/services/data-period.service';
 
 // Données entièrement synthétiques : ces scores ne décrivent pas les votes de l'ONU.
 const countries: Country[] = [
@@ -78,6 +79,7 @@ describe('MapPage interactions', () => {
     await TestBed.configureTestingModule({
       imports: [MapPage],
       providers: [
+        { provide: DataPeriodService, useValue: { firstYear: 1946, lastYear: 2025 } },
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),

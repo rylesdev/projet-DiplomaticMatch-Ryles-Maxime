@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { DiplomaticApiService, apiErrorMessage } from '../../core/services/diplomatic-api.service';
+import { DataPeriodService, DEFAULT_FROM } from '../../core/services/data-period.service';
 import {
   ComparisonResult,
   Country,
@@ -32,6 +33,7 @@ const differentCountries = (control: AbstractControl) =>
   styleUrl: './compare.page.scss',
 })
 export class ComparePage {
+  private readonly period = inject(DataPeriodService);
   readonly voteLabel = voteLabel;
   readonly voteClass = voteClass;
   private readonly api = inject(DiplomaticApiService);
@@ -57,8 +59,8 @@ export class ComparePage {
       countryA: ['FRA', Validators.required],
       countryB: ['IND', Validators.required],
       theme: ['all', Validators.required],
-      from: [2000, [Validators.required, Validators.min(1946), Validators.max(2100)]],
-      to: [2025, [Validators.required, Validators.min(1946), Validators.max(2100)]],
+      from: [DEFAULT_FROM, [Validators.required, Validators.min(1946), Validators.max(2100)]],
+      to: [this.period.lastYear, [Validators.required, Validators.min(1946), Validators.max(2100)]],
     },
     { validators: [periodValidator, differentCountries] },
   );
@@ -136,8 +138,8 @@ export class ComparePage {
         countryA: params.get('countryA') ?? 'FRA',
         countryB: params.get('countryB') ?? 'IND',
         theme: params.get('theme') ?? 'all',
-        from: Number(params.get('from') ?? 2000),
-        to: Number(params.get('to') ?? 2025),
+        from: Number(params.get('from') ?? DEFAULT_FROM),
+        to: Number(params.get('to') ?? this.period.lastYear),
       });
       this.compare();
     });

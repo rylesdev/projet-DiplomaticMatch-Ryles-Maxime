@@ -7,6 +7,7 @@ import { RouterLink } from '@angular/router';
 import { BehaviorSubject, catchError, finalize, of, switchMap } from 'rxjs';
 import { CountryRankings, Theme } from '../../core/models/api.models';
 import { apiErrorMessage, DiplomaticApiService } from '../../core/services/diplomatic-api.service';
+import { DataPeriodService, DEFAULT_FROM } from '../../core/services/data-period.service';
 
 interface RankingRequest {
   id: string;
@@ -23,6 +24,7 @@ interface RankingRequest {
   styleUrl: './country-rankings.component.scss',
 })
 export class CountryRankingsComponent {
+  private readonly period = inject(DataPeriodService);
   private readonly api = inject(DiplomaticApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly requests = new BehaviorSubject<RankingRequest | null>(null);
@@ -37,11 +39,11 @@ export class CountryRankingsComponent {
 
   readonly form = new FormGroup(
     {
-      from: new FormControl(2000, {
+      from: new FormControl(DEFAULT_FROM, {
         nonNullable: true,
         validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
       }),
-      to: new FormControl(2026, {
+      to: new FormControl(this.period.lastYear, {
         nonNullable: true,
         validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
       }),

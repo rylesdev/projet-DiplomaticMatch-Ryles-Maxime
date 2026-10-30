@@ -6,6 +6,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { DiplomaticApiService, apiErrorMessage } from '../../core/services/diplomatic-api.service';
 import { ComparisonResult, Country, DataMetadata } from '../../core/models/api.models';
+import { DataPeriodService, DEFAULT_FROM } from '../../core/services/data-period.service';
 
 @Component({
   selector: 'app-home-page',
@@ -16,6 +17,8 @@ import { ComparisonResult, Country, DataMetadata } from '../../core/models/api.m
 export class HomePage {
   private readonly api = inject(DiplomaticApiService);
   private readonly destroyRef = inject(DestroyRef);
+  readonly from = DEFAULT_FROM;
+  readonly to = inject(DataPeriodService).lastYear;
   readonly form = inject(FormBuilder).nonNullable.group({ countryA: 'FRA', countryB: 'IND' });
   readonly countries = signal<Country[]>([]);
   readonly metadata = signal<DataMetadata | null>(null);
@@ -34,7 +37,7 @@ export class HomePage {
     forkJoin({
       metadata: this.api.metadata(),
       countries: this.api.countries(),
-      preview: this.api.compare('FRA', 'IND', 2000, 2025),
+      preview: this.api.compare('FRA', 'IND', this.from, this.to),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({

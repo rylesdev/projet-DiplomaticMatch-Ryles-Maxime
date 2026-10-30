@@ -17,6 +17,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, finalize, of, switchMap } from 'rxjs';
 import { ConcordanceMatrix, Theme } from '../../core/models/api.models';
 import { DiplomaticApiService, apiErrorMessage } from '../../core/services/diplomatic-api.service';
+import { DataPeriodService, DEFAULT_FROM } from '../../core/services/data-period.service';
 import { concordanceColor } from './matrix-colors';
 
 interface MatrixFilters {
@@ -33,6 +34,7 @@ interface MatrixFilters {
   styleUrl: './matrix.page.scss',
 })
 export class MatrixPage implements AfterViewInit {
+  private readonly period = inject(DataPeriodService);
   private readonly api = inject(DiplomaticApiService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -52,8 +54,8 @@ export class MatrixPage implements AfterViewInit {
   readonly headerHeight = 62;
   readonly form = inject(FormBuilder).nonNullable.group(
     {
-      from: [2000, [Validators.required, Validators.min(1946), Validators.max(2100)]],
-      to: [2025, [Validators.required, Validators.min(1946), Validators.max(2100)]],
+      from: [DEFAULT_FROM, [Validators.required, Validators.min(1946), Validators.max(2100)]],
+      to: [this.period.lastYear, [Validators.required, Validators.min(1946), Validators.max(2100)]],
       minVotes: [20, [Validators.required, Validators.min(1), Validators.max(100000)]],
       theme: ['all', Validators.required],
     },
