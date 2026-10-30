@@ -1,176 +1,98 @@
 ﻿# Diplomatic Match — projet-diplomaticmatch-ryles-maxime
 
-Application universitaire Angular pour explorer les votes enregistrés à l'Assemblée générale des Nations unies : recherche de pays, historique, comparaison, classements, évolution, résolutions, fiche de positionnement, carte et matrice des pays choisis. Un atelier permet aussi de créer des groupes de pays, tester leur composition et enregistrer leurs analyses. Les comparaisons peuvent être filtrées par thématique. Interface originale en français, responsive, sans template de site préconstruit.
+Projet Angular universitaire de Ryles et Maxime. Diplomatic Match explore les votes enregistrés à l'Assemblée générale des Nations unies : fiche et historique d'un pays, comparaison de deux pays, matrice des concordances, carte, recherche de résolutions et atelier de groupes de pays. L'interface est en français et le design est propre au projet (sans template).
 
-## Installer et démarrer
+## Installer et lancer
 
-Prérequis : Git, Node.js 24 LTS et npm. Environnement vérifié : Node.js 24.21.0 et npm 12.0.2.
+Prérequis : Node.js 24 (vérifié avec 24.21.0) et npm.
 
 ```bash
-git clone https://github.com/rylesdev/projet-diplomaticmatch-ryles-maxime.git
-cd projet-diplomaticmatch-ryles-maxime
 npm ci
 npm start
 ```
 
-Ouvrir **http://localhost:4200/**. `npm start` lance l'API locale sur `127.0.0.1:3001` et le serveur Angular sur le port 4200. Arrêt avec `Ctrl+C`. Les ports doivent être libres. Le proxy Angular transmet `/api` à l'API : aucun proxy CORS public ni secret n'est nécessaire.
+Ouvrir **http://localhost:4200/**. `npm start` (`scripts/dev.mjs`) lance deux processus : l'API Node sur `127.0.0.1:3001` et le serveur Angular sur le port 4200. Arrêt avec `Ctrl+C`. Le port 3001 doit être libre ; sinon, choisir un autre port avec la variable d'environnement `API_PORT`.
 
-Les données compactes sont livrées dans `data/dataset.json` (environ 15,3 Mo, sujets documentaires inclus). **Aucun téléchargement depuis les serveurs ONU n'est nécessaire pour utiliser l'application ou faire la démo** après l'installation des dépendances. Aucune police ni bibliothèque n'est chargée depuis un CDN.
+Les données sont livrées dans `data/dataset.json` (15 Mo). L'application fonctionne **sans internet** : pas de CDN, polices locales, aucun appel aux serveurs de l'ONU pendant l'utilisation.
 
-Autre port Angular : `npm start -- --port 4201`. Pour lancer séparément les deux processus : `npm run start:api` et `npm run start:angular` dans deux terminaux.
+Vérifications : `npm run build`, `npm test -- --watch=false` (tests Angular) et `npm run test:api` (tests de l'API), ou `npm run check` pour les trois.
 
-## Les fonctionnalités et leurs appels
-
-| Fonction         | Parcours                                         | Requêtes de notre API locale                                                       |
-| ---------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| F1 — Pays        | Rechercher France, ouvrir la fiche               | `GET /api/countries?search=France`, `GET /api/countries/FRA`                       |
-| F2 — Historique  | Choisir une période, changer de page             | `GET /api/countries/FRA/votes?from=2000&to=2025&page=1&pageSize=20`                |
-| F3 — Comparer    | Choisir deux pays et des années                  | `GET /api/compare?countryA=FRA&countryB=IND&from=2000&to=2025`                     |
-| F4 — Évolution   | Comparaison puis regroupement annuel ou décennal | `GET /api/compare/trend?countryA=FRA&countryB=IND&from=2000&to=2025&interval=year` |
-| F5 — Résolutions | Rechercher un texte ou symbole, ouvrir ses votes | `GET /api/resolutions?search=...&page=1`, `GET /api/resolutions/:id`               |
-
-Le classement des pays est disponible dans chaque fiche : `GET /api/countries/FRA/rankings?from=2000&to=2025&minVotes=50` renvoie les trois pays les plus concordants et les trois moins concordants sur cette période.
-
-La fiche pays affiche aussi son positionnement en séance : `GET /api/countries/FRA/profile?from=2000&to=2025` compare chaque vote au choix majoritaire de l’Assemblée. La comparaison accepte un mot-clé facultatif, cherché dans le symbole, le titre et les sujets avec quelques synonymes français : `GET /api/compare?countryA=FRA&countryB=IND&search=Palestine`.
-
-Le catalogue `GET /api/themes` fournit les thèmes et leurs effectifs. Le paramètre `theme=environment`, par exemple, filtre de manière identique comparaison, classement et tendance. La page **Matrice** utilise `GET /api/matrix/selection?countries=FRA,IND,USA&from=2000&to=2025&theme=all&minVotes=20` pour comparer de 2 à 15 pays choisis.
-
-Les recherches utilisent le debounce et annulent les requêtes obsolètes. Les filtres et pages déclenchent de nouvelles requêtes HTTP. Les réponses sont typées par les interfaces TypeScript du projet, et une requête sans réponse au bout de 15 secondes affiche un message d’erreur. Chargement, erreur, absence de résultats et succès sont traités. Les détails des votes renvoient vers la bibliothèque de l'ONU ; les titres des textes restent dans la langue de la source, généralement l'anglais.
-
-Le graphique possède un tableau accessible des valeurs et effectifs. Les États historiques sont distincts : les codes du jeu source sont conservés, sans fusion de l'URSS avec la Russie, par exemple.
-
-## Sources et méthode
-
-Source : **© Nations unies, Bibliothèque Dag Hammarskjöld**, [votes enregistrés](https://digitallibrary.un.org/record/4060887) et [résolutions](https://digitallibrary.un.org/record/4060945). Version **6, publiée le 15 octobre 2026**. Le jeu importé comprend **954 382 positions, 202 codes pays et 20 834 résolutions**, dont 5 730 ont des positions de vote individuelles. Couverture réellement observée : **26 janvier 1946 au 17 septembre 2026**. Les non-votes font partie des positions consignées ; les résolutions sans vote individuel n'ont aucune position inventée.
-
-La concordance vaut `100 × votes identiques / votes explicites communs`, pour `Y` (pour), `N` (contre), `A` (abstention). Deux abstentions sont concordantes. `X` (non-vote), absences et valeurs inconnues sont exclus du dénominateur. Avec zéro vote commun, le résultat est `null`, affiché par un tiret. Les bornes de période sont inclusives et l'arrondi concerne uniquement l'affichage. La même formule sert à chaque période du graphique ; les périodes sans votes communs restent vides.
-
-Il s'agit d'un outil descriptif : ce taux n'est ni un indice d'alliance ni une mesure des relations bilatérales. Les faibles effectifs sont signalés. Les données s'utilisent à des fins non commerciales avec attribution ; leur licence ne doit pas être remplacée par celle du code. Voir [la FAQ officielle](https://ask.un.org/faq/432839), la page Méthodologie de l'application et [data/README.md](data/README.md) pour les limites, les schémas et la différence entre la date de début annoncée par le dictionnaire et celle observée dans le CSV.
-
-### Pays aux votes les plus et les moins concordants
-
-Dans une fiche pays, le classement recherche trois taux de concordance élevés et trois faibles sur la période choisie. Le pays lui-même est exclu. Chaque candidat doit atteindre le minimum de votes explicites communs (50 par défaut) ; les absences et valeurs inconnues restent exclues du calcul. Les effectifs et les dates de couverture sont affichés pour chaque résultat, car les votes communs peuvent différer d'un candidat à l'autre.
-
-Le tri utilise le taux exact, avant tout arrondi. À taux égal, le plus grand nombre de votes communs est prioritaire, puis le nom et le code pays. Les trois pays les plus concordants sont sélectionnés d'abord ; les trois moins concordants sont ensuite choisis parmi les autres. Avec moins de six candidats éligibles, les listes restent incomplètes pour éviter de présenter un même pays des deux côtés. Sans candidat atteignant le seuil, aucun classement n'est fabriqué. Chaque résultat ouvre la comparaison détaillée sur la même période.
-
-### Comparaisons par thématique
-
-Les regroupements écologie/environnement, sécurité/paix, droits, développement, décolonisation, institutions, Moyen-Orient, droit international, espace/sciences, situations de pays/conflits et économie sont **propres au projet**, à partir du champ `subjects` de l'ONU. Ils ne constituent pas une classification officielle. Les sujets exacts sont conservés ; aucune thématique n'est inventée à partir du titre ou du pays. Une résolution peut relever de plusieurs thèmes. Sans sujet reconnu, elle reste dans « Sans thème attribué » et demeure incluse dans « Tous les sujets ». Règles, exemples et effectifs sont documentés dans [data/README.md](data/README.md) et le manifeste.
-
-Le jeu v6 contient 272 résolutions classées en écologie, mais seulement 21 avec des votes individuels enregistrés. Sur 2000–2025, France/Inde ont 15 votes comparables et 8 identiques en écologie (53,3 %), contre 647 comparables et 193 identiques en sécurité (29,8 %). Les seuils 1, 5 et 10 sont disponibles pour explorer les petits effectifs, avec un avertissement sous 20. Un résultat vide au seuil 20 reste un résultat vide : aucune position n'est ajoutée pour le remplir.
-
-### Matrice des pays choisis
-
-La page **Matrice** (`/matrice`) compare de 2 à 15 pays choisis, avec période, thème et seuil réglables. Chaque case affiche le taux de concordance et le nombre de votes communs ; bleu = forte concordance (100 %), rouge = faible concordance (0 %), gris = aucun vote commun ou minimum non atteint. Cliquer sur une case ouvre la comparaison détaillée avec les filtres appliqués. La vue de l'ensemble des 202 pays a été retirée.
-
-### Carte des concordances
-
-La page **Carte** (`/carte`) permet de choisir un pays en cliquant sur son territoire ou avec le sélecteur. Les autres pays sont colorés selon leur concordance avec ce pays de référence : **rouge à 0 %**, **bleu à 100 %**, **gris si aucun vote commun ou si le seuil n'est pas atteint**. La période, le thème et le minimum de votes communs sont réglables. Le survol permet de consulter les valeurs ; la comparaison détaillée reste accessible.
-
-La carte et l'accueil utilisent `GET /api/countries/FRA/concordances?from=2000&to=2025&theme=all&minVotes=20`, qui renvoie la concordance du pays de référence avec chacun des autres (environ 25 Ko). Changer de pays de référence ou de filtres déclenche une nouvelle demande à l'API. La carte ne charge plus la matrice complète (1,1 Mo), que le proxy de développement d'Angular ne relayait pas toujours en entier sur certaines machines.
-
-Le fond géographique est simplifié : tous les petits territoires et les entités historiques du jeu de votes ne sont pas nécessairement représentés. Les frontières de ce fond ne reconstituent pas les frontières de chaque période historique. Les entités historiques ne sont pas fusionnées avec les pays actuels. La source et la licence du fond sont documentées dans `public/maps/README.md`.
-
-## Atelier Groupes : écritures et rapports persistants
-
-Ouvrir **http://localhost:4200/groupes**. Créer un groupe de **2 à 12 pays distincts**, avec un nom et une description facultative. Le groupe est enregistré dans l'API mockée (MirageJS), puis peut être modifié ou supprimé. Les analyses portent sur la composition enregistrée : un brouillon doit être sauvegardé avant analyse. La suppression demande une confirmation et retire aussi les rapports associés.
-
-Le bouton **Analyser** produit un aperçu calculé à partir des votes officiels. **Enregistrer le rapport** sauvegarde dans l'API mockée l'analyse affichée, sous forme d'instantané comprenant composition, révision, paramètres, résultats, date et versions des données, des règles thématiques et de la méthode. Un rapport ancien reste identique après modification du groupe. L'historique permet de consulter deux rapports et de calculer un écart uniquement si leurs filtres et leurs versions de données/méthode sont compatibles.
-
-### Simulations et suggestions
-
-Ajouter ou retirer un membre dans le simulateur demande à l'API Node l'analyse d'une composition de brouillon. **Le groupe enregistré ne change qu'avec « Appliquer au groupe »**. Les résultats avant/après indiquent les effectifs et les paires retenues ; leur différence ne constitue pas une prédiction diplomatique.
-
-Les suggestions recherchent trois candidats atteignant le seuil de votes communs avec **chacun** des membres. Leur classement utilise les votes identiques et comparables des nouvelles paires candidat/membre. Par défaut, les candidats doivent avoir une couverture source allant jusqu'à la dernière année disponible de la période ; une option permet d'inclure les couvertures terminées plus tôt. Ce filtre utilise les dates observées dans le jeu et n'infère pas l'existence ou le statut politique actuel d'un État. Les entités historiques déjà choisies dans un groupe restent distinctes.
-
-### Calcul de la concordance interne
-
-Pour chaque paire du groupe, seuls les votes explicites `Y/N/A` communs sont retenus. Une paire doit atteindre le seuil choisi. La concordance interne vaut :
+## Architecture : deux API
 
 ```text
-100 × somme des votes identiques des paires éligibles
-    / somme de leurs votes explicites communs
+Navigateur (Angular)
+ ├─ /api/...       ──► proxy de ng serve (proxy.conf.mjs) ──► API Node (server/), port 3001
+ │                     lectures et calculs, GET uniquement
+ └─ /mock-api/...  ──► MirageJS (src/app/mock-api/), dans le navigateur
+                       écritures : groupes et rapports, sauvegardés dans le localStorage
 ```
 
-Ce taux est **pondéré par les effectifs**, et non une moyenne simple des pourcentages. Une résolution peut contribuer à plusieurs paires : le dénominateur est un nombre de **comparaisons de votes**, pas un nombre de résolutions uniques. Les paires peuvent couvrir des dates et des résolutions différentes ; le nombre de paires retenues sur le total est toujours affiché. Sans paire éligible, le taux est `null`. La couverture globale est l'union des dates des paires retenues. Le graphique recalcule exactement la même formule par année, avec le seuil appliqué à chaque paire/année.
+- **API Node** (`server/`, sans framework, module `node:http`) : charge `data/dataset.json` au démarrage et répond en JSON. Elle n'accepte que `GET` : toute autre méthode renvoie **405**. Une route inconnue renvoie 404, un paramètre invalide 400.
+- **API mockée MirageJS** (`/mock-api`) : intercepte dans le navigateur les requêtes vers `/mock-api`, gère création, modification et suppression des groupes et des rapports, et les sauvegarde dans le `localStorage` (clé `diplomatic-match-mock-api`). Tout le reste (`/api/**`, `/maps/**`) est laissé passer (passthrough) vers le réseau. Ses requêtes sont **journalisées dans la console** du navigateur ; elles n'apparaissent pas dans l'onglet Réseau.
+- Toutes les requêtes HTTP ont un délai maximal de **15 secondes** (`core/http-timeout.interceptor.ts`).
 
-La liste des résolutions divisantes conserve les désaccords stricts avec au moins deux votes explicites, leur proportion de paires identiques et le nombre de membres participants. Une ligne source absente reste inconnue et ne devient pas une abstention. Le compteur de résolutions observées inclut les textes où au moins un membre figure dans la source, y compris avec un non-vote.
+## Fonctionnalités et appels API
 
-Référence indépendante sur **France, Inde, Brésil et Canada**, 2000–2025, tous sujets, seuil 20 : **6 paires**, **13 304 comparaisons de votes**, **7 329 identiques**, soit **55,088695 %**. Retirer l'Inde donne **56,556391 %** ; ajouter la Belgique au groupe initial donne **60,624521 %**. Ces chiffres servent aux tests de calcul et ne sont pas des groupes précréés dans l'application.
+Période par défaut : de 2000 à la dernière année complète des données (2025), sauf pour les résolutions (depuis 1946).
 
-### Deux API
+**1. Explorer les pays** (`/pays`, `/pays/:id`) : rechercher un pays, ouvrir sa fiche, son historique de votes paginé, son alignement sur la majorité de l'Assemblée et le top 3 des pays les plus et les moins concordants (seuil de 50 votes communs par défaut).
 
-Les calculs viennent de l'API Node, en lecture seule (`GET`) :
+- `GET /api/countries?search=fran` et `GET /api/countries/FRA`
+- `GET /api/countries/FRA/votes?from=2000&to=2025&page=1&pageSize=20`
+- `GET /api/countries/FRA/profile?from=2000&to=2025&theme=all`
+- `GET /api/countries/FRA/rankings?from=2000&to=2025&minVotes=50&theme=all`
 
-| Calcul                                         | Requête                                                                   |
-| ---------------------------------------------- | ------------------------------------------------------------------------- |
-| Analyse d'une composition (groupe ou scénario) | `GET /api/groups/analysis?members=FRA,IND&from=…&to=…&theme=…&minVotes=…` |
-| Pays candidats                                 | `GET /api/groups/suggestions?members=…&includeHistorical=false`           |
+**2. Comparer les votes** (`/comparer`) : deux pays, période, thème, mot-clé facultatif ; taux de concordance, grille des votes croisés, exemples de résolutions, évolution par année ou par décennie.
 
-Toute autre méthode que `GET` sur `/api` renvoie **405**.
+- `GET /api/compare?countryA=FRA&countryB=IND&from=2000&to=2025&theme=all` (option `search=Palestine`)
+- `GET /api/compare/trend?countryA=FRA&countryB=IND&from=2000&to=2025&interval=year&theme=all` (`interval=decade` possible)
 
-Les écritures passent par l'API mockée **MirageJS**, sous le préfixe `/mock-api`, exécutée dans le navigateur :
+**3. Visualiser les concordances** (`/matrice`) : matrice de 2 à 15 pays choisis (6 au départ : France, États-Unis, Royaume-Uni, Chine, Russie, Inde), taux et votes communs par case, couleur du rouge (0 %) au bleu (100 %), gris sous le seuil ; une case ouvre la comparaison.
 
-| Action                              | Requête                                                                          |
-| ----------------------------------- | -------------------------------------------------------------------------------- |
-| Lister / créer                      | `GET /mock-api/groups`, `POST /mock-api/groups`                                  |
-| Lire / modifier                     | `GET /mock-api/groups/:id`, `PUT /mock-api/groups/:id`                           |
-| Supprimer le groupe et ses rapports | `DELETE /mock-api/groups/:id?expectedRevision=2`                                 |
-| Enregistrer un rapport              | `POST /mock-api/groups/:id/reports`                                              |
-| Lister / lire les rapports figés    | `GET /mock-api/groups/:id/reports`, `GET /mock-api/groups/:id/reports/:reportId` |
+- `GET /api/matrix/selection?countries=FRA,USA,GBR,CHN,RUS,IND&from=2000&to=2025&minVotes=20&theme=all`
 
-Les créations renvoient 201 et les suppressions 204. `PUT`, `DELETE` et l'enregistrement d'un rapport utilisent une `expectedRevision` : une version périmée renvoie **409**, sans écrasement. Avant chaque calcul, l'interface relit aussi la révision enregistrée ; si le groupe a changé dans un autre onglet, elle affiche le même conflit. L'interface garde le brouillon et propose un rechargement explicite. Mirage valide nom, description et membres ; limites : 100 groupes et 100 rapports par groupe. Ses requêtes sont journalisées dans la console du navigateur (elles n'apparaissent pas dans l'onglet Réseau).
+**4. Explorer les résolutions** (`/resolutions`, `/resolutions/:id`) : recherche par titre ou symbole, filtre par période, détail avec le vote de chaque pays et le lien vers la notice de l'ONU.
 
-### Stockage local
+- `GET /api/resolutions?search=Ukraine&page=1&pageSize=20&from=1946&to=2025`
+- `GET /api/resolutions/3959039`
 
-Mirage enregistre groupes et rapports dans le **`localStorage`** du navigateur (clé `diplomatic-match-mock-api`), relu à chaque requête : les données survivent au rechargement de la page et sont partagées entre les onglets du même navigateur. Deux groupes d'exemple sont créés au premier lancement : « Membres permanents du Conseil de sécurité » et « BRICS (membres fondateurs) ». Effacer cette clé remet ces exemples. Il n'y a pas de comptes utilisateurs. Les écritures ne modifient jamais le jeu officiel `data/dataset.json`.
+**5. Groupes de pays** (`/groupes`, `/groupes/:id`) : créer, modifier, supprimer un groupe de 2 à 12 pays (formulaire réactif validé) ; concordance interne, évolution annuelle, résolutions qui divisent le groupe.
 
-## Reproduire l'import
+- Écritures (MirageJS) : `GET /mock-api/groups`, `POST /mock-api/groups`, `GET /mock-api/groups/:id`, `PUT /mock-api/groups/:id`, `DELETE /mock-api/groups/:id?expectedRevision=2`
+- Calcul (API Node) : `GET /api/groups/analysis?members=FRA,IND,BRA,CAN&from=2000&to=2025&theme=all&minVotes=20`
 
-```bash
-npm run data:download
-npm run data:import
-```
+**Fonctionnalités complémentaires**
 
-Le premier script télécharge les deux CSV officiels (environ 376 Mo au total) et les dictionnaires. Le second inspecte les en-têtes, relie votes/résolutions par `undl_id`, normalise `Y/N/A/X` et génère le JSON compact, `data/source-manifest.json` et `data/import-report.json`. Les empreintes SHA-256, URLs, dates, comptages et rejets sont consignés. Les sources brutes de `data/raw/` sont exclues de Git. L'import actuel conserve toutes les lignes, sans rejet. Aucun CSV brut n'est envoyé au navigateur.
+- **Carte** (`/carte`, aussi sur l'accueil) : un pays de référence, les autres colorés selon leur concordance. `GET /api/countries/FRA/concordances?from=2000&to=2025&theme=all&minVotes=20` (25 Ko) et le fond `GET /maps/world.json`.
+- **Simulation** d'un ajout ou d'un retrait de pays dans un groupe : `GET /api/groups/analysis` avec la composition proposée, sans rien enregistrer.
+- **Suggestions** de pays à ajouter : `GET /api/groups/suggestions?members=…&from=…&to=…&theme=…&minVotes=…&includeHistorical=false`.
+- **Rapports** figés et comparaison de deux rapports : `GET /mock-api/groups/:id/reports`, `POST /mock-api/groups/:id/reports`, `GET /mock-api/groups/:id/reports/:reportId`.
+- **Révisions** : chaque groupe a un numéro de révision. Modifier, supprimer ou enregistrer un rapport depuis une version périmée renvoie **409**. Avant chaque calcul, l'application relit aussi la révision : un groupe modifié dans un autre onglet affiche un conflit, sans écraser le brouillon.
+- Catalogues : `GET /api/metadata` (version et couverture, lu au démarrage), `GET /api/themes` (thèmes et effectifs), `GET /api/health`.
 
-## Vérifier le projet
+Thèmes : 11 regroupements définis par le projet à partir de la colonne `subjects` des CSV de l'ONU, plus « Sans thème attribué » (détail dans [data/README.md](data/README.md)).
 
-```bash
-npm run build
-npm test -- --watch=false
-npm run test:api
-```
-
-Ou `npm run check` pour les trois vérifications. Compilation dans `dist/projet-diplomaticmatch-ryles-maxime/browser/`.
-
-Les tests Angular couvrent le démarrage et les contrats HTTP. Les tests Node couvrent les calculs, les votes inconnus, les abstentions/absences, les périodes et bornes, le CSV, la validation des paramètres et les routes HTTP. Des tests de référence relisent aussi les données livrées : **France / Inde, 2000–2025 : 2 218 comparables, 1 005 identiques, 1 213 différents, 14 non comparables, soit 45,311091073 %**. Les petites fixtures des tests sont séparées des données officielles de production.
-
-## Organisation
+## Concordance : formule et limites
 
 ```text
-src/app/
-  core/models/                Contrats TypeScript
-  core/services/              Service HttpClient et validation des réponses
-  features/home/              Accueil et comparaison rapide
-  features/countries/         Recherche, fiche et historique
-  features/compare/           Concordance et évolution SVG/tableau
-  features/matrix/            Matrice des pays choisis (2 à 15)
-  features/map/               Carte, réutilisée sur l’accueil
-  features/groups/            Groupes, simulations et rapports enregistrés
-  mock-api/                   API mockée MirageJS (groupes et rapports, localStorage)
-  features/resolutions/       Recherche et détail
-  features/methodology/       Sources, formule et limites
-  app.routes.ts               Routes chargées à la demande
-server/                       API HTTP Node (GET), domaines et tests
-scripts/                      Lancement, téléchargement et import
-public/                       Fichiers statiques
-data/                         Données compactes, dictionnaires et manifestes
-PLAN_PROJET.md                Checklist et démonstration proposée (15 min)
+concordance = 100 × votes identiques / votes explicites communs
 ```
 
-## Validations universitaires restantes
+- Seuls les votes **Pour (Y)**, **Contre (N)** et **Abstention (A)** des deux pays comptent. Deux abstentions sont concordantes.
+- **Non-vote (X)**, absence de ligne et valeur inconnue sont exclus du dénominateur.
+- Zéro vote commun : le résultat est `null`, affiché par un tiret (jamais 0 %).
+- Bornes de période incluses ; arrondi seulement à l'affichage.
+- Matrice, carte, classement et groupes appliquent un **seuil** de votes communs (20 par défaut, 50 pour le classement) : sous le seuil, pas de taux.
+- **Groupes** : concordance interne = 100 × somme des votes identiques des paires éligibles / somme de leurs votes communs. Elle est pondérée par les effectifs, ce n'est pas une moyenne des pourcentages.
 
-Le développement technique ne vaut pas validation pédagogique. Les **cinq fonctions restent à faire valider par l'enseignant** ; son accès au dépôt et la convention finale `projet-diplomaticmatch-ryles-maxime` sont à confirmer. Aucune invitation n'a été envoyée et le dépôt distant n'a pas été renommé automatiquement.
+Référence vérifiée par les tests : **France / Inde, 2000–2025 : 2 218 votes comparables, 1 005 identiques, soit 45,3 %** (14 votes non comparables).
 
-Rendu : **1er décembre 2026 avant 23 h 59**. Démonstration : **2 décembre 2026**, 15 minutes maximum, application fonctionnelle sans présentation de code. Voir [PLAN_PROJET.md](PLAN_PROJET.md) pour le déroulé.
+Limites : c'est un outil descriptif. Un taux de concordance n'est ni une alliance ni une mesure des relations entre deux pays. Beaucoup de résolutions sont adoptées sans vote enregistré (5 730 sur 20 834 ont des votes individuels). Un résultat calculé sur moins de 20 votes est signalé comme fragile. Les États historiques restent distincts (URSS et Russie, par exemple). Les thèmes sont des regroupements du projet, pas une classification officielle de l'ONU.
+
+## Sources et licence des données
+
+**© Nations unies, Bibliothèque Dag Hammarskjöld** — jeux de données des votes et des résolutions de l'Assemblée générale : [notice 4060887](https://digitallibrary.un.org/record/4060887) (votes) et [notice 4060945](https://digitallibrary.un.org/record/4060945) (résolutions), **version 6 du 15 octobre 2026**, téléchargés le 26 octobre 2026. Jeu importé : **954 382 votes, 20 834 résolutions, 202 codes pays**, du 26 janvier 1946 au 17 septembre 2026.
+
+Licence : **utilisation non commerciale avec attribution** ([FAQ officielle](https://ask.un.org/faq/432839)). Elle s'applique aux données, pas au code. Fond de carte : Natural Earth, domaine public (`public/maps/README.md`). Polices DM Sans et Instrument Serif : licence SIL OFL (`public/fonts/`).
+
+Annexe détaillée (fichiers, empreintes, schéma, import, règles des thèmes) : [data/README.md](data/README.md). Réimport depuis les CSV : `npm run data:download` puis `npm run data:import`.

@@ -43,7 +43,7 @@ Le CSV des résolutions contient également `modality` : les résolutions adopt�
 
 ## Couverture et limites historiques
 
-Les dates réellement observées dans le CSV de votes vont du **26 janvier 1946 au 17 septembre 2026**. Le titre du dictionnaire officiel indique un début au 11 décembre 1946 ; nous conservons les dates du CSV et signalons cette différence plutôt que les réécrire. L'API doit afficher sa couverture effective et la version du jeu.
+Les dates réellement observées dans le CSV de votes vont du **26 janvier 1946 au 17 septembre 2026**. Le titre du dictionnaire officiel indique un début au 11 décembre 1946 ; nous conservons les dates du CSV et signalons cette différence plutôt que les réécrire. L'API expose cette couverture effective et la version du jeu (`GET /api/metadata`).
 
 La source contient **202 codes de séries de pays**, incluant des États historiques. Ce total n'est pas un décompte des membres actuels de l'ONU. Les codes sont conservés sans fusion : `SUN`/`RUS`, `DDR`/`GER`/`DEU`, `CSK`/`CZE`, `YUG`/`SCG`/`SRB` et `YMD`/`YEM` restent distincts. Un code source ne doit pas être présenté automatiquement comme un code ISO actuel.
 
@@ -134,7 +134,7 @@ Quelques exclusions préviennent les rapprochements abusifs : `NUCLEAR ENERGY` s
 | 280765           | `ANTARCTICA`                                                                     | espace et sciences           |
 | 280897           | `AGEING PERSONS`                                                                 | sans thème attribué          |
 
-### Couverture des regroupements après réimport
+### Couverture des regroupements (règles v2)
 
 | Filtre                                  | Résolutions | Résolutions possédant des votes individuels | Lignes de vote, non-votes inclus |
 | --------------------------------------- | ----------: | ------------------------------------------: | -------------------------------: |
@@ -152,8 +152,8 @@ Quelques exclusions préviennent les rapprochements abusifs : `NUCLEAR ENERGY` s
 | Économie, commerce et finances          |         456 |                                         112 |                           20 369 |
 | Sans thème attribué                     |       8 823 |                                       1 993 |                          275 427 |
 
-Les lignes ne s'additionnent pas : les thèmes peuvent se recouper. Les 8 823 résolutions sans thème attribué comprennent les 6 717 champs absents et 2 106 résolutions dont les libellés ne correspondent pas aux règles. Chaque thème ajouté en v2 regroupe plus de 100 résolutions avec votes individuels ; des regroupements trop rares (humanitaire et catastrophes : 24 résolutions votées) n'ont pas été créés. L'absence de champ ne doit pas être comblée par une classification inventée.
+Les deux premières colonnes sont calculées par l'API au démarrage et renvoyées par `GET /api/themes` ; la troisième compte les lignes de vote du jeu rattachées à chaque thème. Les lignes ne s'additionnent pas : les thèmes peuvent se recouper. Les 8 823 résolutions sans thème attribué comprennent les 6 717 champs absents et 2 106 résolutions dont les libellés ne correspondent pas aux règles. Chaque thème ajouté en v2 regroupe plus de 100 résolutions avec votes individuels ; des regroupements trop rares (humanitaire et catastrophes : 24 résolutions votées) n'ont pas été créés. L'absence de champ ne doit pas être comblée par une classification inventée.
 
-**Limite particulière de l'écologie :** parmi les 272 résolutions reconnues, seules 21 disposent de votes individuels dans cette copie historique. Beaucoup d'autres textes ont été adoptés sans vote enregistré. Une période courte ou un seuil minimal élevé peut donc ne laisser aucune paire comparable. Le classement ou la matrice doit alors afficher un état vide ou une cellule sans résultat, sans transformer l'absence de données en `0 %`. Un résultat inférieur à 20 votes comparables garde l'avertissement d'effectif limité.
+**Limite particulière de l'écologie :** parmi les 272 résolutions reconnues, seules 21 disposent de votes individuels dans cette copie historique. Beaucoup d'autres textes ont été adoptés sans vote enregistré. Une période courte ou un seuil minimal élevé peut donc ne laisser aucune paire comparable. Le classement ou la matrice affiche alors un état vide ou une case sans résultat, sans transformer l'absence de données en `0 %`. Un résultat inférieur à 20 votes comparables garde l'avertissement d'effectif limité.
 
-Le réimport préserve les **954 382 votes, 20 834 résolutions et 202 codes**, avec zéro rejet, et les empreintes SHA-256 des deux CSV bruts restent identiques. Le manifeste et le rapport d'import contiennent les effectifs thématiques pour vérifier le calcul et reproduire le classement.
+Le réimport préserve les **954 382 votes, 20 834 résolutions et 202 codes**, avec zéro rejet, et les empreintes SHA-256 des deux CSV bruts restent identiques. Le manifeste et le rapport d'import contiennent les effectifs des six thèmes de la v1, appliquée lors de l'import ; les effectifs des onze thèmes de la v2 sont ceux de `GET /api/themes`.

@@ -1,79 +1,72 @@
-# Diplomatic Match — suivi du projet
+# Diplomatic Match — scénario de démo (15 minutes)
 
-État du projet au **28 octobre 2026**. Les cinq parcours principaux et leurs extensions sont réalisés ; ce fichier distingue leurs vérifications des validations universitaires à obtenir. Les fonctionnalités utilisent de véritables appels à l'API locale consommée par Angular.
+Démo du **2 décembre 2026** : 15 minutes maximum, application fonctionnelle, aucun code montré, interruptions possibles. Les chiffres ci-dessous ont été relevés sur les données livrées (version 6 de l'ONU, 15 octobre 2026). Ils servent de **contrôle** : si l'écran affiche autre chose, un filtre n'est pas celui prévu.
 
-## Cadrage et données
+## Préparation (avant d'entrer dans la salle)
 
-- [x] Initialiser une base Angular standalone vierge, TypeScript strict, SCSS et tests.
-- [x] Examiner l'idée produit et les cinq parcours API proposés.
-- [x] Télécharger les deux CSV officiels ONU et leurs dictionnaires, version 6 du 15 octobre 2026.
-- [x] Vérifier les en-têtes réels, la clé `undl_id`, les quatre valeurs de vote et les codes historiques sans fusion.
-- [x] Documenter les sources, les empreintes, la licence, la couverture et les limites dans `data/README.md`.
-- [ ] Faire valider les **cinq fonctionnalités** par l'enseignant.
-- [ ] Confirmer la convention finale du nom du dépôt avec le nom du projet et les prénoms.
-- [ ] Donner accès au dépôt à l'enseignant ; organiser les échanges via merge requests.
+- [ ] `npm start` lancé, l'accueil s'ouvre sur http://localhost:4200/. Wi-Fi coupé : tout doit marcher hors ligne.
+- [ ] Groupes remis à zéro : outils de développement > Application > Local Storage > supprimer la clé `diplomatic-match-mock-api`, puis recharger. Il ne reste que les deux groupes d'exemple.
+- [ ] Outils de développement ancrés en bas, deux onglets prêts :
+  - **Réseau**, filtre `Fetch/XHR` et texte `api` : on y voit les appels à l'**API Node** ;
+  - **Console**, filtre `Mirage` : on y voit les appels à l'**API mockée MirageJS**.
+- [ ] Zoom du navigateur à 100 ou 110 %, une seule fenêtre, onglets inutiles fermés.
+- [ ] Un deuxième onglet ouvert sur `/groupes/membres-permanents` (pour le conflit, si le temps le permet).
 
-## Réalisation technique vérifiée
+## Déroulé minute par minute
 
-- [x] Finaliser et vérifier le pipeline CSV → données compactes + manifeste traçable.
-- [x] Finaliser une API locale démarrée avec Angular, sans dépendance réseau pour la démo.
-- [x] F1 : recherche pays et ouverture de sa fiche (`/api/countries`, `/api/countries/:id`).
-- [x] F2 : historique paginé d'un pays avec période (`/api/countries/:id/votes`).
-- [x] F3 : comparaison de deux pays, effectifs et concordance (`/api/compare`).
-- [x] F4 : évolution annuelle avec effectifs et années sans données (`/api/compare/trend`).
-- [x] F5 : recherche paginée de résolutions et détail sourcé (`/api/resolutions`, `/api/resolutions/:id`).
-- [x] Finaliser la navigation, l'accueil et l'écran Méthodologie / Sources.
-- [x] Vérifier les états chargement, erreur, vide et succès sur chaque parcours.
-- [x] Valider les calculs : `Y/N/A` explicites, absence exclue, deux abstentions concordantes, dénominateur nul → `null`, bornes de période inclusives.
-- [x] Vérifier les paramètres API, les erreurs de saisie et la pagination.
-- [x] Vérifier le clavier, les contrastes, le mobile et les alternatives au graphique.
-- [x] Exécuter la compilation, les tests Angular et les tests métier/API.
-- [x] Vérifier les cinq appels dans le panneau Réseau et répéter le parcours hors connexion aux serveurs ONU.
-- [x] Mettre à jour le README avec les commandes finales et les parcours vérifiés.
+| Temps         | Écran                               | À faire et à dire                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Chiffres de contrôle                                                                                                                                                                                                                                      |
+| ------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0:00 – 1:00   | Accueil                             | Présenter le besoin : comprendre comment les pays votent à l'ONU. Les données sont officielles (Bibliothèque de l'ONU). Deux API : une API Node pour lire et calculer, une API mockée MirageJS pour enregistrer les groupes. Montrer la carte de l'accueil (France en référence).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | 954 382 votes, 20 834 résolutions, 202 codes pays, 1946 – 2026                                                                                                                                                                                            |
+| 1:00 – 3:00   | **1. Pays** : `/pays`               | Taper « fran » (la liste se filtre pendant la saisie), ouvrir **France**. **Ouvrir l'onglet Réseau** : `GET /api/countries?search=fran`, puis `/api/countries/FRA`, `/votes`, `/profile`, `/rankings`. Montrer l'historique paginé (Pour, Contre, Abstention, Non-vote), l'alignement sur la majorité de l'Assemblée, puis le top 3 (seuil 50).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | 2000 – 2025 : 2 232 votes ; alignée sur la majorité dans 56,2 % des cas ; plus proches : Royaume-Uni 91,7 %, Monaco 91,1 %, Belgique 88,4 % ; moins proches : Syrie 38,1 %, Nauru 38,5 %, Cameroun 38,8 %                                                 |
+| 3:00 – 5:30   | **2. Comparer** : `/comparer`       | France / Inde, 2000 – 2025, « Comparer ». Dans le Réseau : `/api/compare` et `/api/compare/trend`. Expliquer la formule (votes identiques / votes communs, Non-vote exclu). Montrer la grille des votes croisés et des exemples de résolutions. Passer en **décennie**. Thème **Écologie** (petit effectif signalé), puis **Sécurité**. Mot-clé **Palestine**.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Tous sujets : **45,3 %** (2 218 comparables, 1 005 identiques) ; par décennie : 44,3 / 42,3 / 50,3 % ; année la plus haute 2025 (67,2 %), la plus basse 2009 (35,3 %) ; écologie 53,3 % sur 15 votes ; sécurité 29,8 % sur 647 ; Palestine 80,7 % sur 367 |
+| 5:30 – 7:00   | **3. Matrice** : `/matrice`         | Matrice des 6 pays de départ (membres permanents et Inde). Lire la couleur : rouge faible, bleu fort, gris sous le seuil. Dans le Réseau : une seule requête `/api/matrix/selection`. Ajouter un pays (Allemagne), cliquer sur « Afficher la matrice ». Cliquer sur la case **France – États-Unis** : la comparaison s'ouvre avec les mêmes filtres.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | France – Royaume-Uni 91,7 % ; États-Unis – Chine 11,6 % ; Chine – Inde 80,0 % ; États-Unis – Inde 14,8 % ; France – États-Unis 45,7 %                                                                                                                     |
+| 7:00 – 8:30   | **4. Résolutions** : `/resolutions` | Chercher « Ukraine » (Réseau : `/api/resolutions?search=Ukraine…`). Ouvrir **A/RES/ES-11/1** (2 mars 2022). Montrer la répartition et le vote de chaque pays, cliquer sur un pays pour revenir à sa fiche. Montrer le lien vers la notice ONU (ne pas cliquer hors ligne).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | 23 résultats de 1946 à 2025 ; A/RES/ES-11/1 : 141 Pour, 5 Contre, 35 Abstentions, 12 Non-votes                                                                                                                                                            |
+| 8:30 – 12:30  | **5. Groupes** : `/groupes`         | **Ouvrir la console** (filtre Mirage). Montrer les deux groupes d'exemple. Ouvrir « Membres permanents… », « Analyser » : la console montre `GET /mock-api/groups/membres-permanents`, le Réseau `GET /api/groups/analysis`. **Créer** un groupe (« Nouveau ») : essayer d'abord un nom d'une lettre et un seul pays (messages de validation), puis « Test démo » avec France, Inde, Brésil, Canada → console `[201] POST /mock-api/groups`. « Analyser » : concordance, paires, évolution, résolutions qui divisent. Dans « Et si le groupe changeait ? », tester l'ajout de la Belgique, puis le retrait de l'Inde (rien n'est enregistré). **Modifier** : ajouter une description, enregistrer → console `[200] PUT`, révision 2. Recharger la page (F5) : le groupe est toujours là (localStorage). **Supprimer** : confirmation, console `[204] DELETE`. | Membres permanents : 49,2 % (10 paires) ; France, Inde, Brésil, Canada : **55,1 %** (6 paires, 13 304 votes comparés) ; avec la Belgique : 60,6 % ; sans l'Inde : 56,6 %                                                                                  |
+| 12:30 – 14:00 | Compléments (selon le temps)        | **Suggestions** sur « BRICS (membres fondateurs) » : « Rechercher des candidats ». **Rapports** : analyser, « Enregistrer le rapport » (console `[201] POST …/reports`), le rapport reste identique après modification du groupe. **Conflit** : modifier le groupe dans le deuxième onglet, puis enregistrer dans le premier → message de conflit, brouillon conservé, « Recharger ». **Carte** : changer de pays de référence.                                                                                                                                                                                                                                                                                                                                                                                                                               | BRICS : 76,2 % ; premier candidat Turkménistan 85,2 % (concordance du groupe 78,5 %, +2,3 points), puis Somalie et Cambodge                                                                                                                               |
+| 14:00 – 15:00 | Méthodologie : `/methodologie`      | Conclure : outil descriptif, une concordance n'est pas une alliance ; données ONU non commerciales avec attribution ; les deux API et le fonctionnement hors ligne.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | —                                                                                                                                                                                                                                                         |
 
-## Extensions réalisées
+Si le temps manque, sauter la ligne « Compléments » : les cinq fonctionnalités validées sont couvertes avant 12:30.
 
-- [x] Classement demandé : top 3 des taux de concordance les plus élevés et les plus faibles dans une fiche pays, avec période et minimum de votes, calculé par l'API. Vérifié par tests métier, HTTP et navigateur (ordinateur, mobile, clavier, erreur et période vide).
-- [x] Filtrage thématique des comparaisons, tendances et classements à partir des sujets documentaires conservés, avec règles propres au projet documentées et états sans données.
-- [x] Matrice des pays choisis (2 à 15) : taux et votes communs par case, bleu/rouge, effectifs sous le seuil en gris, ouverture des comparaisons détaillées. La vue des 202 pays a été retirée.
-- [x] Vérifier indépendamment les résultats écologie et sécurité, la symétrie de la matrice et la distinction entre 0 % et absence de données.
+## Questions possibles et réponses courtes
 
-- [x] Ajouter un atelier de groupes de pays : création, modification et suppression via l'API mockée MirageJS, avec stockage dans le localStorage.
-- [x] Analyser la concordance interne pondérée, l'évolution et les résolutions qui divisent le groupe, avec seuil et couverture visibles.
-- [x] Tester des ajouts/retraits sans mutation jusqu'à application explicite et proposer des candidats avec couverture temporelle documentée.
-- [x] Enregistrer des rapports immuables et comparer deux versions uniquement à paramètres et versions compatibles.
-- [x] Vérifier la persistance et les conflits de révision avec les tests de l'API mockée ; vérifier le CRUD et les scénarios dans un vrai navigateur.
+**Pourquoi deux API ?** Le professeur a validé l'API Node pour lire et calculer sur les données de l'ONU (GET uniquement). Les écritures (groupes, rapports) passent par une deuxième API, mockée avec MirageJS, comme demandé.
 
-## Améliorations proposées — à choisir
+**Pourquoi les appels MirageJS ne sont-ils pas dans l'onglet Réseau ?** MirageJS répond dans le navigateur, avant que la requête parte sur le réseau. On a activé son journal : chaque requête apparaît dans la console (`Mirage: [201] POST /mock-api/groups`).
 
-- [ ] Partager une comparaison : conserver les deux pays, les années et le regroupement du graphique dans l'URL, avec un bouton pour copier le lien.
-- [ ] Parcourir tous les votes comparés : tableau paginé et filtres pour les votes identiques, différents ou non comparables, avec recherche de résolution.
-- [ ] Filtrer les résolutions disposant de votes individuels : afficher leur disponibilité dans les résultats et ajouter un filtre API.
+**Où sont enregistrés les groupes ?** Dans le `localStorage` du navigateur, clé `diplomatic-match-mock-api`. Ils restent après un rechargement, et sont partagés entre les onglets du même navigateur. Un autre navigateur ne les voit pas.
 
-Ces propositions prolongent les fonctionnalités existantes. Elles ne sont pas encore implémentées et ne remplacent pas la validation des cinq parcours par l'enseignant.
+**Que se passe-t-il si on fait un POST sur l'API Node ?** Elle répond 405 : elle n'accepte que GET.
 
-## Parcours de démonstration proposé — 15 minutes maximum
+**Comment le navigateur atteint-il l'API Node ?** Angular appelle `/api/...` ; en développement, le proxy de `ng serve` (`proxy.conf.mjs`) transmet ces requêtes à l'API sur le port 3001. Le navigateur reste sur la même origine, donc pas de problème de CORS.
 
-Ce scénario est à répéter sur la version livrée. France / Inde et la période 2000–2025 ont été vérifiées directement dans le CSV v6 : **2 218 votes comparables**, dont **1 005 concordants**, soit environ **45,3 %** ; 14 autres paires de lignes sont non comparables. Ces nombres servent de référence de contrôle, sans interprétation d'alliance.
+**Pourquoi deux abstentions comptent-elles comme un accord ?** Les deux pays ont fait le même choix explicite. En revanche, un Non-vote (absence de participation) n'est pas un choix : il est exclu du calcul.
 
-| Temps       | Action visible                                               | Fonction et vérification                                                    |
-| ----------- | ------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| 0:00–1:00   | Présenter le problème et la couverture historique            | Expliquer l'outil descriptif et la source datée                             |
-| 1:00–2:00   | Rechercher « France » puis ouvrir la fiche                   | F1 : montrer recherche et fiche provenant de l'API                          |
-| 2:00–3:00   | Choisir 2000–2025 et changer de page                         | F2 : nouveau GET avec période et pagination                                 |
-| 3:00–7:00   | Comparer France / Inde puis modifier la période              | F3 : effectifs, concordance, exemples de votes ; nouveau GET                |
-| 7:00–9:00   | Afficher l'évolution puis lire une année                     | F4 : pourcentage et nombre de votes annuels ; nouveau GET                   |
-| 9:00–11:00  | Rechercher un symbole issu de la liste, ouvrir sa résolution | F5 : requête de recherche, détail et lien de provenance                     |
-| 11:00–13:00 | Ouvrir la méthodologie                                       | Formule, abstentions, non-participation, historique, version et attribution |
-| 13:00–15:00 | Répondre aux questions et garder une marge                   | Aucun passage par le code n'est nécessaire                                  |
+**Pourquoi un tiret et pas 0 % ?** Sans vote commun, il n'y a rien à comparer : le taux est inconnu, pas nul.
 
-Pour illustrer le changement de période, France / Inde sur **2020–2026** donne **682 votes comparables**, **357 concordants**, soit environ **52,3 %**, dans le CSV téléchargé. L'année 2026 s'arrête au 17 septembre : elle ne représente pas une année complète.
+**À quoi sert le seuil de votes communs ?** Un taux calculé sur 3 votes n'est pas fiable. Sous le seuil (20 par défaut, 50 pour le top 3), on n'affiche pas de taux.
 
-## Échéances et conditions externes
+**Pourquoi 202 pays alors que l'ONU compte 193 membres ?** Les 202 codes incluent des États historiques (URSS, RDA, Yougoslavie…), gardés séparés de leurs successeurs.
 
-- [ ] Obtenir la validation pédagogique et l'accès enseignant ; aucune validation n'est présumée.
-- [ ] Répéter une démonstration fonctionnelle de 15 minutes, application installée depuis le README.
-- [ ] Effectuer le rendu **avant le 1er décembre 2026 à 23 h 59**.
-- [ ] Préparer la démonstration du **2 décembre 2026**, sans présentation de code.
+**D'où viennent les thèmes ?** De la colonne `subjects` des CSV de l'ONU. Nous les avons regroupés en 11 grands thèmes avec des règles écrites dans `server/themes.mjs`. Ce n'est pas une classification officielle ; une résolution peut avoir plusieurs thèmes.
 
-La fin du développement technique ne vaut ni validation par l'enseignant, ni rendu administratif. Aucune invitation, prise de contact ou modification du nom distant ne fait partie des actions automatiques de cette checklist.
+**Pourquoi l'écologie a-t-elle si peu de votes ?** 272 résolutions sont classées en écologie, mais seulement 21 ont des votes individuels : la plupart sont adoptées sans vote.
+
+**Pourquoi la France et les États-Unis ne sont-ils qu'à 45,7 % ?** De 2000 à 2025, les États-Unis votent Contre 1 517 fois, la France 492 fois. Sur 2 219 votes communs, la France vote Pour et les États-Unis Contre 669 fois ; une abstention face à un Pour ou un Contre compte aussi comme un désaccord.
+
+**Comment l'application reste-t-elle rapide avec 954 382 votes ?** L'API charge les données une fois en mémoire au démarrage, indexées par pays et par résolution, et met en cache les matrices déjà calculées. Les réponses restent légères (moins de 30 Ko).
+
+**Que se passe-t-il si l'API est arrêtée ?** Chaque page affiche un message d'erreur et un bouton « Réessayer ». Une requête sans réponse est abandonnée au bout de 15 secondes.
+
+**Qu'est-ce qu'une révision, et le 409 ?** Chaque enregistrement augmente le numéro de révision du groupe. Si on enregistre depuis une version périmée (autre onglet), MirageJS répond 409 « conflit » : rien n'est écrasé, l'utilisateur recharge.
+
+**Que fait `switchMap` ?** Quand l'utilisateur relance une recherche avant la fin de la précédente, l'ancienne requête est annulée et seule la dernière réponse s'affiche.
+
+**Pourquoi des signals ?** Ce sont des valeurs réactives d'Angular : quand on modifie un signal (résultat, chargement, erreur), l'affichage se met à jour.
+
+**Comment le formulaire de groupe est-il validé ?** Reactive Form : nom obligatoire de 2 à 80 caractères (espaces retirés), description de 500 caractères au plus, 2 à 12 pays. Le bouton affiche les erreurs sous les champs ; MirageJS refait les mêmes contrôles (400).
+
+**Avez-vous utilisé un template ?** Non. Le design est le nôtre (feuilles SCSS, polices locales DM Sans et Instrument Serif), sans Bootstrap ni Angular Material.
+
+**Les données sont-elles libres ?** Elles appartiennent à l'ONU : utilisation non commerciale avec attribution, citée dans l'application et le README.
+
+**Comment avez-vous testé ?** Tests Angular (Vitest) sur les composants, services et routes MirageJS ; tests Node sur les calculs et les routes de l'API, dont une référence France / Inde calculée séparément sur les CSV bruts (45,311 %).
