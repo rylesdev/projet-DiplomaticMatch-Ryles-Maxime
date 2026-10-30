@@ -3,8 +3,9 @@ import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, combineLatest, finalize, of, startWith, Subject, switchMap } from 'rxjs';
-import { DataMetadata, ResolutionDetail, VoteChoice } from '../../core/models/api.models';
+import { DataMetadata, ResolutionDetail } from '../../core/models/api.models';
 import { apiErrorMessage, DiplomaticApiService } from '../../core/services/diplomatic-api.service';
+import { voteClass, voteLabel } from '../../core/vote-labels';
 
 @Component({
   selector: 'app-resolution-detail-page',
@@ -13,6 +14,8 @@ import { apiErrorMessage, DiplomaticApiService } from '../../core/services/diplo
   styleUrl: './resolution-detail.page.scss',
 })
 export class ResolutionDetailPage {
+  readonly voteLabel = voteLabel;
+  readonly voteClass = voteClass;
   private readonly api = inject(DiplomaticApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
@@ -53,23 +56,5 @@ export class ResolutionDetailPage {
 
   reload(): void {
     this.retries.next();
-  }
-  voteLabel(choice: VoteChoice): string {
-    return {
-      YES: 'Pour',
-      NO: 'Contre',
-      ABSTAIN: 'Abstention',
-      NOT_VOTED: 'Non-vote',
-      UNKNOWN: 'Inconnu',
-    }[choice];
-  }
-  voteClass(choice: VoteChoice): string {
-    return {
-      YES: 'tag-yes',
-      NO: 'tag-no',
-      ABSTAIN: 'tag-abstain',
-      NOT_VOTED: 'tag-missing',
-      UNKNOWN: 'tag-missing',
-    }[choice];
   }
 }

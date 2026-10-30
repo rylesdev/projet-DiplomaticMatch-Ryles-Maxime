@@ -11,8 +11,8 @@ import {
   DataMetadata,
   TrendResult,
   Theme,
-  VoteChoice,
 } from '../../core/models/api.models';
+import { voteClass, voteLabel } from '../../core/vote-labels';
 
 interface Filters {
   countryA: string;
@@ -37,6 +37,8 @@ const periodValidator = (control: AbstractControl) => {
   styleUrl: './compare.page.scss',
 })
 export class ComparePage {
+  readonly voteLabel = voteLabel;
+  readonly voteClass = voteClass;
   private readonly api = inject(DiplomaticApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
@@ -193,24 +195,5 @@ export class ComparePage {
     return trend.interval === 'year'
       ? String(year)
       : `${Math.max(year, trend.from)}–${Math.min(year + 9, trend.to)}`;
-  }
-
-  voteLabel(choice: VoteChoice): string {
-    return {
-      YES: 'Pour',
-      NO: 'Contre',
-      ABSTAIN: 'Abstention',
-      NOT_VOTED: 'Sans vote',
-      UNKNOWN: 'Inconnu',
-    }[choice];
-  }
-  voteClass(choice: VoteChoice): string {
-    return {
-      YES: 'tag-yes',
-      NO: 'tag-no',
-      ABSTAIN: 'tag-abstain',
-      NOT_VOTED: 'tag-missing',
-      UNKNOWN: 'tag-missing',
-    }[choice];
   }
 }

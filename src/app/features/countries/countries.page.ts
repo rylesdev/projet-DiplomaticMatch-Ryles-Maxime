@@ -14,15 +14,10 @@ import {
   startWith,
   switchMap,
 } from 'rxjs';
-import {
-  Country,
-  CountryVote,
-  DataMetadata,
-  Paginated,
-  VoteChoice,
-} from '../../core/models/api.models';
+import { Country, CountryVote, DataMetadata, Paginated } from '../../core/models/api.models';
 import { apiErrorMessage, DiplomaticApiService } from '../../core/services/diplomatic-api.service';
 import { CountryRankingsComponent } from './country-rankings.component';
+import { voteClass, voteLabel } from '../../core/vote-labels';
 
 interface VoteRequest {
   id: string;
@@ -38,6 +33,8 @@ interface VoteRequest {
   styleUrl: './countries.page.scss',
 })
 export class CountriesPage {
+  readonly voteLabel = voteLabel;
+  readonly voteClass = voteClass;
   readonly Math = Math;
   private readonly api = inject(DiplomaticApiService);
   private readonly route = inject(ActivatedRoute);
@@ -154,25 +151,5 @@ export class CountriesPage {
       previous?.id === country.id && previous.from === from && previous.to === to ? page : 1;
     this.page.set(nextPage);
     this.voteRequest.next({ id: country.id, from, to, page: nextPage });
-  }
-
-  voteLabel(choice: VoteChoice): string {
-    return {
-      YES: 'Pour',
-      NO: 'Contre',
-      ABSTAIN: 'Abstention',
-      NOT_VOTED: 'Non-vote',
-      UNKNOWN: 'Inconnu',
-    }[choice];
-  }
-
-  voteClass(choice: VoteChoice): string {
-    return {
-      YES: 'tag-yes',
-      NO: 'tag-no',
-      ABSTAIN: 'tag-abstain',
-      NOT_VOTED: 'tag-missing',
-      UNKNOWN: 'tag-missing',
-    }[choice];
   }
 }

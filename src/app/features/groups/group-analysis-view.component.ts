@@ -1,8 +1,8 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, Input, OnChanges } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { VoteChoice } from '../../core/models/api.models';
 import { GroupAnalysis } from '../../core/models/groups.models';
+import { voteClass, voteLabel } from '../../core/vote-labels';
 
 @Component({
   selector: 'app-group-analysis-view',
@@ -11,6 +11,8 @@ import { GroupAnalysis } from '../../core/models/groups.models';
   styleUrl: './group-analysis-view.component.scss',
 })
 export class GroupAnalysisViewComponent implements OnChanges {
+  readonly voteLabel = voteLabel;
+  readonly voteClass = voteClass;
   @Input({ required: true }) analysis!: GroupAnalysis;
   @Input() themeLabel = '';
   segments: string[] = [];
@@ -39,23 +41,5 @@ export class GroupAnalysisViewComponent implements OnChanges {
 
   countryName(id: string): string {
     return this.analysis.members.find((member) => member.id === id)?.name ?? id;
-  }
-  voteLabel(choice: VoteChoice): string {
-    return {
-      YES: 'Pour',
-      NO: 'Contre',
-      ABSTAIN: 'Abstention',
-      NOT_VOTED: 'Non-vote',
-      UNKNOWN: 'Donnée absente ou inconnue',
-    }[choice];
-  }
-  voteClass(choice: VoteChoice): string {
-    return {
-      YES: 'tag-yes',
-      NO: 'tag-no',
-      ABSTAIN: 'tag-abstain',
-      NOT_VOTED: 'tag-missing',
-      UNKNOWN: 'tag-missing',
-    }[choice];
   }
 }
