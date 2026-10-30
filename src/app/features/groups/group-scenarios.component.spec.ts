@@ -42,9 +42,7 @@ function analysis(memberIds: string[]): GroupAnalysis {
       countryB,
       commonVoteCount: 5,
       matchingVoteCount: 3,
-      differingVoteCount: 2,
       agreementPercent: 60,
-      eligible: true,
       coverage,
     })),
   );

@@ -170,7 +170,7 @@
           @for (point of analysis.trend; track point.year) {
             <tr>
               <td>{{ point.year }}</td>
-              <td>{{ point.eligiblePairCount }} / {{ point.totalPairCount }}</td>
+              <td>{{ point.eligiblePairCount }} / {{ analysis.totalPairCount }}</td>
               <td>{{ point.commonPairVotes | number }}</td>
               <td>
                 @if (point.cohesionPercent === null) {

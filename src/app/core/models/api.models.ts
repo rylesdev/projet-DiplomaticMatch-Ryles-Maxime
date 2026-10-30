@@ -10,6 +10,9 @@ export interface Country {
   lastYear: number;
 }
 
+// Référence courte vers un pays, utilisée dans les listes longues (votes, paires de groupe).
+export type CountryRef = Pick<Country, 'id' | 'name'>;
+
 export interface Resolution {
   id: string;
   symbol: string;
@@ -114,7 +117,7 @@ export interface ConcordanceMatrix {
 }
 
 export interface ResolutionDetail extends Resolution {
-  votes: { country: Country; choice: VoteChoice; rawChoice: string }[];
+  votes: { country: CountryRef; choice: VoteChoice; rawChoice: string }[];
   totals: Record<VoteChoice, number>;
 }
 

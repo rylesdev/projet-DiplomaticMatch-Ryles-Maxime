@@ -1,4 +1,4 @@
-import { EXPLICIT_CHOICES, inScope, publicResolution } from './domain.mjs';
+import { countryRef, EXPLICIT_CHOICES, inScope, publicResolution } from './domain.mjs';
 import { HttpError, integerInRange } from './http-error.mjs';
 import { THEMES, THEME_CLASSIFICATION_VERSION } from './themes.mjs';
 
@@ -132,8 +132,8 @@ export function analyzeGroup(store, memberIds, filters) {
     for (let b = a + 1; b < members.length; b++) {
       pairIndexes[a][b] = pairs.length;
       pairs.push({
-        countryA: members[a],
-        countryB: members[b],
+        countryA: countryRef(members[a]),
+        countryB: countryRef(members[b]),
         commonVoteCount: 0,
         matchingVoteCount: 0,
         coverage: { from: null, to: null },
@@ -188,16 +188,20 @@ export function analyzeGroup(store, memberIds, filters) {
   }
   const metrics = totals(pairs, filters.minVotes);
   const coverage = { from: null, to: null };
-  const outputPairs = pairs.map((pair) => {
-    const eligible = pair.commonVoteCount >= filters.minVotes;
-    if (eligible) coverageUnion(coverage, pair.coverage);
-    return {
-      ...pair,
-      differingVoteCount: pair.commonVoteCount - pair.matchingVoteCount,
-      agreementPercent: eligible ? (100 * pair.matchingVoteCount) / pair.commonVoteCount : null,
-      eligible,
-    };
-  });
+  // Paires renvoyées sans champs déductibles (écart, éligibilité, dates) pour une réponse légère.
+  const outputPairs = pairs.map(
+    ({ countryA, countryB, commonVoteCount, matchingVoteCount }, index) => {
+      const eligible = commonVoteCount >= filters.minVotes;
+      if (eligible) coverageUnion(coverage, pairs[index].coverage);
+      return {
+        countryA,
+        countryB,
+        commonVoteCount,
+        matchingVoteCount,
+        agreementPercent: eligible ? (100 * matchingVoteCount) / commonVoteCount : null,
+      };
+    },
+  );
   const symbols = new Intl.Collator('en', { numeric: true });
   divisiveResolutions.sort(
     (a, b) =>
@@ -216,11 +220,7 @@ export function analyzeGroup(store, memberIds, filters) {
     observedResolutionCount,
     coverage,
     pairs: outputPairs,
-    trend: yearly.map((point) => ({
-      year: point.year,
-      totalPairCount: pairs.length,
-      ...totals(point.pairs, filters.minVotes),
-    })),
+    trend: yearly.map((point) => ({ year: point.year, ...totals(point.pairs, filters.minVotes) })),
     divisiveResolutions: divisiveResolutions.slice(0, 8),
     dataVersion: store.metadata.version,
     themeClassificationVersion: THEME_CLASSIFICATION_VERSION,

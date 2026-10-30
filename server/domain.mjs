@@ -64,6 +64,11 @@ export function normalizeSearch(value) {
     .toLocaleLowerCase('fr');
 }
 
+// Référence courte vers un pays, pour les listes longues (votes, paires) : réponse plus légère.
+export function countryRef({ id, name }) {
+  return { id, name };
+}
+
 export function publicResolution(resolution) {
   const { id, symbol, title, date, sourceUrl } = resolution;
   return { id, symbol, title, date, sourceUrl };
@@ -539,6 +544,29 @@ export function selectMatrix(store, countryIds, from, to, minVotes = 20, theme =
   };
 }
 
+// Concordance d'un pays de référence avec chacun des autres (utilisée par la carte) : une seule
+// ligne de la matrice, avec des pays réduits à l'essentiel pour garder une réponse légère.
+export function concordanceRow(store, countryId, from, to, minVotes = 20, theme = 'all') {
+  const matrix = compareMatrix(store, from, to, minVotes, theme);
+  const row = matrix.countries.findIndex((country) => country.id === countryId);
+  return {
+    country: store.countries.get(countryId),
+    from,
+    to,
+    theme,
+    minVotes,
+    entries: matrix.countries.map(({ id, name, iso3 }, column) => ({
+      id,
+      name,
+      ...(iso3 ? { iso3 } : {}),
+      commonVoteCount: matrix.commonVoteCounts[row][column],
+      matchingVoteCount: matrix.matchingVoteCounts[row][column],
+      agreementPercent: matrix.agreementPercents[row][column],
+    })),
+    dataVersion: store.metadata.version,
+  };
+}
+
 // Fiche pays : répartition des votes et alignement sur la majorité de séance de l'Assemblée.
 export function countryProfile(store, countryId, from, to, theme = 'all') {
   const totals = Object.fromEntries(VOTE_CHOICES.map((choice) => [choice, 0]));
@@ -615,7 +643,7 @@ export function resolutionDetail(store, resolution) {
   const totals = Object.fromEntries(VOTE_CHOICES.map((choice) => [choice, 0]));
   const votes = Array.from(resolution.voteMap, ([countryId, vote]) => {
     totals[vote.choice]++;
-    return { country: store.countries.get(countryId), ...vote };
+    return { country: countryRef(store.countries.get(countryId)), ...vote };
   }).sort((a, b) => a.country.name.localeCompare(b.country.name, 'fr'));
   return { ...publicResolution(resolution), votes, totals };
 }

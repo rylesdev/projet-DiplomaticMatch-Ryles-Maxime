@@ -1,4 +1,4 @@
-import { Country, Resolution, VoteChoice } from './api.models';
+import { Country, CountryRef, Resolution, VoteChoice } from './api.models';
 
 export interface CountryGroup {
   id: string;
@@ -36,19 +36,16 @@ export interface GroupSuggestionsRequest extends GroupAnalysisRequest {
 }
 
 export interface GroupPair {
-  countryA: Country;
-  countryB: Country;
+  countryA: CountryRef;
+  countryB: CountryRef;
   commonVoteCount: number;
   matchingVoteCount: number;
-  differingVoteCount: number;
+  // null : seuil de votes communs non atteint pour cette paire.
   agreementPercent: number | null;
-  eligible: boolean;
-  coverage: { from: string | null; to: string | null };
 }
 
 export interface GroupTrendPoint {
   year: number;
-  totalPairCount: number;
   eligiblePairCount: number;
   commonPairVotes: number;
   matchingPairVotes: number;

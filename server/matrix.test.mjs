@@ -4,6 +4,7 @@ import {
   compareCountries,
   compareMatrix,
   compareTrend,
+  concordanceRow,
   createStore,
   rankCountries,
   selectMatrix,
@@ -249,4 +250,18 @@ test('matrice sélectionnée : mêmes cases que la matrice complète, dans l’o
   );
   assert.equal(selection.theme, 'environment');
   assert.equal(selection.minVotes, 1);
+});
+
+test('ligne de concordance : mêmes valeurs que la ligne du pays dans la matrice complète', () => {
+  const store = createStore(themedDataset());
+  const full = compareMatrix(store, 2020, 2024, 1, 'environment');
+  const row = concordanceRow(store, 'FRA', 2020, 2024, 1, 'environment');
+  const index = positions(full);
+  assert.equal(row.country.id, 'FRA');
+  assert.equal(row.entries.length, full.countries.length);
+  for (const entry of row.entries) {
+    assert.equal(entry.commonVoteCount, full.commonVoteCounts[index.FRA][index[entry.id]]);
+    assert.equal(entry.matchingVoteCount, full.matchingVoteCounts[index.FRA][index[entry.id]]);
+    assert.equal(entry.agreementPercent, full.agreementPercents[index.FRA][index[entry.id]]);
+  }
 });

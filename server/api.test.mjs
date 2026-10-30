@@ -98,6 +98,15 @@ test('profil pays : distribution, majorité de séance et filtrage thématique',
   assert.equal(emptyTheme.explicitVoteCount, 0);
   assert.equal(emptyTheme.majorityAlignmentPercent, null);
 });
+test('API carte : ligne de concordance du pays de référence', () => {
+  const row = request('/api/countries/FRA/concordances?from=2020&to=2024&minVotes=1');
+  assert.equal(row.country.id, 'FRA');
+  assert.equal(row.minVotes, 1);
+  assert.equal(row.entries.find((entry) => entry.id === 'IND').commonVoteCount, 3);
+  assert.equal(request('/api/countries/FRA/concordances').minVotes, 20);
+  assert.throws(() => request('/api/countries/ZZZ/concordances'), { status: 404 });
+  assert.throws(() => request('/api/countries/FRA/concordances?minVotes=0'), { status: 400 });
+});
 test('API matrice : tous les pays, seuil par défaut et matrices numériques typées', () => {
   const matrix = request('/api/matrix?from=2020&to=2024&minVotes=1');
   assert.equal(matrix.theme, 'all');

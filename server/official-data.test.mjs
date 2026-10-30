@@ -5,6 +5,7 @@ import {
   compareCountries,
   compareMatrix,
   compareTrend,
+  concordanceRow,
   countryProfile,
   createStore,
   rankCountries,
@@ -164,4 +165,27 @@ test('les comparaisons restent légères : au plus 4 exemples par case, 6 avec u
     // Sous 30 Ko : certains proxys de développement bloquent les grosses réponses.
     assert.ok(Buffer.byteLength(JSON.stringify(result)) < 30_000);
   }
+});
+
+test('la ligne de concordance de la carte reste sous 30 Ko pour les 202 pays', () => {
+  const row = concordanceRow(store, 'FRA', 1946, 2025, 20, 'all');
+  assert.equal(row.entries.length, 202);
+  assert.ok(Buffer.byteLength(JSON.stringify(row)) < 30_000);
+  const india = row.entries.find((entry) => entry.id === 'IND');
+  assert.equal(
+    india.agreementPercent,
+    compareCountries(store, 'FRA', 'IND', 1946, 2025).agreementPercent,
+  );
+});
+
+test('les listes longues restent légères : pays, détail de résolution, analyse de groupe', async () => {
+  const { handleApi } = await import('./api.mjs');
+  const size = (url) => Buffer.byteLength(JSON.stringify(handleApi(store, { url, method: 'GET' })));
+  const twelve = 'FRA,USA,GBR,CHN,RUS,IND,BRA,ZAF,DEU,JPN,CAN,AUS';
+  assert.ok(size('/api/countries') < 30_000);
+  assert.ok(size('/api/resolutions/4128222') < 30_000);
+  assert.ok(size(`/api/groups/analysis?members=${twelve}&from=2000&to=2025`) < 30_000);
+  // Les pays des votes et des paires sont des références courtes { id, name }.
+  const detail = handleApi(store, { url: '/api/resolutions/4128222', method: 'GET' });
+  assert.deepEqual(Object.keys(detail.votes[0].country), ['id', 'name']);
 });

@@ -3,6 +3,7 @@ import {
   compareCountries,
   compareMatrix,
   compareTrend,
+  concordanceRow,
   countryProfile,
   normalizeSearch,
   publicResolution,
@@ -137,15 +138,21 @@ export function handleApi(store, request) {
   }
   if (path === '/api/countries') {
     const query = search(params);
-    return Array.from(store.countries.values())
-      .filter((item) =>
-        normalizeSearch(
-          [item.id, item.name, item.nameEn, ...(item.aliases ?? [])].join(' '),
-        ).includes(query),
-      )
-      .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    return (
+      Array.from(store.countries.values())
+        .filter((item) =>
+          normalizeSearch(
+            [item.id, item.name, item.nameEn, ...(item.aliases ?? [])].join(' '),
+          ).includes(query),
+        )
+        .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+        // Les anciens noms (aliases) servent à la recherche ci-dessus, pas à l'affichage.
+        .map(({ aliases, ...country }) => country)
+    );
   }
-  const countryMatch = path.match(/^\/api\/countries\/([^/]+)(\/votes|\/rankings|\/profile)?$/);
+  const countryMatch = path.match(
+    /^\/api\/countries\/([^/]+)(\/votes|\/rankings|\/profile|\/concordances)?$/,
+  );
   if (countryMatch) {
     const id = decodeURIComponent(countryMatch[1]);
     const found = country(store, id);
@@ -157,6 +164,10 @@ export function handleApi(store, request) {
     }
     if (countryMatch[2] === '/profile')
       return countryProfile(store, id, from, to, themeParameter(params));
+    if (countryMatch[2] === '/concordances') {
+      const minVotes = integer(params, 'minVotes', 20, 1, 100000);
+      return concordanceRow(store, id, from, to, minVotes, themeParameter(params));
+    }
     const votes = store.countryVotes
       .get(id)
       .filter((item) => {
