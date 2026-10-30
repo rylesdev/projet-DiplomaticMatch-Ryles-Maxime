@@ -126,8 +126,17 @@ export class DiplomaticApiService {
     from: number,
     to: number,
     theme = 'all',
+    search = '',
   ): Observable<ComparisonResult> {
-    return this.get<ComparisonResult>('/compare', { countryA, countryB, from, to, theme });
+    // Mot-clé facultatif : non envoyé quand il est vide.
+    return this.get<ComparisonResult>('/compare', {
+      countryA,
+      countryB,
+      from,
+      to,
+      theme,
+      search: search || undefined,
+    });
   }
   trend(
     countryA: string,
@@ -136,6 +145,7 @@ export class DiplomaticApiService {
     to: number,
     interval: 'year' | 'decade' = 'year',
     theme = 'all',
+    search = '',
   ): Observable<TrendResult> {
     return this.get<TrendResult>('/compare/trend', {
       countryA,
@@ -144,6 +154,7 @@ export class DiplomaticApiService {
       to,
       interval,
       theme,
+      search: search || undefined,
     });
   }
   resolutions(

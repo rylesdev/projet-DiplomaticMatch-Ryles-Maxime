@@ -215,6 +215,25 @@ describe('DiplomaticApiService', () => {
     request.flush(testMatrix);
   });
 
+  it('sends a comparison keyword only when there is one', () => {
+    api.compare('FRA', 'IND', 2000, 2025, 'all', 'Palestine').subscribe();
+    api.trend('FRA', 'IND', 2000, 2025, 'year', 'all', '').subscribe();
+    const comparison = http.expectOne((request) => request.url === '/api/compare');
+    const trend = http.expectOne((request) => request.url === '/api/compare/trend');
+    expect(comparison.request.params.get('search')).toBe('Palestine');
+    expect(trend.request.params.has('search')).toBe(false);
+    comparison.flush({});
+    trend.flush({});
+  });
+
+  it('requests the profile of a country for a period and a theme', () => {
+    api.profile('FRA', 2000, 2025, 'security').subscribe();
+    const request = http.expectOne((request) => request.url === '/api/countries/FRA/profile');
+    expect(request.request.params.get('from')).toBe('2000');
+    expect(request.request.params.get('theme')).toBe('security');
+    request.flush({});
+  });
+
   it('turns HTTP failures into readable French messages', () => {
     expect(apiErrorMessage(new HttpErrorResponse({ status: 0 }))).toContain('indisponible');
     expect(apiErrorMessage(new HttpErrorResponse({ status: 404 }))).toContain('pas été trouvée');
