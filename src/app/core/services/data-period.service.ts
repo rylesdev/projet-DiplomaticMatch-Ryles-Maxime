@@ -17,7 +17,9 @@ export function lastCompleteYear(coverageTo: string): number {
 @Injectable({ providedIn: 'root' })
 export class DataPeriodService {
   private readonly api = inject(DiplomaticApiService);
-  // Valeurs de secours, utilisées seulement si l'API ne répond pas au démarrage.
+  // Début par défaut des analyses (2000), lu ici par les pages qui affichent la période.
+  readonly defaultFrom = DEFAULT_FROM;
+  // Valeurs de secours, remplacées par load() si l'API répond au démarrage.
   firstYear = DEFAULT_FROM;
   lastYear = new Date().getFullYear() - 1;
 
