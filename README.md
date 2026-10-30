@@ -29,7 +29,7 @@ Autre port Angular : `npm start -- --port 4201`. Pour lancer séparément les de
 | F4 — Évolution   | Comparaison puis regroupement annuel ou décennal | `GET /api/compare/trend?countryA=FRA&countryB=IND&from=2000&to=2025&interval=year` |
 | F5 — Résolutions | Rechercher un texte ou symbole, ouvrir ses votes | `GET /api/resolutions?search=...&page=1`, `GET /api/resolutions/:id`               |
 
-Le classement des pays est disponible dans chaque fiche : `GET /api/countries/FRA/rankings?from=2000&to=2025&minVotes=20` renvoie les trois pays les plus concordants et les trois moins concordants sur cette période.
+Le classement des pays est disponible dans chaque fiche : `GET /api/countries/FRA/rankings?from=2000&to=2025&minVotes=50` renvoie les trois pays les plus concordants et les trois moins concordants sur cette période.
 
 Le catalogue `GET /api/themes` fournit les thèmes et leurs effectifs. Le paramètre `theme=environment`, par exemple, filtre de manière identique comparaison, classement et tendance. La page **Matrice** utilise `GET /api/matrix?from=2000&to=2025&theme=all&minVotes=20` pour comparer les 202 pays et entités historiques sur les deux axes.
 
@@ -47,7 +47,7 @@ Il s'agit d'un outil descriptif : ce taux n'est ni un indice d'alliance ni une m
 
 ### Pays aux votes les plus et les moins concordants
 
-Dans une fiche pays, le classement recherche trois taux de concordance élevés et trois faibles sur la période choisie. Le pays lui-même est exclu. Chaque candidat doit atteindre le minimum de votes explicites communs (20 par défaut) ; les absences et valeurs inconnues restent exclues du calcul. Les effectifs et les dates de couverture sont affichés pour chaque résultat, car les votes communs peuvent différer d'un candidat à l'autre.
+Dans une fiche pays, le classement recherche trois taux de concordance élevés et trois faibles sur la période choisie. Le pays lui-même est exclu. Chaque candidat doit atteindre le minimum de votes explicites communs (50 par défaut) ; les absences et valeurs inconnues restent exclues du calcul. Les effectifs et les dates de couverture sont affichés pour chaque résultat, car les votes communs peuvent différer d'un candidat à l'autre.
 
 Le tri utilise le taux exact, avant tout arrondi. À taux égal, le plus grand nombre de votes communs est prioritaire, puis le nom et le code pays. Les trois pays les plus concordants sont sélectionnés d'abord ; les trois moins concordants sont ensuite choisis parmi les autres. Avec moins de six candidats éligibles, les listes restent incomplètes pour éviter de présenter un même pays des deux côtés. Sans candidat atteignant le seuil, aucun classement n'est fabriqué. Chaque résultat ouvre la comparaison détaillée sur la même période.
 

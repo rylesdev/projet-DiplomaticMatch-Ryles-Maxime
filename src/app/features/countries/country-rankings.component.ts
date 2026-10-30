@@ -43,7 +43,7 @@ export class CountryRankingsComponent {
       nonNullable: true,
       validators: [Validators.required, Validators.min(1946), Validators.max(2100)],
     }),
-    minVotes: new FormControl(20, {
+    minVotes: new FormControl(50, {
       nonNullable: true,
       validators: [Validators.required, Validators.min(1), Validators.max(100000)],
     }),

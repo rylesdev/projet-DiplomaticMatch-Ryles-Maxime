@@ -62,6 +62,12 @@ describe('CountryRankingsComponent', () => {
     fixture = TestBed.createComponent(CountryRankingsComponent);
   });
 
+  it('requests rankings with a default minimum of 50 common votes', () => {
+    fixture.componentRef.setInput('countryId', 'TST');
+    fixture.detectChanges();
+    expect(rankings).toHaveBeenLastCalledWith('TST', 2000, 2026, 50, 'all');
+  });
+
   it('cancels the old country request when the selection changes', () => {
     const first = new Subject<CountryRankings>();
     const second = new Subject<CountryRankings>();
