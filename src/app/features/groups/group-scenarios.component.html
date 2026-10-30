@@ -105,96 +105,12 @@
     </div>
   }
 
-  <div class="suggestions-heading">
-    <div>
-      <h3>Des pays à explorer</h3>
-      <p class="small muted">
-        Chaque candidat doit atteindre le seuil avec chacun des membres. Le classement porte sur sa
-        concordance pondérée avec le groupe.
-      </p>
-    </div>
-    <button
-      type="button"
-      class="button button-ghost"
-      [disabled]="disabled || suggesting() || group.memberIds.length >= 12"
-      (click)="requestSuggestions()"
-    >
-      {{ suggesting() ? 'Recherche…' : 'Rechercher des candidats' }}
-    </button>
-  </div>
-  <label class="history-option"
-    ><input
-      type="checkbox"
-      #historical
-      [checked]="includeHistorical()"
-      (change)="historicalChanged(historical.checked)"
-    />Inclure aussi les candidats dont la couverture s’arrête avant la fin de période</label
-  >
-  @if (group.memberIds.length >= 12) {
-    <p class="small muted">
-      Le groupe atteint la limite de 12 membres. Retirez un pays avant de tester un ajout.
-    </p>
-  }
-  @if (suggesting()) {
-    <p class="status" role="status">Recherche des candidats comparables à tous les membres…</p>
-  }
-  @if (suggestionsError()) {
-    <div class="status status-error" role="alert">
-      <p>{{ suggestionsError() }}</p>
-      <button class="button button-ghost" type="button" (click)="reloadGroup.emit()">
-        Recharger le groupe
-      </button>
-    </div>
-  }
-  @if (suggestions(); as result) {
-    <p class="small muted">
-      {{ result.eligibleCandidateCount }} candidats éligibles ·
-      {{ result.excludedCandidateCount }} exclus · {{ result.filters.from }}–{{
-        result.filters.to
-      }}.
-    </p>
-    @if (!result.suggestions.length) {
-      <p class="status">
-        Aucun candidat n’atteint les critères avec tous les membres. Élargissez la période, adaptez
-        le seuil ou explorez les couvertures historiques.
-      </p>
-    }
-    <div class="suggestion-list">
-      @for (suggestion of result.suggestions; track suggestion.country.id) {
-        <article>
-          <div class="suggestion-title">
-            <h4>{{ suggestion.country.name }}</h4>
-            <strong>{{ suggestion.concordancePercent | number: '1.1-1' }} %</strong>
-          </div>
-          <p>
-            {{ suggestion.eligiblePairCount }} membres comparés ·
-            {{ suggestion.commonPairVotes | number }} comparaisons de votes.
-          </p>
-          <p class="small muted">
-            Couverture : {{ suggestion.coverage.from?.slice(0, 10) }} –
-            {{ suggestion.coverage.to?.slice(0, 10) }}.
-          </p>
-          @if (suggestion.cohesionAfterPercent !== null) {
-            <p class="small">
-              Concordance du groupe après ajout :
-              <strong>{{ suggestion.cohesionAfterPercent | number: '1.1-1' }} %</strong>
-              @if (suggestion.deltaPoints !== null) {
-                ({{ suggestion.deltaPoints > 0 ? '+' : ''
-                }}{{ suggestion.deltaPoints | number: '1.1-1' }} points)
-              }
-              .
-            </p>
-          }
-          <button
-            class="button button-ghost"
-            type="button"
-            [disabled]="disabled || loading()"
-            (click)="testSuggestion(suggestion.country.id)"
-          >
-            Tester ce pays
-          </button>
-        </article>
-      }
-    </div>
-  }
+  <app-group-suggestions
+    [group]="group"
+    [filters]="filters"
+    [disabled]="disabled"
+    [testing]="loading()"
+    (testCountry)="testSuggestion($event)"
+    (reloadGroup)="reloadGroup.emit()"
+  />
 </section>

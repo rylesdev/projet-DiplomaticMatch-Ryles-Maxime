@@ -136,11 +136,11 @@ describe('GroupReportsComponent', () => {
   });
 
   function load(first: GroupReport, second: GroupReport): void {
-    const list = http.expectOne(`/api/groups/${first.groupId}/reports`);
+    const list = http.expectOne(`/mock-api/groups/${first.groupId}/reports`);
     expect(list.request.method).toBe('GET');
     list.flush([summary(second), summary(first)]);
-    http.expectOne(`/api/groups/${first.groupId}/reports/${first.id}`).flush(first);
-    http.expectOne(`/api/groups/${second.groupId}/reports/${second.id}`).flush(second);
+    http.expectOne(`/mock-api/groups/${first.groupId}/reports/${first.id}`).flush(first);
+    http.expectOne(`/mock-api/groups/${second.groupId}/reports/${second.id}`).flush(second);
     fixture.detectChanges();
   }
 
@@ -180,14 +180,14 @@ describe('GroupReportsComponent', () => {
   });
 
   it('cancels an obsolete report-list GET when the group changes', () => {
-    const obsolete = http.expectOne('/api/groups/fixture-group/reports');
+    const obsolete = http.expectOne('/mock-api/groups/fixture-group/reports');
     expect(obsolete.request.method).toBe('GET');
 
     fixture.componentRef.setInput('groupId', 'other-fixture-group');
     fixture.detectChanges();
 
     expect(obsolete.cancelled).toBe(true);
-    const current = http.expectOne('/api/groups/other-fixture-group/reports');
+    const current = http.expectOne('/mock-api/groups/other-fixture-group/reports');
     current.flush([]);
     expect(component.reports()).toEqual([]);
     expect(component.first()).toBeNull();
@@ -197,10 +197,10 @@ describe('GroupReportsComponent', () => {
 
   it('cancels both obsolete detail GETs when another group is selected', () => {
     http
-      .expectOne('/api/groups/fixture-group/reports')
+      .expectOne('/mock-api/groups/fixture-group/reports')
       .flush([summary(report('b', 80)), summary(report('a', 20))]);
-    const oldFirst = http.expectOne('/api/groups/fixture-group/reports/a');
-    const oldSecond = http.expectOne('/api/groups/fixture-group/reports/b');
+    const oldFirst = http.expectOne('/mock-api/groups/fixture-group/reports/a');
+    const oldSecond = http.expectOne('/mock-api/groups/fixture-group/reports/b');
     expect(component.detailLoading()).toBe(true);
 
     fixture.componentRef.setInput('groupId', 'other-fixture-group');
@@ -219,13 +219,13 @@ describe('GroupReportsComponent', () => {
   it('renders the saved snapshots and passes their analyses to the report views', () => {
     const first = report('a', 20);
     const second = report('b', 80);
-    const list = http.expectOne('/api/groups/fixture-group/reports');
+    const list = http.expectOne('/mock-api/groups/fixture-group/reports');
     list.flush([
       { ...summary(second), groupName: 'Nom courant à ignorer', groupRevision: 99 },
       { ...summary(first), groupName: 'Nom courant à ignorer', groupRevision: 99 },
     ]);
-    http.expectOne('/api/groups/fixture-group/reports/a').flush(first);
-    http.expectOne('/api/groups/fixture-group/reports/b').flush(second);
+    http.expectOne('/mock-api/groups/fixture-group/reports/a').flush(first);
+    http.expectOne('/mock-api/groups/fixture-group/reports/b').flush(second);
     fixture.detectChanges();
 
     const text = (fixture.nativeElement as HTMLElement).textContent;
@@ -237,7 +237,7 @@ describe('GroupReportsComponent', () => {
     expect(
       views.map((view) => (view.componentInstance as GroupAnalysisViewComponent).analysis),
     ).toEqual([first.analysis, second.analysis]);
-    http.expectNone('/api/groups/fixture-group');
+    http.expectNone('/mock-api/groups/fixture-group');
     http.expectNone((request) => request.method !== 'GET');
   });
 });

@@ -6,7 +6,8 @@ import { Subject, catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { Theme } from '../../core/models/api.models';
 import { GroupReport, GroupReportSummary } from '../../core/models/groups.models';
 import { DiplomaticApiService } from '../../core/services/diplomatic-api.service';
-import { GroupsApiService, groupErrorMessage } from '../../core/services/groups-api.service';
+import { GroupReportsService } from '../../core/services/group-reports.service';
+import { groupErrorMessage } from '../../core/services/groups-api.service';
 import { GroupAnalysisViewComponent } from './group-analysis-view.component';
 
 @Component({
@@ -18,7 +19,7 @@ import { GroupAnalysisViewComponent } from './group-analysis-view.component';
 export class GroupReportsComponent implements OnChanges {
   @Input({ required: true }) groupId = '';
   @Input() refreshKey = 0;
-  private readonly api = inject(GroupsApiService);
+  private readonly api = inject(GroupReportsService);
   private readonly diplomatic = inject(DiplomaticApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly lists = new Subject<string>();

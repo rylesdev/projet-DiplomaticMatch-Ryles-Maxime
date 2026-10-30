@@ -5,6 +5,8 @@ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angul
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { CountryGroup, GroupAnalysis, GroupAnalysisFilters } from '../../core/models/groups.models';
 import { DiplomaticApiService } from '../../core/services/diplomatic-api.service';
+import { GroupAnalysisService } from '../../core/services/group-analysis.service';
+import { GroupReportsService } from '../../core/services/group-reports.service';
 import { GroupsApiService } from '../../core/services/groups-api.service';
 import { GroupAnalysisViewComponent } from './group-analysis-view.component';
 import { GroupReportsComponent } from './group-reports.component';
@@ -89,9 +91,10 @@ describe('GroupsPage saved-state actions', () => {
     createGroup: ReturnType<typeof vi.fn>;
     updateGroup: ReturnType<typeof vi.fn>;
     deleteGroup: ReturnType<typeof vi.fn>;
-    preview: ReturnType<typeof vi.fn>;
-    saveReport: ReturnType<typeof vi.fn>;
+    checkRevision: ReturnType<typeof vi.fn>;
   };
+  let analysisApi: { analyze: ReturnType<typeof vi.fn> };
+  let reportsApi: { saveReport: ReturnType<typeof vi.fn> };
   let navigate: ReturnType<typeof vi.spyOn>;
   beforeEach(async () => {
     params = new BehaviorSubject(convertToParamMap({ id: 'saved' }));
@@ -101,24 +104,24 @@ describe('GroupsPage saved-state actions', () => {
       createGroup: vi.fn().mockReturnValue(of({ ...savedGroup, id: 'created' })),
       updateGroup: vi.fn().mockReturnValue(of({ ...savedGroup, revision: 2 })),
       deleteGroup: vi.fn().mockReturnValue(of(undefined)),
-      preview: vi.fn().mockImplementation((_id, request) =>
-        of(
-          analysis({
-            from: request.from,
-            to: request.to,
-            theme: request.theme,
-            minVotes: request.minVotes,
-          }),
-        ),
-      ),
-      saveReport: vi.fn().mockReturnValue(of({ id: 'report' })),
+      checkRevision: vi.fn().mockImplementation((group: CountryGroup) => of(group)),
     };
+    analysisApi = {
+      analyze: vi
+        .fn()
+        .mockImplementation((_group: CountryGroup, filters: GroupAnalysisFilters) =>
+          of(analysis({ ...filters })),
+        ),
+    };
+    reportsApi = { saveReport: vi.fn().mockReturnValue(of({ id: 'report' })) };
     TestBed.configureTestingModule({
       imports: [GroupsPage],
       providers: [
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { paramMap: params } },
         { provide: GroupsApiService, useValue: api },
+        { provide: GroupAnalysisService, useValue: analysisApi },
+        { provide: GroupReportsService, useValue: reportsApi },
         {
           provide: DiplomaticApiService,
           useValue: {
@@ -171,8 +174,8 @@ describe('GroupsPage saved-state actions', () => {
     page.saveReport();
     fixture.detectChanges();
     expect(page.dirty()).toBe(true);
-    expect(api.preview).not.toHaveBeenCalled();
-    expect(api.saveReport).not.toHaveBeenCalled();
+    expect(analysisApi.analyze).not.toHaveBeenCalled();
+    expect(reportsApi.saveReport).not.toHaveBeenCalled();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
       'Enregistrez les modifications du groupe',
     );
@@ -199,17 +202,17 @@ describe('GroupsPage saved-state actions', () => {
     expect(page.dirty()).toBe(false);
   });
 
-  it('previews saved members and saves reports only with the applied filter snapshot', () => {
+  it('analyzes the saved members and saves reports only with the applied filter snapshot', () => {
     create();
     page.filters.setValue({ from: 2010, to: 2020, theme: 'environment', minVotes: 5 });
     page.analyze();
     fixture.detectChanges();
-    expect(api.preview).toHaveBeenLastCalledWith('saved', {
+    expect(api.checkRevision).toHaveBeenLastCalledWith(savedGroup);
+    expect(analysisApi.analyze).toHaveBeenLastCalledWith(savedGroup, {
       from: 2010,
       to: 2020,
       theme: 'environment',
       minVotes: 5,
-      expectedRevision: 1,
     });
     expect(page.appliedFilters()).toEqual({
       from: 2010,
@@ -219,16 +222,11 @@ describe('GroupsPage saved-state actions', () => {
     });
     page.filters.controls.theme.setValue('all');
     page.saveReport();
-    expect(api.saveReport).not.toHaveBeenCalled();
+    expect(reportsApi.saveReport).not.toHaveBeenCalled();
     page.filters.controls.theme.setValue('environment');
     page.saveReport();
-    expect(api.saveReport).toHaveBeenLastCalledWith('saved', {
-      from: 2010,
-      to: 2020,
-      theme: 'environment',
-      minVotes: 5,
-      expectedRevision: 1,
-    });
+    expect(reportsApi.saveReport).toHaveBeenLastCalledWith(savedGroup, page.analysis());
+    expect(page.analysis()?.filters.theme).toBe('environment');
     expect(page.reportRefresh()).toBe(1);
   });
 

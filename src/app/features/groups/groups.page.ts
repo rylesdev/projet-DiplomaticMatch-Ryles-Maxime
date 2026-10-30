@@ -28,6 +28,8 @@ import {
 } from '../../core/models/groups.models';
 import { DiplomaticApiService, apiErrorMessage } from '../../core/services/diplomatic-api.service';
 import { DataPeriodService, DEFAULT_FROM } from '../../core/services/data-period.service';
+import { GroupAnalysisService } from '../../core/services/group-analysis.service';
+import { GroupReportsService } from '../../core/services/group-reports.service';
 import { GroupsApiService, groupErrorMessage } from '../../core/services/groups-api.service';
 import { CountryPickerComponent } from '../../shared/country-picker.component';
 import { GroupAnalysisViewComponent } from './group-analysis-view.component';
@@ -62,6 +64,8 @@ interface AnalysisRequest {
 export class GroupsPage {
   private readonly period = inject(DataPeriodService);
   private readonly api = inject(GroupsApiService);
+  private readonly analysisApi = inject(GroupAnalysisService);
+  private readonly reportsApi = inject(GroupReportsService);
   private readonly dataApi = inject(DiplomaticApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -152,18 +156,15 @@ export class GroupsPage {
           if (!request) return of(null);
           this.analysisLoading.set(true);
           this.analysisError.set('');
-          return this.api
-            .preview(request.group.id, {
-              ...request.filters,
-              expectedRevision: request.group.revision,
-            })
-            .pipe(
-              catchError((error: unknown) => {
-                this.handleError(error, this.analysisError);
-                return of(null);
-              }),
-              finalize(() => this.analysisLoading.set(false)),
-            );
+          // Vérifie d'abord la version enregistrée (Mirage), puis calcule l'analyse (API Node).
+          return this.api.checkRevision(request.group).pipe(
+            switchMap(() => this.analysisApi.analyze(request.group, request.filters)),
+            catchError((error: unknown) => {
+              this.handleError(error, this.analysisError);
+              return of(null);
+            }),
+            finalize(() => this.analysisLoading.set(false)),
+          );
         }),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -310,10 +311,10 @@ export class GroupsPage {
   }
   saveReport(): void {
     const group = this.group();
-    const filters = this.appliedFilters();
+    const analysis = this.analysis();
     if (
       !group ||
-      !filters ||
+      !analysis ||
       this.busy() ||
       this.dirty() ||
       this.conflict() ||
@@ -323,8 +324,9 @@ export class GroupsPage {
     this.reportSaving.set(true);
     this.actionError.set('');
     this.notice.set('');
-    this.api
-      .saveReport(group.id, { ...filters, expectedRevision: group.revision })
+    // Le rapport fige l'analyse affichée (calculée par l'API Node) dans l'API mockée.
+    this.reportsApi
+      .saveReport(group, analysis)
       .pipe(
         takeUntil(this.selectionChanges),
         takeUntilDestroyed(this.destroyRef),

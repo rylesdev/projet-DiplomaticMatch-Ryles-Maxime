@@ -53,76 +53,12 @@
   font-size: 11px;
   padding: 5px 9px;
 }
-.suggestions-heading {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  justify-content: space-between;
-  border-top: 1px solid var(--line);
-  padding-top: 25px;
-  margin-top: 30px;
-}
-.suggestions-heading h3 {
-  margin-bottom: 10px;
-}
-.suggestions-heading p {
-  margin: 0;
-  max-width: 450px;
-}
-.suggestions-heading button {
-  flex-shrink: 0;
-}
-.history-option {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  margin: 18px 0;
-  font-weight: 400;
-  font-size: 12px;
-  color: var(--muted);
-}
-.history-option input {
-  margin-top: 5px;
-}
-.suggestion-list {
-  display: grid;
-  gap: 13px;
-}
-.suggestion-list article {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 20px;
-}
-.suggestion-title {
-  display: flex;
-  align-items: start;
-  gap: 20px;
-  justify-content: space-between;
-}
-.suggestion-title h4 {
-  font-size: 15px;
-  margin: 0;
-}
-.suggestion-title > strong {
-  color: var(--accent);
-  font-size: 20px;
-}
-.suggestion-list p {
-  font-size: 12px;
-  margin: 10px 0;
-}
-.suggestion-list button {
-  margin-top: 9px;
-}
 @media (max-width: 850px) {
   .scenario-form {
     grid-template-columns: 1fr 1fr;
   }
   .scenario-form .button {
     grid-column: 1/-1;
-  }
-  .suggestions-heading {
-    flex-wrap: wrap;
   }
 }
 @media (max-width: 600px) {

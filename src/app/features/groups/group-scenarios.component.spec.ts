@@ -3,12 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { Country } from '../../core/models/api.models';
-import {
-  CountryGroup,
-  GroupAnalysis,
-  GroupAnalysisFilters,
-  GroupSuggestions,
-} from '../../core/models/groups.models';
+import { CountryGroup, GroupAnalysis, GroupAnalysisFilters } from '../../core/models/groups.models';
 import { DiplomaticApiService } from '../../core/services/diplomatic-api.service';
 import { GroupsApiService } from '../../core/services/groups-api.service';
 import { GroupScenariosComponent } from './group-scenarios.component';
@@ -33,7 +28,8 @@ const savedGroup: CountryGroup = {
   updatedAt: '2026-10-28T10:00:00.000Z',
 };
 
-function analysis(memberIds: string[]): GroupAnalysis {
+// Réponse de l'API Node : sans groupId ni groupRevision, ajoutés par GroupAnalysisService.
+function analysis(memberIds: string[]): Omit<GroupAnalysis, 'groupId' | 'groupRevision'> {
   const members = memberIds.map((id) => countries.find((country) => country.id === id)!);
   const coverage = { from: '2001-01-01', to: '2004-12-31' };
   const pairs = members.flatMap((countryA, index) =>
@@ -43,12 +39,9 @@ function analysis(memberIds: string[]): GroupAnalysis {
       commonVoteCount: 5,
       matchingVoteCount: 3,
       agreementPercent: 60,
-      coverage,
     })),
   );
   return {
-    groupId: savedGroup.id,
-    groupRevision: savedGroup.revision,
     memberIds,
     members,
     filters: { ...filters },
@@ -101,31 +94,35 @@ describe('GroupScenariosComponent', () => {
     vi.restoreAllMocks();
   });
 
-  it('posts only a preview with the proposed members, revision and applied filters until apply', () => {
+  // L'aperçu vérifie la version enregistrée (API mockée), puis analyse la composition (API Node).
+  function answerPreview(memberIds: string[], savedRevision = savedGroup.revision): void {
+    http
+      .expectOne('/mock-api/groups/fixture-group')
+      .flush({ ...savedGroup, revision: savedRevision });
+    if (savedRevision !== savedGroup.revision) return;
+    const request = http.expectOne((request) => request.url === '/api/groups/analysis');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('members')).toBe(memberIds.join(','));
+    expect(request.request.params.get('theme')).toBe(filters.theme);
+    expect(request.request.params.get('minVotes')).toBe(String(filters.minVotes));
+    request.flush(analysis(memberIds));
+  }
+
+  it('only previews the proposed members with the applied filters until apply', () => {
     const update = vi.spyOn(api, 'updateGroup');
     const applied = vi.fn<(ids: string[]) => void>();
     component.applyMembers.subscribe(applied);
     component.form.controls.countryId.setValue('CCC');
 
     component.simulate();
+    answerPreview(['AAA', 'BBB', 'CCC']);
 
-    const request = http.expectOne('/api/groups/fixture-group/preview');
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({
-      ...filters,
-      expectedRevision: 7,
-      memberIds: ['AAA', 'BBB', 'CCC'],
-    });
     expect(component.group.memberIds).toEqual(['AAA', 'BBB']);
-    expect(update).not.toHaveBeenCalled();
-    expect(applied).not.toHaveBeenCalled();
-
-    // L'ordre retourné diffère volontairement de celui du formulaire.
-    request.flush(analysis(['CCC', 'AAA', 'BBB']));
+    expect(component.preview()?.groupRevision).toBe(7);
     expect(applied).not.toHaveBeenCalled();
     component.apply();
 
-    expect(applied).toHaveBeenCalledExactlyOnceWith(['CCC', 'AAA', 'BBB']);
+    expect(applied).toHaveBeenCalledExactlyOnceWith(['AAA', 'BBB', 'CCC']);
     expect(update).not.toHaveBeenCalled();
     expect(component.group.memberIds).toEqual(['AAA', 'BBB']);
   });
@@ -136,22 +133,15 @@ describe('GroupScenariosComponent', () => {
     component.form.patchValue({ mode: 'remove', countryId: 'BBB' });
 
     component.simulate();
+    answerPreview(['AAA', 'CCC']);
 
-    const request = http.expectOne('/api/groups/fixture-group/preview');
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({
-      ...filters,
-      expectedRevision: 7,
-      memberIds: ['AAA', 'CCC'],
-    });
-    request.flush(analysis(['AAA', 'CCC']));
     expect(component.group.memberIds).toEqual(['AAA', 'BBB', 'CCC']);
   });
 
   it('cancels an in-flight preview when the selected country changes', () => {
     component.form.controls.countryId.setValue('CCC');
     component.simulate();
-    const obsolete = http.expectOne('/api/groups/fixture-group/preview');
+    const obsolete = http.expectOne('/mock-api/groups/fixture-group');
     expect(component.loading()).toBe(true);
 
     component.form.controls.countryId.setValue('DDD');
@@ -160,59 +150,20 @@ describe('GroupScenariosComponent', () => {
     expect(component.preview()).toBeNull();
     expect(component.loading()).toBe(false);
     component.simulate();
-    const current = http.expectOne('/api/groups/fixture-group/preview');
-    current.flush(analysis(['AAA', 'BBB', 'DDD']));
+    answerPreview(['AAA', 'BBB', 'DDD']);
     expect(component.preview()?.memberIds).toEqual(['AAA', 'BBB', 'DDD']);
   });
 
-  it('does not apply a preview calculated for an obsolete group revision', () => {
+  it('refuses a preview when the group was modified elsewhere', () => {
     const applied = vi.fn<(ids: string[]) => void>();
     component.applyMembers.subscribe(applied);
     component.form.controls.countryId.setValue('CCC');
     component.simulate();
-    http.expectOne('/api/groups/fixture-group/preview').flush({
-      ...analysis(['AAA', 'BBB', 'CCC']),
-      groupRevision: 6,
-    });
+    answerPreview(['AAA', 'BBB', 'CCC'], 8);
 
+    expect(component.preview()).toBeNull();
+    expect(component.error()).toContain('a été modifié');
     component.apply();
-
     expect(applied).not.toHaveBeenCalled();
-  });
-
-  it('passes includeHistorical and cancels the obsolete suggestions when it changes', () => {
-    component.requestSuggestions();
-    const obsolete = http.expectOne('/api/groups/fixture-group/suggestions');
-    expect(obsolete.request.method).toBe('POST');
-    expect(obsolete.request.body).toEqual({
-      ...filters,
-      expectedRevision: 7,
-      includeHistorical: false,
-    });
-
-    component.historicalChanged(true);
-
-    expect(obsolete.cancelled).toBe(true);
-    const current = http.expectOne('/api/groups/fixture-group/suggestions');
-    expect(current.request.method).toBe('POST');
-    expect(current.request.body).toEqual({
-      ...filters,
-      expectedRevision: 7,
-      includeHistorical: true,
-    });
-    const response: GroupSuggestions = {
-      groupId: savedGroup.id,
-      groupRevision: 7,
-      filters,
-      suggestions: [],
-      eligibleCandidateCount: 0,
-      excludedCandidateCount: 2,
-      dataVersion: 'Fixture dataset v1',
-      methodVersion: 'Fixture method v1',
-      includeHistorical: true,
-    };
-    current.flush(response);
-    expect(component.suggestions()).toEqual(response);
-    expect(component.suggesting()).toBe(false);
   });
 });

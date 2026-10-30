@@ -23,18 +23,6 @@ export interface GroupAnalysisFilters {
   minVotes: number;
 }
 
-export interface GroupAnalysisRequest extends GroupAnalysisFilters {
-  expectedRevision: number;
-}
-
-export interface GroupPreviewRequest extends GroupAnalysisRequest {
-  memberIds?: string[];
-}
-
-export interface GroupSuggestionsRequest extends GroupAnalysisRequest {
-  includeHistorical?: boolean;
-}
-
 export interface GroupPair {
   countryA: CountryRef;
   countryB: CountryRef;
@@ -63,6 +51,7 @@ export interface GroupDivisiveResolution {
 }
 
 export interface GroupAnalysis {
+  // Groupe et version pour lesquels l'analyse a été demandée (ajoutés par GroupAnalysisService).
   groupId: string;
   groupRevision: number;
   memberIds: string[];

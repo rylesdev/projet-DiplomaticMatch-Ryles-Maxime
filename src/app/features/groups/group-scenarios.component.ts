@@ -13,20 +13,23 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, finalize, of, switchMap } from 'rxjs';
 import { Country } from '../../core/models/api.models';
-import {
-  CountryGroup,
-  GroupAnalysis,
-  GroupAnalysisFilters,
-  GroupPreviewRequest,
-  GroupSuggestions,
-  GroupSuggestionsRequest,
-} from '../../core/models/groups.models';
+import { CountryGroup, GroupAnalysis, GroupAnalysisFilters } from '../../core/models/groups.models';
 import { apiErrorMessage, DiplomaticApiService } from '../../core/services/diplomatic-api.service';
+import { GroupAnalysisService } from '../../core/services/group-analysis.service';
 import { GroupsApiService, groupErrorMessage } from '../../core/services/groups-api.service';
+import { GroupSuggestionsComponent } from './group-suggestions.component';
 
+interface ScenarioRequest {
+  group: CountryGroup;
+  filters: GroupAnalysisFilters;
+  memberIds: string[];
+}
+
+// Simule l'ajout ou le retrait d'un pays : l'API Node analyse la composition proposée,
+// sans rien enregistrer. Seul « Appliquer au groupe » modifie le groupe (API mockée).
 @Component({
   selector: 'app-group-scenarios',
-  imports: [ReactiveFormsModule, DecimalPipe],
+  imports: [ReactiveFormsModule, DecimalPipe, GroupSuggestionsComponent],
   templateUrl: './group-scenarios.component.html',
   styleUrl: './group-scenarios.component.scss',
 })
@@ -37,23 +40,16 @@ export class GroupScenariosComponent implements OnChanges {
   @Input() disabled = false;
   @Output() applyMembers = new EventEmitter<string[]>();
   @Output() reloadGroup = new EventEmitter<void>();
-  private readonly api = inject(GroupsApiService);
+  private readonly groupsApi = inject(GroupsApiService);
+  private readonly analysisApi = inject(GroupAnalysisService);
   private readonly diplomatic = inject(DiplomaticApiService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly scenarios = new Subject<{ id: string; input: GroupPreviewRequest } | null>();
-  private readonly suggestionRequests = new Subject<{
-    id: string;
-    input: GroupSuggestionsRequest;
-  } | null>();
+  private readonly scenarios = new Subject<ScenarioRequest | null>();
   readonly countries = signal<Country[]>([]);
   readonly preview = signal<GroupAnalysis | null>(null);
-  readonly suggestions = signal<GroupSuggestions | null>(null);
   readonly loading = signal(false);
-  readonly suggesting = signal(false);
   readonly error = signal('');
-  readonly suggestionsError = signal('');
   readonly optionsError = signal('');
-  readonly includeHistorical = signal(false);
   readonly form = inject(FormBuilder).nonNullable.group({ mode: 'add', countryId: '' });
 
   constructor() {
@@ -64,7 +60,11 @@ export class GroupScenariosComponent implements OnChanges {
           this.error.set('');
           if (!request) return of(null);
           this.loading.set(true);
-          return this.api.preview(request.id, request.input).pipe(
+          // Vérifie la version enregistrée (Mirage), puis analyse la composition proposée (API Node).
+          return this.groupsApi.checkRevision(request.group).pipe(
+            switchMap(() =>
+              this.analysisApi.analyze(request.group, request.filters, request.memberIds),
+            ),
             catchError((error: unknown) => {
               this.error.set(groupErrorMessage(error));
               return of(null);
@@ -75,24 +75,6 @@ export class GroupScenariosComponent implements OnChanges {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((analysis) => this.preview.set(analysis));
-    this.suggestionRequests
-      .pipe(
-        switchMap((request) => {
-          this.suggestions.set(null);
-          this.suggestionsError.set('');
-          if (!request) return of(null);
-          this.suggesting.set(true);
-          return this.api.suggestions(request.id, request.input).pipe(
-            catchError((error: unknown) => {
-              this.suggestionsError.set(groupErrorMessage(error));
-              return of(null);
-            }),
-            finalize(() => this.suggesting.set(false)),
-          );
-        }),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((result) => this.suggestions.set(result));
     this.form.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.scenarios.next(null));
@@ -104,7 +86,6 @@ export class GroupScenariosComponent implements OnChanges {
 
   ngOnChanges(): void {
     this.scenarios.next(null);
-    this.suggestionRequests.next(null);
     this.form.reset({ mode: 'add', countryId: '' }, { emitEvent: false });
   }
 
@@ -150,29 +131,7 @@ export class GroupScenariosComponent implements OnChanges {
       this.error.set('Le scénario doit conserver entre 2 et 12 pays distincts.');
       return;
     }
-    this.scenarios.next({
-      id: this.group.id,
-      input: { ...this.filters, expectedRevision: this.group.revision, memberIds: members },
-    });
-  }
-
-  requestSuggestions(): void {
-    if (this.disabled || !this.group || this.group.memberIds.length >= 12) return;
-    this.suggestionRequests.next({
-      id: this.group.id,
-      input: {
-        ...this.filters,
-        expectedRevision: this.group.revision,
-        includeHistorical: this.includeHistorical(),
-      },
-    });
-  }
-
-  historicalChanged(value: boolean): void {
-    const reload = this.suggesting() || this.suggestions() !== null;
-    this.includeHistorical.set(value);
-    this.suggestionRequests.next(null);
-    if (reload) this.requestSuggestions();
+    this.scenarios.next({ group: this.group, filters: this.filters, memberIds: members });
   }
 
   testSuggestion(id: string): void {

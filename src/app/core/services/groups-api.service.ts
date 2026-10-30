@@ -1,17 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable, TimeoutError } from 'rxjs';
-import {
-  CountryGroup,
-  GroupAnalysis,
-  GroupAnalysisRequest,
-  GroupDraft,
-  GroupPreviewRequest,
-  GroupReport,
-  GroupReportSummary,
-  GroupSuggestions,
-  GroupSuggestionsRequest,
-} from '../models/groups.models';
+import { Observable, of, switchMap, throwError, TimeoutError } from 'rxjs';
+import { CountryGroup, GroupDraft } from '../models/groups.models';
 import { TIMEOUT_MESSAGE } from './diplomatic-api.service';
 
 export function groupErrorMessage(error: unknown): string {
@@ -23,55 +13,49 @@ export function groupErrorMessage(error: unknown): string {
       return 'Le service des groupes est indisponible. Réessayez dans un instant.';
     if (error.status === 404)
       return 'Ce groupe ou ce rapport n’existe plus. Rechargez la liste des groupes.';
+    // 400 : message de validation renvoyé par l'API mockée ou l'API Node ({ error: '...' }).
     const body: unknown = error.error;
-    if ([400, 413, 415, 422].includes(error.status) && body && typeof body === 'object') {
-      const item = body as Record<string, unknown>;
-      const message = typeof item['message'] === 'string' ? item['message'] : item['error'];
+    if (error.status === 400 && body && typeof body === 'object') {
+      const message = (body as Record<string, unknown>)['error'];
       if (typeof message === 'string') return message;
     }
-    if (error.status === 413) return 'La demande est trop volumineuse. Réduisez son contenu.';
-    if (error.status === 415) return 'Le format de la demande n’est pas accepté par le serveur.';
   }
   return error instanceof Error ? error.message : 'La demande concernant ce groupe a échoué.';
 }
 
-// Groupes de pays et rapports. Les réponses sont typées par les interfaces de groups.models.ts.
+// Groupes de pays, enregistrés par l'API mockée (MirageJS, /mock-api, localStorage).
 @Injectable({ providedIn: 'root' })
 export class GroupsApiService {
   private readonly http = inject(HttpClient);
   getGroups(): Observable<CountryGroup[]> {
-    return this.http.get<CountryGroup[]>('/api/groups');
+    return this.http.get<CountryGroup[]>('/mock-api/groups');
   }
   getGroup(id: string): Observable<CountryGroup> {
     return this.http.get<CountryGroup>(this.path(id));
   }
   createGroup(draft: GroupDraft): Observable<CountryGroup> {
-    return this.http.post<CountryGroup>('/api/groups', draft);
+    return this.http.post<CountryGroup>('/mock-api/groups', draft);
   }
   updateGroup(id: string, draft: GroupDraft, expectedRevision: number): Observable<CountryGroup> {
-    return this.http.patch<CountryGroup>(this.path(id), { ...draft, expectedRevision });
+    return this.http.put<CountryGroup>(this.path(id), { ...draft, expectedRevision });
   }
   deleteGroup(id: string, expectedRevision: number): Observable<void> {
     return this.http.delete<void>(this.path(id), {
       params: new HttpParams().set('expectedRevision', expectedRevision),
     });
   }
-  preview(id: string, input: GroupPreviewRequest): Observable<GroupAnalysis> {
-    return this.http.post<GroupAnalysis>(`${this.path(id)}/preview`, input);
-  }
-  saveReport(id: string, input: GroupAnalysisRequest): Observable<GroupReport> {
-    return this.http.post<GroupReport>(`${this.path(id)}/reports`, input);
-  }
-  reports(id: string): Observable<GroupReportSummary[]> {
-    return this.http.get<GroupReportSummary[]>(`${this.path(id)}/reports`);
-  }
-  report(id: string, reportId: string): Observable<GroupReport> {
-    return this.http.get<GroupReport>(`${this.path(id)}/reports/${encodeURIComponent(reportId)}`);
-  }
-  suggestions(id: string, input: GroupSuggestionsRequest): Observable<GroupSuggestions> {
-    return this.http.post<GroupSuggestions>(`${this.path(id)}/suggestions`, input);
+  // Révisions : avant un calcul, vérifie que le groupe affiché est toujours la dernière
+  // version enregistrée (un autre onglet a pu le modifier). Sinon, erreur 409 comme une écriture.
+  checkRevision(group: CountryGroup): Observable<CountryGroup> {
+    return this.getGroup(group.id).pipe(
+      switchMap((current) =>
+        current.revision === group.revision
+          ? of(current)
+          : throwError(() => new HttpErrorResponse({ status: 409, url: this.path(group.id) })),
+      ),
+    );
   }
   private path(id: string): string {
-    return `/api/groups/${encodeURIComponent(id)}`;
+    return `/mock-api/groups/${encodeURIComponent(id)}`;
   }
 }
