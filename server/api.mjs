@@ -10,6 +10,8 @@ import {
   selectMatrix,
 } from './domain.mjs';
 import { THEMES } from './themes.mjs';
+import { analyzeGroup, validateMemberIds } from './group-domain.mjs';
+import { suggestGroupMembers } from './group-suggestions.mjs';
 import { HttpError, integerInRange } from './http-error.mjs';
 import { createGroupRepository } from './group-repository.mjs';
 import { handleGroupsRequest, isGroupsPath } from './groups-api.mjs';
@@ -75,6 +77,20 @@ function comparisonParameters(store, params) {
   return { countryA, countryB, ...period(params, store) };
 }
 
+// members=FRA,IND,BRA : 2 à 12 codes distincts, puis période, thème et seuil des paires.
+function groupParameters(store, params) {
+  const memberIds = validateMemberIds(
+    store,
+    (params.get('members') ?? '').split(',').map((id) => id.trim()),
+  );
+  const filters = {
+    ...period(params, store),
+    theme: themeParameter(params),
+    minVotes: integer(params, 'minVotes', 20, 1, 100000),
+  };
+  return { memberIds, filters };
+}
+
 // countries=FRA,IND,USA : 2 à 15 codes distincts présents dans le jeu de données.
 function selectedCountries(store, params) {
   const ids = (params.get('countries') ?? '').split(',').map((id) => id.trim());
@@ -106,6 +122,17 @@ export function handleApi(store, request) {
     const { from, to } = period(params, store);
     const minVotes = integer(params, 'minVotes', 20, 1, 100000);
     return selectMatrix(store, ids, from, to, minVotes, themeParameter(params));
+  }
+  if (path === '/api/groups/analysis') {
+    const { memberIds, filters } = groupParameters(store, params);
+    return analyzeGroup(store, memberIds, filters);
+  }
+  if (path === '/api/groups/suggestions') {
+    const { memberIds, filters } = groupParameters(store, params);
+    const historical = params.get('includeHistorical') ?? 'false';
+    if (historical !== 'true' && historical !== 'false')
+      throw new HttpError(400, 'Le paramètre includeHistorical doit valoir true ou false.');
+    return suggestGroupMembers(store, memberIds, filters, historical === 'true');
   }
   if (path === '/api/countries') {
     const query = search(params);

@@ -1,4 +1,4 @@
-import { compareMatrix, EXPLICIT_CHOICES, inScope, publicResolution } from './domain.mjs';
+import { EXPLICIT_CHOICES, inScope, publicResolution } from './domain.mjs';
 import { HttpError, integerInRange } from './http-error.mjs';
 import { THEMES, THEME_CLASSIFICATION_VERSION } from './themes.mjs';
 
@@ -98,7 +98,7 @@ export function validateAnalysisRequest(
   };
 }
 
-function coverageUnion(coverage, next) {
+export function coverageUnion(coverage, next) {
   if (next.from !== null && (coverage.from === null || next.from < coverage.from))
     coverage.from = next.from;
   if (next.to !== null && (coverage.to === null || next.to > coverage.to)) coverage.to = next.to;
@@ -122,7 +122,9 @@ function totals(pairs, minVotes) {
   };
 }
 
-export function analyzeGroup(store, group, filters, memberIds = group.memberIds) {
+// Concordance interne d'une liste de membres (groupe enregistré ou scénario) : calcul seul,
+// sans identifiant ni révision de groupe.
+export function analyzeGroup(store, memberIds, filters) {
   const members = memberIds.map((id) => store.countries.get(id));
   const pairs = [];
   const pairIndexes = members.map(() => Array(members.length).fill(-1));
@@ -206,8 +208,6 @@ export function analyzeGroup(store, group, filters, memberIds = group.memberIds)
       a.resolution.id.localeCompare(b.resolution.id, 'en'),
   );
   return {
-    groupId: group.id,
-    groupRevision: group.revision,
     memberIds: memberIds.slice(),
     members,
     filters: { ...filters },
@@ -225,84 +225,5 @@ export function analyzeGroup(store, group, filters, memberIds = group.memberIds)
     dataVersion: store.metadata.version,
     themeClassificationVersion: THEME_CLASSIFICATION_VERSION,
     methodVersion: GROUP_METHOD_VERSION,
-  };
-}
-
-export function suggestGroupMembers(store, group, filters, includeHistorical = false) {
-  const outside = Array.from(store.countries.values()).filter(
-    (country) => !group.memberIds.includes(country.id),
-  );
-  const response = {
-    groupId: group.id,
-    groupRevision: group.revision,
-    filters: { ...filters },
-    includeHistorical,
-    suggestions: [],
-    eligibleCandidateCount: 0,
-    excludedCandidateCount: outside.length,
-    dataVersion: store.metadata.version,
-    methodVersion: GROUP_METHOD_VERSION,
-  };
-  if (group.memberIds.length >= MAX_GROUP_MEMBERS) return response;
-  const matrix = compareMatrix(store, filters.from, filters.to, filters.minVotes, filters.theme);
-  const indexes = new Map(matrix.countries.map((country, index) => [country.id, index]));
-  const memberIndexes = group.memberIds.map((id) => indexes.get(id));
-  const base = analyzeGroup(store, group, filters);
-  const candidates = [];
-  const lastRequiredYear = Math.min(filters.to, Number(store.metadata.coverage.to.slice(0, 4)));
-  for (const country of outside) {
-    if (!includeHistorical && country.lastYear < lastRequiredYear) continue;
-    const index = indexes.get(country.id);
-    if (memberIndexes.some((member) => matrix.commonVoteCounts[index][member] < filters.minVotes))
-      continue;
-    const commonPairVotes = memberIndexes.reduce(
-      (sum, member) => sum + matrix.commonVoteCounts[index][member],
-      0,
-    );
-    const matchingPairVotes = memberIndexes.reduce(
-      (sum, member) => sum + matrix.matchingVoteCounts[index][member],
-      0,
-    );
-    const cohesionAfterPercent =
-      (100 * (base.matchingPairVotes + matchingPairVotes)) /
-      (base.commonPairVotes + commonPairVotes);
-    candidates.push({
-      country,
-      commonPairVotes,
-      matchingPairVotes,
-      concordancePercent: (100 * matchingPairVotes) / commonPairVotes,
-      cohesionAfterPercent,
-      deltaPoints:
-        base.cohesionPercent === null ? null : cohesionAfterPercent - base.cohesionPercent,
-      eligiblePairCount: group.memberIds.length,
-      coverage: { from: null, to: null },
-    });
-  }
-  const names = new Intl.Collator('fr');
-  candidates.sort(
-    (a, b) =>
-      b.matchingPairVotes * a.commonPairVotes - a.matchingPairVotes * b.commonPairVotes ||
-      b.commonPairVotes - a.commonPairVotes ||
-      names.compare(a.country.name, b.country.name) ||
-      a.country.id.localeCompare(b.country.id, 'en'),
-  );
-  const suggestions = candidates.slice(0, 3);
-  // Le cache matrice donne les effectifs ; une seule passe sourcée donne la couverture des 3 retenus.
-  for (const resolution of store.orderedResolutions) {
-    if (
-      !inScope(resolution, filters.from, filters.to, filters.theme) ||
-      !group.memberIds.some((id) => EXPLICIT_CHOICES.has(resolution.voteMap.get(id)?.choice))
-    )
-      continue;
-    for (const suggestion of suggestions)
-      if (EXPLICIT_CHOICES.has(resolution.voteMap.get(suggestion.country.id)?.choice)) {
-        coverageUnion(suggestion.coverage, { from: resolution.date, to: resolution.date });
-      }
-  }
-  return {
-    ...response,
-    suggestions,
-    eligibleCandidateCount: candidates.length,
-    excludedCandidateCount: outside.length - candidates.length,
   };
 }

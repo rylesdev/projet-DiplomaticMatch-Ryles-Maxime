@@ -1,10 +1,10 @@
 import {
   analyzeGroup,
-  suggestGroupMembers,
   validateAnalysisRequest,
   validateGroupDraft,
   validateRevision,
 } from './group-domain.mjs';
+import { suggestGroupMembers } from './group-suggestions.mjs';
 import { HttpError } from './http-error.mjs';
 
 const BODY_LIMIT = 32 * 1024;
@@ -57,8 +57,19 @@ function revisionQuery(params) {
   return validateRevision(Number(raw));
 }
 
+// Les calculs GET /api/groups/analysis et /api/groups/suggestions sont traités par api.mjs.
 export function isGroupsPath(path) {
+  if (path === '/api/groups/analysis' || path === '/api/groups/suggestions') return false;
   return path === '/api/groups' || path.startsWith('/api/groups/');
+}
+
+// Ancien format des réponses : le calcul, précédé de l'identifiant et de la révision du groupe.
+export function analyzeSavedGroup(store, group, filters, memberIds = group.memberIds) {
+  return {
+    groupId: group.id,
+    groupRevision: group.revision,
+    ...analyzeGroup(store, memberIds, filters),
+  };
 }
 
 export async function handleGroupsRequest(store, repository, request) {
@@ -116,14 +127,13 @@ export async function handleGroupsRequest(store, repository, request) {
   if (action === 'suggestions')
     return {
       status: 200,
-      body: suggestGroupMembers(store, current, input.filters, input.includeHistorical),
+      body: {
+        groupId: current.id,
+        groupRevision: current.revision,
+        ...suggestGroupMembers(store, current.memberIds, input.filters, input.includeHistorical),
+      },
     };
-  const analysis = analyzeGroup(
-    store,
-    current,
-    input.filters,
-    input.memberIds ?? current.memberIds,
-  );
+  const analysis = analyzeSavedGroup(store, current, input.filters, input.memberIds);
   if (action === 'preview') return { status: 200, body: analysis };
   return { status: 201, body: repository.saveReport(id, input.expectedRevision, analysis) };
 }

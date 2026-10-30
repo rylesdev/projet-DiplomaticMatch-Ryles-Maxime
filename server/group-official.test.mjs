@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createStore } from './domain.mjs';
-import { analyzeGroup, suggestGroupMembers } from './group-domain.mjs';
+import { analyzeGroup } from './group-domain.mjs';
+import { suggestGroupMembers } from './group-suggestions.mjs';
 
 // Référence calculée indépendamment depuis les tableaux bruts du jeu officiel, sans group-domain.
 const store = createStore(
@@ -20,7 +21,7 @@ const group = {
 const filters = { from: 2000, to: 2025, theme: 'all', minVotes: 20 };
 
 test('groupe officiel : cohésion pondérée, tendance annuelle et résolutions divisives vérifiées indépendamment', () => {
-  const analysis = analyzeGroup(store, group, filters);
+  const analysis = analyzeGroup(store, group.memberIds, filters);
   assert.equal(analysis.totalPairCount, 6);
   assert.equal(analysis.eligiblePairCount, 6);
   assert.equal(analysis.commonPairVotes, 13304);
@@ -42,17 +43,17 @@ test('groupe officiel : cohésion pondérée, tendance annuelle et résolutions 
 });
 
 test('groupe officiel : scénarios de retrait et d’ajout sont calculés sans modifier le groupe', () => {
-  const removed = analyzeGroup(store, group, filters, ['FRA', 'BRA', 'CAN']);
+  const removed = analyzeGroup(store, ['FRA', 'BRA', 'CAN'], filters);
   assert.equal(removed.commonPairVotes, 6650);
   assert.equal(removed.matchingPairVotes, 3761);
-  const added = analyzeGroup(store, group, filters, [...group.memberIds, 'BEL']);
+  const added = analyzeGroup(store, [...group.memberIds, 'BEL'], filters);
   assert.equal(added.commonPairVotes, 22161);
   assert.equal(added.matchingPairVotes, 13435);
   assert.deepEqual(group.memberIds, ['FRA', 'IND', 'BRA', 'CAN']);
 });
 
 test('suggestions officielles : cohorte jusqu’à fin de période, pondération et effet de l’ajout', () => {
-  const suggestions = suggestGroupMembers(store, group, filters);
+  const suggestions = suggestGroupMembers(store, group.memberIds, filters);
   assert.equal(suggestions.includeHistorical, false);
   assert.equal(suggestions.eligibleCandidateCount, 189);
   assert.equal(suggestions.excludedCandidateCount, 9);
@@ -71,7 +72,7 @@ test('suggestions officielles : cohorte jusqu’à fin de période, pondération
     assert.equal(candidate.matchingPairVotes, matches);
     assert.equal(candidate.concordancePercent, (100 * matches) / common);
     assert.equal(candidate.cohesionAfterPercent, (100 * (7329 + matches)) / (13304 + common));
-    const preview = analyzeGroup(store, group, filters, [...group.memberIds, candidate.country.id]);
+    const preview = analyzeGroup(store, [...group.memberIds, candidate.country.id], filters);
     assert.equal(candidate.cohesionAfterPercent, preview.cohesionPercent);
     assert.deepEqual(candidate.coverage, {
       from: index === 0 ? '2001-11-27' : '2000-06-15',
@@ -81,7 +82,7 @@ test('suggestions officielles : cohorte jusqu’à fin de période, pondération
 });
 
 test('suggestions officielles : option explicite pour les codes source sans couverture récente', () => {
-  const result = suggestGroupMembers(store, group, filters, true);
+  const result = suggestGroupMembers(store, group.memberIds, filters, true);
   assert.equal(result.includeHistorical, true);
   assert.equal(result.eligibleCandidateCount, 191);
   assert.equal(result.excludedCandidateCount, 7);

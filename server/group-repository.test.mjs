@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { basename, join, resolve, sep } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { createStore } from './domain.mjs';
-import { analyzeGroup } from './group-domain.mjs';
+import { analyzeSavedGroup } from './groups-api.mjs';
 import { createGroupRepository } from './group-repository.mjs';
 import { groupDataset, groupFilters } from './fixtures/group-dataset.mjs';
 
@@ -36,7 +36,7 @@ test('SQLite groupes : persistance après fermeture/réouverture et cascade des 
     let report;
     try {
       group = repository.create(draft);
-      report = repository.saveReport(group.id, 1, analyzeGroup(store, group, groupFilters));
+      report = repository.saveReport(group.id, 1, analyzeSavedGroup(store, group, groupFilters));
     } finally {
       repository.close();
     }
@@ -84,7 +84,7 @@ test('SQLite groupes : rapports et résumés figés, sans partage de référence
   const repository = createGroupRepository();
   try {
     const group = repository.create(draft);
-    const analysis = analyzeGroup(store, group, groupFilters);
+    const analysis = analyzeSavedGroup(store, group, groupFilters);
     const report = repository.saveReport(group.id, 1, analysis);
     const frozen = JSON.parse(JSON.stringify(report));
     analysis.cohesionPercent = 999;
@@ -126,7 +126,7 @@ test('SQLite groupes : quotas explicites et aucun rapport pour une analyse d’u
   const repository = createGroupRepository();
   try {
     const group = repository.create(draft);
-    const analysis = analyzeGroup(store, group, groupFilters);
+    const analysis = analyzeSavedGroup(store, group, groupFilters);
     assert.throws(() => repository.saveReport(group.id, 1, { ...analysis, groupId: 'other' }), {
       status: 400,
     });

@@ -1,16 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStore } from './domain.mjs';
-import {
-  analyzeGroup,
-  suggestGroupMembers,
-  validateAnalysisRequest,
-  validateGroupDraft,
-} from './group-domain.mjs';
-import { groupDataset, groupFilters, testGroup } from './fixtures/group-dataset.mjs';
+import { analyzeGroup, validateAnalysisRequest, validateGroupDraft } from './group-domain.mjs';
+import { groupDataset, groupFilters } from './fixtures/group-dataset.mjs';
+
+// Membres fictifs utilisés par les calculs : le calcul ne dépend que de cette liste.
+const members = ['FRA', 'IND', 'BRA'];
 
 test('groupes : cohésion pondérée par effectifs, distincte de la moyenne des taux', () => {
-  const result = analyzeGroup(createStore(groupDataset()), testGroup(), groupFilters);
+  const result = analyzeGroup(createStore(groupDataset()), members, groupFilters);
   assert.equal(result.totalPairCount, 3);
   assert.equal(result.eligiblePairCount, 3);
   assert.equal(result.commonPairVotes, 7);
@@ -20,14 +18,14 @@ test('groupes : cohésion pondérée par effectifs, distincte de la moyenne des 
   assert.notEqual(result.cohesionPercent, mean);
   assert.equal(result.observedResolutionCount, 6);
   assert.deepEqual(result.coverage, { from: '2020-01-01', to: '2022-06-01' });
-  assert.equal(result.groupRevision, 1);
+  assert.equal(result.groupId, undefined);
   assert.ok(result.methodVersion);
   assert.ok(result.themeClassificationVersion);
 });
 
 test('groupes : seuil par paire et par année, sans transformer une année vide en 0 %', () => {
   const store = createStore(groupDataset());
-  const result = analyzeGroup(store, testGroup(), groupFilters);
+  const result = analyzeGroup(store, members, groupFilters);
   assert.deepEqual(
     result.trend.map((point) => point.eligiblePairCount),
     [1, 0, 0],
@@ -36,18 +34,18 @@ test('groupes : seuil par paire et par année, sans transformer une année vide 
     result.trend.map((point) => point.cohesionPercent),
     [100, null, null],
   );
-  const threshold = analyzeGroup(store, testGroup(), { ...groupFilters, minVotes: 3 });
+  const threshold = analyzeGroup(store, members, { ...groupFilters, minVotes: 3 });
   assert.equal(threshold.eligiblePairCount, 1);
   assert.equal(threshold.commonPairVotes, 3);
   assert.equal(threshold.cohesionPercent, 100);
   assert.equal(threshold.pairs.filter((pair) => pair.agreementPercent === null).length, 2);
   assert.deepEqual(threshold.coverage, { from: '2020-01-01', to: '2021-01-01' });
-  const zero = analyzeGroup(store, testGroup(), { ...groupFilters, minVotes: 1 });
+  const zero = analyzeGroup(store, members, { ...groupFilters, minVotes: 1 });
   assert.equal(zero.trend[2].cohesionPercent, 0);
 });
 
 test('groupes : aucune paire éligible donne null, avec effectifs observés disponibles', () => {
-  const result = analyzeGroup(createStore(groupDataset()), testGroup(), {
+  const result = analyzeGroup(createStore(groupDataset()), members, {
     ...groupFilters,
     minVotes: 99,
   });
@@ -60,7 +58,7 @@ test('groupes : aucune paire éligible donne null, avec effectifs observés disp
 });
 
 test('groupes : filtres thématiques et dates inclusives restent sourcés', () => {
-  const result = analyzeGroup(createStore(groupDataset()), testGroup(), {
+  const result = analyzeGroup(createStore(groupDataset()), members, {
     from: 2020,
     to: 2020,
     theme: 'environment',
@@ -76,7 +74,7 @@ test('groupes : filtres thématiques et dates inclusives restent sourcés', () =
 test('groupes : résolutions divisives calculées par paires, absences et lignes manquantes distinctes', () => {
   const dataset = groupDataset();
   dataset.resolutions[3].votes.find(([index]) => index === 2)[1] = 'N';
-  const result = analyzeGroup(createStore(dataset), testGroup(), { ...groupFilters, minVotes: 1 });
+  const result = analyzeGroup(createStore(dataset), members, { ...groupFilters, minVotes: 1 });
   const threeVotes = result.divisiveResolutions.find((row) => row.resolution.id === '1');
   assert.equal(threeVotes.participatingCount, 3);
   assert.equal(threeVotes.memberCount, 3);
@@ -91,128 +89,12 @@ test('groupes : résolutions divisives calculées par paires, absences et lignes
   assert.ok(result.divisiveResolutions.every((row) => row.agreementPercent < 100));
 });
 
-test('groupes : aperçu avec membres alternatifs ne modifie pas la définition passée', () => {
-  const group = testGroup();
-  const result = analyzeGroup(createStore(groupDataset()), group, groupFilters, [
-    'FRA',
-    'IND',
-    'CAN',
-  ]);
-  assert.deepEqual(group.memberIds, ['FRA', 'IND', 'BRA']);
+test('groupes : le calcul porte sur la liste de membres reçue, comme pour un scénario', () => {
+  const scenario = ['FRA', 'IND', 'CAN'];
+  const result = analyzeGroup(createStore(groupDataset()), scenario, groupFilters);
+  assert.deepEqual(scenario, ['FRA', 'IND', 'CAN']);
   assert.deepEqual(result.memberIds, ['FRA', 'IND', 'CAN']);
   assert.equal(result.cohesionPercent, 100);
-});
-
-test('suggestions : éligibilité contre chaque membre et cohésion après ajout avec toutes les paires', () => {
-  const store = createStore(groupDataset());
-  const group = testGroup(['FRA', 'IND']);
-  const result = suggestGroupMembers(store, group, groupFilters);
-  assert.equal(result.includeHistorical, false);
-  assert.equal(result.eligibleCandidateCount, 4);
-  assert.equal(result.excludedCandidateCount, 1);
-  assert.deepEqual(
-    result.suggestions.map((entry) => entry.country.id),
-    ['CAN', 'BEL', 'USA'],
-  );
-  const belgium = result.suggestions[1];
-  assert.equal(belgium.commonPairVotes, 8);
-  assert.equal(belgium.matchingPairVotes, 6);
-  assert.equal(belgium.concordancePercent, 75);
-  assert.equal(belgium.cohesionAfterPercent, (100 * 9) / 11);
-  assert.equal(belgium.deltaPoints, (100 * 9) / 11 - 100);
-  assert.equal(belgium.eligiblePairCount, 2);
-  assert.deepEqual(belgium.coverage, { from: '2020-01-01', to: '2022-06-01' });
-});
-
-test('suggestions : atteindre le seuil contre un seul membre ne suffit pas', () => {
-  const result = suggestGroupMembers(createStore(groupDataset()), testGroup(['FRA', 'IND']), {
-    ...groupFilters,
-    minVotes: 3,
-  });
-  assert.ok(!result.suggestions.some((entry) => entry.country.id === 'BRA'));
-  assert.equal(result.eligibleCandidateCount, 3);
-});
-
-test('suggestions : une cohésion initiale indéfinie garde un delta null', () => {
-  const result = suggestGroupMembers(createStore(groupDataset()), testGroup(['FRA', 'IND']), {
-    ...groupFilters,
-    minVotes: 4,
-  });
-  assert.equal(result.suggestions[0].country.id, 'CAN');
-  assert.equal(result.suggestions[0].concordancePercent, 100);
-  assert.equal(result.suggestions[0].cohesionAfterPercent, 100);
-  assert.equal(result.suggestions[0].deltaPoints, null);
-});
-
-test('suggestions : dernière année observée contrôlée, option historique et période ancienne', () => {
-  const dataset = groupDataset();
-  dataset.countries.find((country) => country.id === 'CAN').lastYear = 2021;
-  const store = createStore(dataset);
-  const group = testGroup(['FRA', 'IND']);
-  const current = suggestGroupMembers(store, group, groupFilters);
-  assert.ok(!current.suggestions.some((entry) => entry.country.id === 'CAN'));
-  assert.equal(current.eligibleCandidateCount, 3);
-  const history = suggestGroupMembers(store, group, groupFilters, true);
-  assert.equal(history.suggestions[0].country.id, 'CAN');
-  assert.equal(history.includeHistorical, true);
-  const older = suggestGroupMembers(store, group, { ...groupFilters, to: 2021 });
-  assert.equal(older.suggestions[0].country.id, 'CAN');
-});
-
-test('suggestions : une entité ancienne reste admissible pour une période qu’elle couvre', () => {
-  const dataset = groupDataset();
-  dataset.countries.push({
-    id: 'SUN',
-    name: 'Union soviétique (test)',
-    nameEn: 'TEST USSR',
-    voteCount: 1,
-    firstYear: 1946,
-    lastYear: 1991,
-  });
-  dataset.resolutions.push({
-    id: 'old',
-    symbol: 'TEST/OLD',
-    title: 'Fixture ancienne',
-    date: '1980-12-31',
-    sourceUrl: 'https://example.test/fixture',
-    subjects: [],
-    votes: [
-      [0, 'Y'],
-      [1, 'Y'],
-      [7, 'Y'],
-    ],
-  });
-  const result = suggestGroupMembers(createStore(dataset), testGroup(['FRA', 'IND']), {
-    from: 1980,
-    to: 1980,
-    theme: 'all',
-    minVotes: 1,
-  });
-  assert.equal(result.includeHistorical, false);
-  assert.equal(result.suggestions[0].country.id, 'SUN');
-});
-
-test('suggestions : période future bornée par la couverture source et groupe de douze déjà complet', () => {
-  const store = createStore(groupDataset());
-  assert.ok(
-    suggestGroupMembers(store, testGroup(['FRA', 'IND']), { ...groupFilters, to: 2100 }).suggestions
-      .length > 0,
-  );
-  const dataset = groupDataset();
-  for (let index = 0; index < 8; index++)
-    dataset.countries.push({
-      id: `T${index}`,
-      name: `Test ${index}`,
-      nameEn: `Test ${index}`,
-      voteCount: 0,
-      firstYear: 2020,
-      lastYear: 2024,
-    });
-  const fullGroup = testGroup(dataset.countries.slice(0, 12).map((country) => country.id));
-  const result = suggestGroupMembers(createStore(dataset), fullGroup, groupFilters);
-  assert.deepEqual(result.suggestions, []);
-  assert.equal(result.eligibleCandidateCount, 0);
-  assert.equal(result.excludedCandidateCount, 3);
 });
 
 test('groupes : validation bornée, doublons, codes inconnus et filtres complets', () => {
