@@ -13,6 +13,11 @@ test('les thèmes exposent des identifiants stables et all reste un filtre virtu
       'development',
       'decolonization',
       'institutions',
+      'middle-east',
+      'law',
+      'science',
+      'conflicts',
+      'economy',
       'unclassified',
     ],
   );
@@ -55,9 +60,10 @@ test('les qualificatifs ONU d’un désarmement ne deviennent pas le thème inst
 test('les droits, la décolonisation et les sujets non interprétés sont explicites', () => {
   assert.deepEqual(assignThemes(['TERRITORIES OCCUPIED BY ISRAEL--HUMAN RIGHTS--REPORTS']), [
     'rights',
+    'middle-east',
   ]);
   assert.deepEqual(assignThemes(['NON-SELF-GOVERNING TERRITORIES--REPORTS']), ['decolonization']);
-  assert.deepEqual(assignThemes(['PALESTINE QUESTION']), ['unclassified']);
+  assert.deepEqual(assignThemes(['AGEING PERSONS']), ['unclassified']);
   assert.deepEqual(assignThemes(['SUSTAINABLE DEVELOPMENT']), ['development']);
   assert.deepEqual(assignThemes([]), ['unclassified']);
   assert.deepEqual(assignThemes(undefined), ['unclassified']);
@@ -68,4 +74,23 @@ test('la normalisation de comparaison n’altère pas les libellés source', () 
   const before = subjects.slice();
   assert.deepEqual(assignThemes(subjects), ['environment', 'development']);
   assert.deepEqual(subjects, before);
+});
+
+test('v2 : cinq thèmes ajoutés à partir de libellés explicites de l’ONU', () => {
+  assert.deepEqual(assignThemes(['PALESTINE QUESTION']), ['middle-east']);
+  assert.deepEqual(assignThemes(['MIDDLE EAST SITUATION']), ['middle-east']);
+  assert.deepEqual(assignThemes(['LAW OF THE SEA']), ['law']);
+  assert.deepEqual(assignThemes(['ANTARCTICA']), ['science']);
+  assert.deepEqual(assignThemes(['OUTER SPACE--PEACEFUL USES']), ['science']);
+  assert.deepEqual(assignThemes(['AFGHANISTAN SITUATION']), ['conflicts']);
+  assert.deepEqual(assignThemes(['CUBA--ECONOMIC EMBARGO']), ['conflicts', 'economy']);
+  assert.deepEqual(assignThemes(['EXTERNAL DEBT']), ['economy']);
+});
+
+test('v2 : les règles de la v1 ne changent pas', () => {
+  // Le commerce reste aussi du développement ; le Moyen-Orient n'est pas un « conflit » générique.
+  assert.deepEqual(assignThemes(['INTERNATIONAL TRADE']), ['development', 'economy']);
+  assert.ok(!assignThemes(['MIDDLE EAST SITUATION']).includes('conflicts'));
+  assert.deepEqual(assignThemes(['NUCLEAR ENERGY']), ['unclassified']);
+  assert.deepEqual(assignThemes(['FOOD SECURITY']), ['development']);
 });

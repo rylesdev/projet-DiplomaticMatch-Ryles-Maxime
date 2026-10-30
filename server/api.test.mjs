@@ -57,7 +57,7 @@ test('classement pays : seuil par défaut et seuil explicite, sans duplicata', (
 });
 test('API thèmes : catalogue explicite et absence de sujets classée sans inférence', () => {
   const themes = request('/api/themes');
-  assert.equal(themes.length, 8);
+  assert.equal(themes.length, 13);
   assert.equal(themes.find((theme) => theme.id === 'all').resolutionCount, 6);
   assert.equal(themes.find((theme) => theme.id === 'unclassified').recordedVoteResolutionCount, 6);
   assert.equal(themes.find((theme) => theme.id === 'environment').resolutionCount, 0);

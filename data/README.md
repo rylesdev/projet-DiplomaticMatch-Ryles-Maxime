@@ -81,11 +81,11 @@ L'import contrôle les colonnes et la liaison des notices. Ne pas remplacer une 
 
 ## Regroupements thématiques du projet
 
-Les filtres « Écologie et environnement », « Sécurité et paix », « Droits », « Développement », « Décolonisation » et « Institutions » sont **des regroupements définis pour Diplomatic Match**, pas une taxonomie officielle publiée par l'ONU. Ils sont fondés uniquement sur la colonne documentaire `subjects` du CSV des résolutions. Aucun thème n'est déduit du titre, d'un pays cité ou d'une interprétation politique.
+Les filtres « Écologie et environnement », « Sécurité et paix », « Droits », « Développement », « Décolonisation », « Institutions », « Moyen-Orient et question palestinienne », « Droit international et justice », « Espace, Antarctique et sciences », « Situations de pays et conflits » et « Économie, commerce et finances » sont **des regroupements définis pour Diplomatic Match**, pas une taxonomie officielle publiée par l'ONU. Ils sont fondés uniquement sur la colonne documentaire `subjects` du CSV des résolutions. Aucun thème n'est déduit du titre, d'un pays cité ou d'une interprétation politique.
 
 L'audit du 27 octobre 2026 a porté sur les **20 834 résolutions** : **14 117** ont un champ `subjects` renseigné, **6 717** n'en ont pas. Le séparateur réellement observé est **`|`**, présent dans 1 332 champs ; ni le point-virgule ni le retour à la ligne ne servent de séparateur. Les **15 515 libellés** ainsi extraits sont conservés comme tableau `subjects` de chaque résolution, dans leur ordre et leur graphie source. Les subdivisions `--` restent à l'intérieur d'un libellé. La casse et les espaces externes ne sont ignorés que pour appliquer les règles, sans modifier la valeur conservée.
 
-Les expressions exactes figurent dans [`server/themes.mjs`](../server/themes.mjs) et dans `source-manifest.json`, sous `themeClassification.rules`. Leur version est **`diplomatic-match-subject-rules-v1`**. Une résolution peut relever de plusieurs thèmes : par exemple `ENVIRONMENT--SUSTAINABLE DEVELOPMENT` relève de l'environnement et du développement. Elle n'est comptée qu'une fois dans chaque thème.
+Les expressions exactes figurent dans [`server/themes.mjs`](../server/themes.mjs). Leur version est **`diplomatic-match-subject-rules-v2`** : la v2 ajoute cinq thèmes sans modifier les six règles de la v1. `source-manifest.json` (`themeClassification.rules`) et `import-report.json` décrivent encore la v1, appliquée lors de l'import ; l'API recalcule les thèmes v2 au démarrage à partir des `subjects` conservés, sans réimport. Une résolution peut relever de plusieurs thèmes : par exemple `ENVIRONMENT--SUSTAINABLE DEVELOPMENT` relève de l'environnement et du développement. Elle n'est comptée qu'une fois dans chaque thème.
 
 | Identifiant      | Principaux motifs documentaires reconnus                                                                                                                                        |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -95,10 +95,15 @@ Les expressions exactes figurent dans [`server/themes.mjs`](../server/themes.mjs
 | `development`    | `DEVELOPMENT`, pays en développement, pauvreté, santé, éducation, établissements humains, coopération et assistance économique/sociale, commerce, alimentation                  |
 | `decolonization` | Décolonisation, pays coloniaux, territoires non autonomes ou sous tutelle, autodétermination et mouvements de libération                                                        |
 | `institutions`   | Sujet commençant par `UN`, organes/programmes ONU explicitement identifiés, budget, personnel et services de conférence ; un simple qualificatif `--UN...` ne suffit pas        |
+| `middle-east`    | `PALESTINE QUESTION`, Palestiniens, `MIDDLE EAST` (dont `MIDDLE EAST SITUATION`), `TERRITORIES OCCUPIED BY ISRAEL`, Golan syrien, Jérusalem, Israël, `UNRWA`                    |
+| `law`            | Droit de la mer, droit international, Cour pénale internationale, tribunaux internationaux, CIJ, règlement des différends, traités, prévention du crime et justice pénale       |
+| `science`        | `OUTER SPACE`, `ANTARCTICA`, science et technologie, télécommunications, rayonnements ionisants                                                                                 |
+| `conflicts`      | Sujets nommés « … SITUATION » (sauf Moyen-Orient), `CUBA`, `UKRAINE`, `IRAQ`, `NICARAGUA`, `AFGHANISTAN`, `NAMIBIA QUESTION`, `WESTERN SAHARA`, Malouines…                      |
+| `economy`        | Mondialisation, dette extérieure, nouvel ordre économique international, produits de base, sanctions et mesures économiques unilatérales, commerce, questions financières       |
 | `unclassified`   | Sujets absents ou aucun motif reconnu ; ce n'est pas une absence de vote                                                                                                        |
 | `all`            | Filtre virtuel sans restriction, jamais un thème attribué à une résolution                                                                                                      |
 
-Quelques exclusions préviennent les rapprochements abusifs : `NUCLEAR ENERGY` seul ne signifie pas armement nucléaire ; `FOOD SECURITY` relève du développement, pas de la sécurité militaire ; `SUSTAINABLE DEVELOPMENT` seul ne devient pas automatiquement un sujet écologique. `PALESTINE QUESTION`, `MIDDLE EAST SITUATION` ou `ANTARCTICA` ne reçoivent pas de thème sur une simple intuition géographique. Ces sujets restent néanmoins consultables avec « Tous les sujets » et « Sans thème attribué ».
+Quelques exclusions préviennent les rapprochements abusifs : `NUCLEAR ENERGY` seul ne signifie pas armement nucléaire ; `FOOD SECURITY` relève du développement, pas de la sécurité militaire ; `SUSTAINABLE DEVELOPMENT` seul ne devient pas automatiquement un sujet écologique. Les thèmes `middle-east`, `science` et `conflicts` ne reposent que sur des libellés de l'ONU qui nomment explicitement la région ou la situation (`PALESTINE QUESTION`, `ANTARCTICA`, `AFGHANISTAN SITUATION`…), jamais sur le titre ou les pays votants. Un sujet non reconnu reste consultable avec « Tous les sujets » et « Sans thème attribué ».
 
 ### Exemples vérifiés dans le fichier source
 
@@ -111,12 +116,12 @@ Quelques exclusions préviennent les rapprochements abusifs : `NUCLEAR ENERGY` s
 | 280722           | `DISARMAMENT--UN. GENERAL ASSEMBLY (12TH SPECIAL SESS. : 1982)--RECOMMENDATIONS` | sécurité                     |
 | 280857           | `DISARMAMENT--GENERAL AND COMPLETE`                                              | sécurité                     |
 | 281148           | `NON-NUCLEAR-WEAPON STATES`                                                      | sécurité                     |
-| 280730           | `TERRITORIES OCCUPIED BY ISRAEL--HUMAN RIGHTS--REPORTS`                          | droits                       |
+| 280730           | `TERRITORIES OCCUPIED BY ISRAEL--HUMAN RIGHTS--REPORTS`                          | droits, Moyen-Orient         |
 | 280785           | `HUMAN RIGHTS ADVANCEMENT--UN SYSTEM`                                            | droits                       |
 | 285182           | `WOMEN'S ADVANCEMENT--CONFERENCES (4TH : 1995 : BEIJING)`                        | droits                       |
 | 405445           | `RIGHTS OF THE CHILD`                                                            | droits                       |
 | 285181           | `WOMEN IN DEVELOPMENT`                                                           | développement                |
-| 280947           | `INTERNATIONAL TRADE`                                                            | développement                |
+| 280947           | `INTERNATIONAL TRADE`                                                            | développement, économie      |
 | 455672           | `POVERTY--INTERNATIONAL DECADES`                                                 | développement                |
 | 280834           | `DECOLONIZATION`                                                                 | décolonisation               |
 | 281755           | `NON-SELF-GOVERNING TERRITORIES--REPORTS`                                        | décolonisation               |
@@ -124,9 +129,9 @@ Quelques exclusions préviennent les rapprochements abusifs : `NUCLEAR ENERGY` s
 | 280748           | `NATIONAL LIBERATION MOVEMENTS--OBSERVER STATUS`                                 | décolonisation               |
 | 280819           | `UN--BUDGET (1986-1987)`                                                         | institutions                 |
 | 280790           | `UN. ECONOMIC AND SOCIAL COUNCIL--REPORTS`                                       | institutions                 |
-| 280874           | `UNRWA`                                                                          | institutions                 |
-| 280797           | `MIDDLE EAST SITUATION`                                                          | sans thème attribué          |
-| 280765           | `ANTARCTICA`                                                                     | sans thème attribué          |
+| 280874           | `UNRWA`                                                                          | institutions, Moyen-Orient   |
+| 280797           | `MIDDLE EAST SITUATION`                                                          | Moyen-Orient                 |
+| 280765           | `ANTARCTICA`                                                                     | espace et sciences           |
 | 280897           | `AGEING PERSONS`                                                                 | sans thème attribué          |
 
 ### Couverture des regroupements après réimport
@@ -140,9 +145,14 @@ Quelques exclusions préviennent les rapprochements abusifs : `NUCLEAR ENERGY` s
 | Développement et conditions de vie      |       1 749 |                                         244 |                           45 321 |
 | Décolonisation et autodétermination     |       1 010 |                                         347 |                           63 673 |
 | Institutions et fonctionnement de l'ONU |       3 336 |                                         518 |                           92 155 |
-| Sans thème attribué                     |      10 212 |                                       2 649 |                          394 572 |
+| Moyen-Orient et question palestinienne  |         922 |                                         829 |                          150 735 |
+| Droit international et justice          |         912 |                                         248 |                           46 370 |
+| Espace, Antarctique et sciences         |         276 |                                         128 |                           23 084 |
+| Situations de pays et conflits          |         239 |                                         117 |                           20 319 |
+| Économie, commerce et finances          |         456 |                                         112 |                           20 369 |
+| Sans thème attribué                     |       8 823 |                                       1 993 |                          275 427 |
 
-Les lignes ne s'additionnent pas : les thèmes peuvent se recouper. Les 10 212 résolutions sans thème attribué comprennent les 6 717 champs absents et 3 495 résolutions dont les libellés ne correspondent pas aux règles. L'absence de champ ne doit pas être comblée par une classification inventée.
+Les lignes ne s'additionnent pas : les thèmes peuvent se recouper. Les 8 823 résolutions sans thème attribué comprennent les 6 717 champs absents et 2 106 résolutions dont les libellés ne correspondent pas aux règles. Chaque thème ajouté en v2 regroupe plus de 100 résolutions avec votes individuels ; des regroupements trop rares (humanitaire et catastrophes : 24 résolutions votées) n'ont pas été créés. L'absence de champ ne doit pas être comblée par une classification inventée.
 
 **Limite particulière de l'écologie :** parmi les 272 résolutions reconnues, seules 21 disposent de votes individuels dans cette copie historique. Beaucoup d'autres textes ont été adoptés sans vote enregistré. Une période courte ou un seuil minimal élevé peut donc ne laisser aucune paire comparable. Le classement ou la matrice doit alors afficher un état vide ou une cellule sans résultat, sans transformer l'absence de données en `0 %`. Un résultat inférieur à 20 votes comparables garde l'avertissement d'effectif limité.
 
