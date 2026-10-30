@@ -39,7 +39,8 @@ probe.on('error', () => {
 });
 probe.listen(apiPort, '127.0.0.1', () => {
   probe.close(() => {
-    launch(['server/index.mjs']);
+    // --watch-path=server : l'API redémarre seule quand un fichier de server/ change.
+    launch(['--watch-path=server', 'server/index.mjs']);
     launch(['node_modules/@angular/cli/bin/ng.js', 'serve', ...process.argv.slice(2)]);
   });
 });
