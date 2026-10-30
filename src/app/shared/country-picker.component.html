@@ -1,10 +1,10 @@
 <fieldset [disabled]="disabled" class="country-picker">
   <legend>
-    Pays du groupe <span>{{ memberIds.length }} / 12</span>
+    {{ legend }} <span>{{ memberIds.length }} / {{ max }}</span>
   </legend>
-  <p class="muted">
-    Choisissez entre 2 et 12 pays distincts. Les entités historiques restent séparées.
-  </p>
+  @if (hint) {
+    <p class="muted">{{ hint }}</p>
+  }
   <ul class="member-chips" aria-label="Pays sélectionnés">
     @for (id of memberIds; track id) {
       <li>
@@ -15,10 +15,10 @@
       </li>
     }
   </ul>
-  @if (memberIds.length < 12) {
-    <label class="field" for="group-country-search">Ajouter un pays</label
+  @if (memberIds.length < max) {
+    <label class="field" [attr.for]="searchId">Ajouter un pays</label
     ><input
-      id="group-country-search"
+      [id]="searchId"
       (keydown.enter)="$event.preventDefault()"
       class="input"
       type="search"
@@ -41,7 +41,7 @@
     }
   } @else {
     <p class="limit-note">
-      Le groupe contient 12 pays. Retirez un membre pour en ajouter un autre.
+      Maximum atteint ({{ max }} pays). Retirez un pays pour en ajouter un autre.
     </p>
   }
 </fieldset>

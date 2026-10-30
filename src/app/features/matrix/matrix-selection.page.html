@@ -1,0 +1,149 @@
+<header class="page-heading">
+  <span class="eyebrow">MATRICE DES VOTES</span>
+  <h1>Quelques pays,<br />deux à deux.</h1>
+  <p>
+    Choisissez de 2 à 15 pays : chaque case donne leur taux de concordance et le nombre de votes
+    communs sur lesquels il repose.
+  </p>
+  <p><a routerLink="/matrice">← Voir la matrice de tous les pays</a></p>
+</header>
+<section class="panel">
+  <form [formGroup]="form" (ngSubmit)="apply()" class="form-grid selection-filters">
+    <div>
+      <label for="selection-theme">Thématique</label
+      ><select id="selection-theme" formControlName="theme">
+        @if (!themes().length) {
+          <option value="all">Tous les thèmes</option>
+        }
+        @for (theme of themes(); track theme.id) {
+          <option [value]="theme.id">{{ theme.label }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="selection-from">De l’année</label
+      ><input id="selection-from" type="number" formControlName="from" min="1946" max="2100" />
+    </div>
+    <div>
+      <label for="selection-to">À l’année</label
+      ><input id="selection-to" type="number" formControlName="to" min="1946" max="2100" />
+    </div>
+    <div>
+      <label for="selection-min">Votes communs minimum</label
+      ><select id="selection-min" formControlName="minVotes">
+        <option [ngValue]="1">1 vote</option>
+        <option [ngValue]="5">5 votes</option>
+        <option [ngValue]="10">10 votes</option>
+        <option [ngValue]="20">20 votes</option>
+        <option [ngValue]="50">50 votes</option>
+        <option [ngValue]="100">100 votes</option>
+      </select>
+    </div>
+    <button type="submit" class="button button-primary" [disabled]="loading()">
+      {{ loading() ? 'Calcul…' : 'Afficher la matrice' }}
+    </button>
+  </form>
+  <app-country-picker
+    legend="Pays de la matrice"
+    hint="Choisissez entre 2 et 15 pays distincts, puis affichez la matrice."
+    searchId="matrix-country-search"
+    [max]="maxCountries"
+    [countries]="countries()"
+    [memberIds]="selectedIds()"
+    [disabled]="loading()"
+    (memberIdsChange)="selectedIds.set($event)"
+  />
+  @if (optionsError()) {
+    <p class="status status-error" role="alert">
+      {{ optionsError() }}
+      <button class="button button-ghost" type="button" (click)="loadOptions()">Recharger</button>
+    </p>
+  }
+</section>
+@if (loading()) {
+  <p class="status" role="status">Calcul des concordances entre les pays choisis…</p>
+}
+@if (error()) {
+  <p class="status status-error" role="alert">{{ error() }}</p>
+}
+@if (data(); as matrix) {
+  <section class="panel result-panel">
+    <h2>{{ matrix.countries.length }} pays</h2>
+    <p class="small muted">
+      {{ themeLabel() }} · {{ matrix.from }}–{{ matrix.to }} · au moins {{ matrix.minVotes }} votes
+      communs
+    </p>
+    <div class="legend" aria-label="Échelle de concordance">
+      <span class="scale" aria-hidden="true"></span>
+      <span>0 % · faible</span><span>100 % · forte</span>
+      <span class="missing"><i aria-hidden="true"></i>Seuil non atteint ou aucun vote commun</span>
+    </div>
+    @if (matrix.minVotes < 20) {
+      <p class="small muted">
+        Seuil inférieur à 20 votes : les petits effectifs appellent une interprétation limitée.
+      </p>
+    }
+    <div class="table-scroll">
+      <table class="selection-table">
+        <caption class="sr-only">
+          Taux de concordance et nombre de votes communs entre les pays choisis. Cliquer sur une
+          case ouvre la comparaison détaillée.
+        </caption>
+        <thead>
+          <tr>
+            <td></td>
+            @for (country of matrix.countries; track country.id) {
+              <th scope="col">{{ country.name }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (rowCountry of matrix.countries; track rowCountry.id; let row = $index) {
+            <tr>
+              <th scope="row">{{ rowCountry.name }}</th>
+              @for (
+                columnCountry of matrix.countries;
+                track columnCountry.id;
+                let column = $index
+              ) {
+                @if (row === column) {
+                  <td class="diagonal" aria-label="Même pays">—</td>
+                } @else {
+                  <td
+                    [style.background]="color(matrix.agreementPercents[row][column])"
+                    [style.color]="textColor(matrix.agreementPercents[row][column])"
+                  >
+                    <a
+                      [routerLink]="['/comparer']"
+                      [queryParams]="{
+                        countryA: rowCountry.id,
+                        countryB: columnCountry.id,
+                        from: matrix.from,
+                        to: matrix.to,
+                        theme: matrix.theme,
+                      }"
+                      [title]="'Comparer ' + rowCountry.name + ' et ' + columnCountry.name"
+                    >
+                      <strong>
+                        @if (matrix.agreementPercents[row][column] === null) {
+                          —
+                        } @else {
+                          {{ matrix.agreementPercents[row][column] | number: '1.1-1' }} %
+                        }
+                      </strong>
+                      <small>{{ matrix.commonVoteCounts[row][column] | number }} votes</small>
+                    </a>
+                  </td>
+                }
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="source-note">
+      {{ matrix.dataVersion }} · Un tiret signifie que le seuil n’est pas atteint ou qu’il n’y a
+      aucun vote commun ; le nombre de votes reste affiché.
+    </p>
+  </section>
+}

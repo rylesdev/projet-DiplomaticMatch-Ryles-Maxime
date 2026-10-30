@@ -6,6 +6,7 @@ import {
   compareTrend,
   createStore,
   rankCountries,
+  selectMatrix,
 } from './domain.mjs';
 import { syntheticDataset } from './fixtures/synthetic-dataset.mjs';
 
@@ -215,4 +216,37 @@ test('thèmes et matrice : un changement d’ordre source des pays ne change pas
   assert.equal(matrix.commonVoteCounts[index.FRA][index.IND], 3);
   assert.equal(matrix.matchingVoteCounts[index.FRA][index.IND], 2);
   assert.equal(matrix.agreementPercents[index.FRA][index.IND], (100 * 2) / 3);
+});
+
+test('matrice sélectionnée : mêmes cases que la matrice complète, dans l’ordre demandé', () => {
+  const store = createStore(themedDataset());
+  const full = compareMatrix(store, 2020, 2024, 1, 'environment');
+  const index = positions(full);
+  const selection = selectMatrix(store, ['USA', 'FRA', 'IND'], 2020, 2024, 1, 'environment');
+  assert.deepEqual(
+    selection.countries.map((country) => country.id),
+    ['USA', 'FRA', 'IND'],
+  );
+  for (const [row, a] of ['USA', 'FRA', 'IND'].entries())
+    for (const [column, b] of ['USA', 'FRA', 'IND'].entries()) {
+      assert.equal(
+        selection.commonVoteCounts[row][column],
+        full.commonVoteCounts[index[a]][index[b]],
+      );
+      assert.equal(
+        selection.matchingVoteCounts[row][column],
+        full.matchingVoteCounts[index[a]][index[b]],
+      );
+      assert.equal(
+        selection.agreementPercents[row][column],
+        full.agreementPercents[index[a]][index[b]],
+      );
+    }
+  // Une case hors diagonale donne le même taux que la comparaison bilatérale.
+  assert.equal(
+    selection.agreementPercents[1][2],
+    compareCountries(store, 'FRA', 'IND', 2020, 2024, 'environment').agreementPercent,
+  );
+  assert.equal(selection.theme, 'environment');
+  assert.equal(selection.minVotes, 1);
 });

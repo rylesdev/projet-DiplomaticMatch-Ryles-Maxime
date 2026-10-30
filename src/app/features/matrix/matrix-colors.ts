@@ -10,3 +10,8 @@ export function concordanceColor(value: number | null): string {
   const fraction = bounded <= 50 ? bounded / 50 : (bounded - 50) / 50;
   return `rgb(${start.map((channel, index) => Math.round(channel + (end[index] - channel) * fraction)).join(', ')})`;
 }
+
+// Texte blanc sur les cases foncées (taux proches de 0 % ou de 100 %), foncé ailleurs.
+export function concordanceTextColor(value: number | null): string {
+  return value !== null && (value <= 25 || value >= 75) ? '#ffffff' : '#152b2b';
+}

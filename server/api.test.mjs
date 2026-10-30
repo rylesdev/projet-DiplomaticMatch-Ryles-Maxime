@@ -105,6 +105,31 @@ test('API matrice : tous les pays, seuil par défaut et matrices numériques typ
   assert.equal(defaultThreshold.agreementPercents[0][1], null);
   assert.equal(defaultThreshold.commonVoteCounts[0][1], 3);
 });
+test('API matrice sélectionnée : pays choisis dans l’ordre, sans toucher à /api/matrix', () => {
+  const selection = request('/api/matrix/selection?countries=IND,FRA&from=2020&to=2024&minVotes=1');
+  assert.deepEqual(
+    selection.countries.map((country) => country.id),
+    ['IND', 'FRA'],
+  );
+  assert.deepEqual(selection.commonVoteCounts, [
+    [4, 3],
+    [3, 4],
+  ]);
+  assert.equal(selection.agreementPercents[0][1], (100 * 2) / 3);
+  assert.equal(selection.minVotes, 1);
+  assert.equal(request('/api/matrix/selection?countries=IND,FRA').minVotes, 20);
+});
+for (const countries of [
+  '',
+  'FRA',
+  'FRA,FRA',
+  'FRA,ZZZ',
+  'FRA,,IND',
+  Array(16).fill('FRA').join(','),
+]) {
+  test(`matrice sélectionnée refusée : countries=${countries.slice(0, 20)}`, () =>
+    assert.throws(() => request(`/api/matrix/selection?countries=${countries}`), { status: 400 }));
+}
 for (const url of [
   '/api/countries/FRA/votes?page=-1',
   '/api/countries/FRA/votes?pageSize=101',

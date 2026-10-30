@@ -320,6 +320,21 @@ export function compareMatrix(store, from, to, minVotes = 20, theme = 'all') {
   };
 }
 
+// Matrice limitée à quelques pays, dans l'ordre demandé : on garde les lignes et colonnes
+// voulues de la matrice complète, qui applique déjà la formule, le thème et le seuil.
+export function selectMatrix(store, countryIds, from, to, minVotes = 20, theme = 'all') {
+  const full = compareMatrix(store, from, to, minVotes, theme);
+  const indexes = countryIds.map((id) => full.countries.findIndex((country) => country.id === id));
+  const pick = (grid) => indexes.map((row) => indexes.map((column) => grid[row][column]));
+  return {
+    ...full,
+    countries: indexes.map((index) => full.countries[index]),
+    agreementPercents: pick(full.agreementPercents),
+    commonVoteCounts: pick(full.commonVoteCounts),
+    matchingVoteCounts: pick(full.matchingVoteCounts),
+  };
+}
+
 export function resolutionDetail(store, resolution) {
   const totals = Object.fromEntries(VOTE_CHOICES.map((choice) => [choice, 0]));
   const votes = Array.from(resolution.voteMap, ([countryId, vote]) => {

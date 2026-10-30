@@ -1,4 +1,4 @@
-import { concordanceColor } from './matrix-colors';
+import { concordanceColor, concordanceTextColor } from './matrix-colors';
 
 describe('concordanceColor', () => {
   it('maps a real zero concordance to red and full concordance to blue', () => {
@@ -15,5 +15,14 @@ describe('concordanceColor', () => {
   it('clamps percentages at the ends of the scale', () => {
     expect(concordanceColor(-5)).toBe(concordanceColor(0));
     expect(concordanceColor(105)).toBe(concordanceColor(100));
+  });
+});
+
+describe('concordanceTextColor', () => {
+  it('writes in white on dark cells and in dark ink on light or gray cells', () => {
+    expect(concordanceTextColor(0)).toBe('#ffffff');
+    expect(concordanceTextColor(100)).toBe('#ffffff');
+    expect(concordanceTextColor(50)).toBe('#152b2b');
+    expect(concordanceTextColor(null)).toBe('#152b2b');
   });
 });

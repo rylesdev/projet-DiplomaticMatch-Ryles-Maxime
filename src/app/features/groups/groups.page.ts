@@ -29,7 +29,7 @@ import {
 import { DiplomaticApiService, apiErrorMessage } from '../../core/services/diplomatic-api.service';
 import { DataPeriodService, DEFAULT_FROM } from '../../core/services/data-period.service';
 import { GroupsApiService, groupErrorMessage } from '../../core/services/groups-api.service';
-import { GroupCountryPickerComponent } from './group-country-picker.component';
+import { CountryPickerComponent } from '../../shared/country-picker.component';
 import { GroupAnalysisViewComponent } from './group-analysis-view.component';
 import { GroupScenariosComponent } from './group-scenarios.component';
 import { GroupReportsComponent } from './group-reports.component';
@@ -51,7 +51,7 @@ interface AnalysisRequest {
     ReactiveFormsModule,
     RouterLink,
     DatePipe,
-    GroupCountryPickerComponent,
+    CountryPickerComponent,
     GroupAnalysisViewComponent,
     GroupScenariosComponent,
     GroupReportsComponent,

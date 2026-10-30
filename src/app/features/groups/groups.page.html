@@ -92,7 +92,11 @@
             rows="3"
             [readOnly]="busy()"
           ></textarea>
-          <app-group-country-picker
+          <app-country-picker
+            legend="Pays du groupe"
+            hint="Choisissez entre 2 et 12 pays distincts. Les entités historiques restent séparées."
+            searchId="group-country-search"
+            [max]="12"
             [countries]="countries()"
             [memberIds]="memberIds()"
             [disabled]="busy()"

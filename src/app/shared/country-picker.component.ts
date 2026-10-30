@@ -1,17 +1,22 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Country } from '../../core/models/api.models';
+import { Country } from '../core/models/api.models';
 
+// Sélecteur de pays partagé : groupes (12 pays au plus) et matrice sélectionnée (15 au plus).
 @Component({
-  selector: 'app-group-country-picker',
+  selector: 'app-country-picker',
   imports: [ReactiveFormsModule],
-  templateUrl: './group-country-picker.component.html',
-  styleUrl: './group-country-picker.component.scss',
+  templateUrl: './country-picker.component.html',
+  styleUrl: './country-picker.component.scss',
 })
-export class GroupCountryPickerComponent {
+export class CountryPickerComponent {
   @Input() countries: Country[] = [];
   @Input() memberIds: string[] = [];
   @Input() disabled = false;
+  @Input() max = 12;
+  @Input() legend = 'Pays';
+  @Input() hint = '';
+  @Input() searchId = 'country-search';
   @Output() memberIdsChange = new EventEmitter<string[]>();
   readonly search = new FormControl('', { nonNullable: true });
 
@@ -29,7 +34,7 @@ export class GroupCountryPickerComponent {
     return this.countries.find((country) => country.id === id)?.name ?? id;
   }
   add(id: string): void {
-    if (this.disabled || this.memberIds.length >= 12 || this.memberIds.includes(id)) return;
+    if (this.disabled || this.memberIds.length >= this.max || this.memberIds.includes(id)) return;
     this.memberIdsChange.emit([...this.memberIds, id]);
     this.search.setValue('');
   }

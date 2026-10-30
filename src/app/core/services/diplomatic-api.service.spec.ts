@@ -204,6 +204,17 @@ describe('DiplomaticApiService', () => {
     expect(next).toHaveBeenCalledWith(testMatrix);
   });
 
+  it('requests a matrix limited to the chosen countries, in their order', () => {
+    api.matrixSelection(['IND', 'FRA', 'USA'], 2000, 2025, 50, 'security').subscribe();
+    const request = http.expectOne((request) => request.url === '/api/matrix/selection');
+    expect(request.request.params.get('countries')).toBe('IND,FRA,USA');
+    expect(request.request.params.get('from')).toBe('2000');
+    expect(request.request.params.get('to')).toBe('2025');
+    expect(request.request.params.get('minVotes')).toBe('50');
+    expect(request.request.params.get('theme')).toBe('security');
+    request.flush(testMatrix);
+  });
+
   it('turns HTTP failures into readable French messages', () => {
     expect(apiErrorMessage(new HttpErrorResponse({ status: 0 }))).toContain('indisponible');
     expect(apiErrorMessage(new HttpErrorResponse({ status: 404 }))).toContain('pas été trouvée');

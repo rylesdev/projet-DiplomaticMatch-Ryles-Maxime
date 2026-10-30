@@ -42,6 +42,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/matrix/matrix.page').then((m) => m.MatrixPage),
   },
   {
+    path: 'matrice/selection',
+    title: 'Matrice des pays choisis — Diplomatic Match',
+    loadComponent: () =>
+      import('./features/matrix/matrix-selection.page').then((m) => m.MatrixSelectionPage),
+  },
+  {
     path: 'resolutions',
     title: 'Les résolutions — Diplomatic Match',
     loadComponent: () =>

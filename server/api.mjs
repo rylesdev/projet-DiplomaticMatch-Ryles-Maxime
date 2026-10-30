@@ -7,6 +7,7 @@ import {
   publicResolution,
   rankCountries,
   resolutionDetail,
+  selectMatrix,
 } from './domain.mjs';
 import { THEMES } from './themes.mjs';
 import { HttpError, integerInRange } from './http-error.mjs';
@@ -74,6 +75,18 @@ function comparisonParameters(store, params) {
   return { countryA, countryB, ...period(params, store) };
 }
 
+// countries=FRA,IND,USA : 2 à 15 codes distincts présents dans le jeu de données.
+function selectedCountries(store, params) {
+  const ids = (params.get('countries') ?? '').split(',').map((id) => id.trim());
+  if (ids.length < 2 || ids.length > 15 || ids.some((id) => id === ''))
+    throw new HttpError(400, 'Choisissez entre 2 et 15 pays.');
+  if (new Set(ids).size !== ids.length)
+    throw new HttpError(400, 'Chaque pays ne doit apparaître qu’une seule fois.');
+  if (ids.some((id) => !store.countries.has(id)))
+    throw new HttpError(400, 'Un des pays choisis est absent du jeu de données.');
+  return ids;
+}
+
 export function handleApi(store, request) {
   const url = new URL(request.url, 'http://127.0.0.1');
   const path = url.pathname;
@@ -87,6 +100,12 @@ export function handleApi(store, request) {
     const { from, to } = period(params, store);
     const minVotes = integer(params, 'minVotes', 20, 1, 100000);
     return compareMatrix(store, from, to, minVotes, themeParameter(params));
+  }
+  if (path === '/api/matrix/selection') {
+    const ids = selectedCountries(store, params);
+    const { from, to } = period(params, store);
+    const minVotes = integer(params, 'minVotes', 20, 1, 100000);
+    return selectMatrix(store, ids, from, to, minVotes, themeParameter(params));
   }
   if (path === '/api/countries') {
     const query = search(params);
