@@ -102,6 +102,20 @@
 .vote-details {
   padding: 28px;
 }
+.no-vote {
+  margin-top: 24px;
+  padding: 25px 28px;
+}
+.no-vote h2 {
+  font-size: 21px;
+  margin: 8px 0 10px;
+}
+.no-vote p.muted {
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 0;
+  max-width: 720px;
+}
 .details-title {
   display: flex;
   justify-content: space-between;
@@ -174,7 +188,8 @@
     font-size: 29px;
   }
   .document-source,
-  .vote-details {
+  .vote-details,
+  .no-vote {
     padding: 20px;
   }
   .details-title {

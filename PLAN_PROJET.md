@@ -51,6 +51,8 @@ Si le temps manque, sauter la ligne « Compléments » : les cinq fonctionnalit�
 
 **Pourquoi l'écologie a-t-elle si peu de votes ?** 272 résolutions sont classées en écologie, mais seulement 21 ont des votes individuels : la plupart sont adoptées sans vote.
 
+**Pourquoi cette résolution n'a-t-elle aucun vote ?** Seules 5 730 des 20 834 résolutions ont un vote État par État ; les autres ont en général été adoptées sans mise aux voix (par consensus). Leur fiche affiche « Adoptée sans vote enregistré » (exemple : A/RES/54/222 sur le climat) et elles n'entrent dans aucun calcul.
+
 **Pourquoi la France et les États-Unis ne sont-ils qu'à 45,7 % ?** De 2000 à 2025, les États-Unis votent Contre 1 517 fois, la France 492 fois. Sur 2 219 votes communs, la France vote Pour et les États-Unis Contre 669 fois ; une abstention face à un Pour ou un Contre compte aussi comme un désaccord.
 
 **Comment l'application reste-t-elle rapide avec 954 382 votes ?** L'API charge les données une fois en mémoire au démarrage, indexées par pays et par résolution, et met en cache les matrices déjà calculées. Les réponses restent légères (moins de 30 Ko).

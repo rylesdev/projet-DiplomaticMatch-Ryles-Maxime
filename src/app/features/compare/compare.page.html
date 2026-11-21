@@ -132,7 +132,7 @@
         @if (comparison.search?.trim()) {
           · Mot-clé : <strong>« {{ comparison.search }} »</strong>
         }
-        · {{ comparison.dataVersion }}</span
+        · Données ONU, version {{ comparison.dataVersion }}</span
       >
     </div>
     <div class="counts-card panel">
@@ -852,7 +852,7 @@
   <p class="source-note">
     © Nations unies ·
     <a [href]="meta.sourceUrl" target="_blank" rel="noopener noreferrer"
-      >Jeu officiel {{ meta.version }}</a
+      >Jeu officiel, version {{ meta.version }}</a
     >, publié le {{ meta.publishedAt | date: 'dd/MM/yyyy' }}. Couverture disponible :
     {{ meta.coverage.from | date: 'dd/MM/yyyy' }}–{{ meta.coverage.to | date: 'dd/MM/yyyy' }}. Les
     votes décrivent des positions, pas une alliance.

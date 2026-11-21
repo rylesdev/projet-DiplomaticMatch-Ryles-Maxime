@@ -42,51 +42,57 @@
     >
   </div>
 
-  <section aria-labelledby="vote-distribution-heading">
-    <div class="section-heading">
-      <div>
-        <p class="eyebrow">Lecture du scrutin</p>
-        <h2 id="vote-distribution-heading">La répartition des votes enregistrés</h2>
-      </div>
-      <p class="muted">Les non-votes sont distingués des abstentions.</p>
-    </div>
-    <dl class="vote-totals">
-      <div class="total-yes">
-        <dt>Pour</dt>
-        <dd>{{ item.totals.YES | number }}</dd>
-      </div>
-      <div class="total-no">
-        <dt>Contre</dt>
-        <dd>{{ item.totals.NO | number }}</dd>
-      </div>
-      <div class="total-abstain">
-        <dt>Abstention</dt>
-        <dd>{{ item.totals.ABSTAIN | number }}</dd>
-      </div>
-      <div>
-        <dt>Non-vote</dt>
-        <dd>{{ item.totals.NOT_VOTED | number }}</dd>
-      </div>
-      <div>
-        <dt>Inconnu</dt>
-        <dd>{{ item.totals.UNKNOWN | number }}</dd>
-      </div>
-    </dl>
-  </section>
-
-  <section class="panel vote-details" aria-labelledby="country-votes-heading">
-    <div class="details-title">
-      <h2 id="country-votes-heading">État par État</h2>
-      <span class="muted"
-        >{{ item.votes.length | number }} ligne{{ item.votes.length > 1 ? 's' : '' }} de vote</span
-      >
-    </div>
-    @if (!item.votes.length) {
-      <p class="status">
-        Aucun vote individuel disponible pour cette résolution dans le jeu chargé. Cette absence de
-        données ne permet pas de déduire la position d’un État.
+  @if (!item.votes.length) {
+    <section class="panel no-vote" aria-labelledby="no-vote-heading">
+      <p class="eyebrow">Lecture du scrutin</p>
+      <h2 id="no-vote-heading">Adoptée sans vote enregistré</h2>
+      <p class="muted">
+        Cette résolution n’a pas de vote État par État dans la source : elle a en général été
+        adoptée sans mise aux voix (par consensus). Elle n’entre donc dans aucun calcul de
+        concordance, et cette absence ne permet pas de déduire la position d’un État.
       </p>
-    } @else {
+    </section>
+  } @else {
+    <section aria-labelledby="vote-distribution-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Lecture du scrutin</p>
+          <h2 id="vote-distribution-heading">La répartition des votes enregistrés</h2>
+        </div>
+        <p class="muted">Les non-votes sont distingués des abstentions.</p>
+      </div>
+      <dl class="vote-totals">
+        <div class="total-yes">
+          <dt>Pour</dt>
+          <dd>{{ item.totals.YES | number }}</dd>
+        </div>
+        <div class="total-no">
+          <dt>Contre</dt>
+          <dd>{{ item.totals.NO | number }}</dd>
+        </div>
+        <div class="total-abstain">
+          <dt>Abstention</dt>
+          <dd>{{ item.totals.ABSTAIN | number }}</dd>
+        </div>
+        <div>
+          <dt>Non-vote</dt>
+          <dd>{{ item.totals.NOT_VOTED | number }}</dd>
+        </div>
+        <div>
+          <dt>Inconnu</dt>
+          <dd>{{ item.totals.UNKNOWN | number }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="panel vote-details" aria-labelledby="country-votes-heading">
+      <div class="details-title">
+        <h2 id="country-votes-heading">État par État</h2>
+        <span class="muted"
+          >{{ item.votes.length | number }} ligne{{ item.votes.length > 1 ? 's' : '' }} de
+          vote</span
+        >
+      </div>
       <div class="table-wrap">
         <table class="data-table">
           <caption class="sr-only">
@@ -121,15 +127,15 @@
           </tbody>
         </table>
       </div>
-    }
-  </section>
+    </section>
+  }
 
   <p class="source-note muted">
     © Nations unies ·
     <a [href]="item.sourceUrl" target="_blank" rel="noopener noreferrer">{{ item.symbol }}</a> ·
-    votes enregistrés le {{ item.date | date: 'dd/MM/yyyy' }}.
+    adoptée le {{ item.date | date: 'dd/MM/yyyy' }}.
     @if (metadata(); as data) {
-      Jeu {{ data.version }}, publié le {{ data.publishedAt | date: 'dd/MM/yyyy' }}.
+      Données ONU, version {{ data.version }}.
     }
     Réutilisation non commerciale avec attribution.
   </p>
