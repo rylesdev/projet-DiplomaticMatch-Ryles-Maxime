@@ -217,11 +217,14 @@ clic ou saisie → méthode du composant → Subject.next(demande) → switchMap
 
 **Conflit entre deux onglets.** Les deux onglets lisent le même `localStorage`. Si l'onglet A enregistre (révision 2), l'onglet B, resté en révision 1, reçoit 409 à l'enregistrement ou à la vérification avant un calcul. `handleError` met `conflict` à `true` : le brouillon reste affiché, les actions sont bloquées et « Recharger » relit la dernière version.
 
-### 4.6 Fonctionnalités complémentaires
+**Simuler, suggérer, enregistrer des rapports** (fin de la fonctionnalité 5) :
 
 - **Simulation** (`group-scenarios`) : choisir « Ajouter » ou « Retirer » et un pays → `simulate()` calcule la liste proposée → `checkRevision` puis `GET /api/groups/analysis` avec cette liste. Rien n'est enregistré. « Appliquer au groupe » émet la liste vers la page, qui fait un `PUT` (nouvelle révision).
 - **Suggestions** (`group-suggestions`) : « Rechercher des candidats » → `checkRevision` puis `GET /api/groups/suggestions?members=...&includeHistorical=false`. `suggestGroupMembers` utilise la matrice en cache : un candidat doit atteindre le seuil avec chaque membre ; tri par concordance avec le groupe ; trois résultats avec la concordance du groupe après ajout. « Tester ce pays » lance la simulation.
 - **Rapports** (`group-reports`) : « Enregistrer le rapport » → `POST /mock-api/groups/:id/reports` avec `{ expectedRevision, analysis }`. MirageJS vérifie la révision et que l'analyse correspond aux membres enregistrés, puis fige une copie du groupe et de l'analyse. Le composant liste les rapports (`GET .../reports`), charge les deux sélectionnés en parallèle (`forkJoin` de deux `GET .../reports/:reportId`) et n'affiche l'écart B − A que si les filtres et les versions sont identiques.
+
+### 4.6 Fonctionnalités complémentaires
+
 - **Carte** (`map-explorer`) : charge `/maps/world.json` (fichier statique, passthrough MirageJS) et `GET /api/countries/FRA/concordances?...` (`concordanceRow` : une ligne de la matrice, 25 Ko). `map-data.ts` associe chaque contour à un pays du jeu et lui donne sa couleur. Un clic sur un pays change le pays de référence et relance la requête.
 
 ## 5. Statuts HTTP rencontrés

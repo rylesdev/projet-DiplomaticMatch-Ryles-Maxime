@@ -51,22 +51,22 @@ Période par défaut : de 2000 à la dernière année complète des données (20
 
 - `GET /api/matrix/selection?countries=FRA,USA,GBR,CHN,RUS,IND&from=2000&to=2025&minVotes=20&theme=all`
 
-**4. Explorer les résolutions** (`/resolutions`, `/resolutions/:id`) : recherche par titre ou symbole, filtre par période, détail avec le vote de chaque pays et le lien vers la notice de l'ONU.
+**4. Explorer les résolutions** (`/resolutions`, `/resolutions/:id`) : recherche par titre ou symbole, filtre par période, détail avec le vote de chaque pays (ou « Adoptée sans vote enregistré ») et le lien vers la notice de l'ONU.
 
 - `GET /api/resolutions?search=Ukraine&page=1&pageSize=20&from=1946&to=2025`
 - `GET /api/resolutions/3959039`
 
-**5. Groupes de pays** (`/groupes`, `/groupes/:id`) : créer, modifier, supprimer un groupe de 2 à 12 pays (formulaire réactif validé) ; concordance interne, évolution annuelle, résolutions qui divisent le groupe.
+**5. Créer et analyser des groupes de pays** (`/groupes`, `/groupes/:id`) : créer, modifier, supprimer un groupe de 2 à 12 pays (formulaire réactif validé) ; concordance interne, évolution annuelle, résolutions qui divisent le groupe ; simulation d'un ajout ou d'un retrait de pays ; suggestions de nouveaux membres ; rapports enregistrés et comparaison de deux rapports.
 
 - Écritures (MirageJS) : `GET /mock-api/groups`, `POST /mock-api/groups`, `GET /mock-api/groups/:id`, `PUT /mock-api/groups/:id`, `DELETE /mock-api/groups/:id?expectedRevision=2`
 - Calcul (API Node) : `GET /api/groups/analysis?members=FRA,IND,BRA,CAN&from=2000&to=2025&theme=all&minVotes=20`
+- Simulation (API Node) : `GET /api/groups/analysis` avec la composition proposée, sans rien enregistrer.
+- Suggestions (API Node) : `GET /api/groups/suggestions?members=…&from=…&to=…&theme=…&minVotes=…&includeHistorical=false`.
+- Rapports (MirageJS) : `GET /mock-api/groups/:id/reports`, `POST /mock-api/groups/:id/reports`, `GET /mock-api/groups/:id/reports/:reportId`.
 
 **Fonctionnalités complémentaires**
 
 - **Carte** (`/carte`, aussi sur l'accueil) : un pays de référence, les autres colorés selon leur concordance. `GET /api/countries/FRA/concordances?from=2000&to=2025&theme=all&minVotes=20` (25 Ko) et le fond `GET /maps/world.json`.
-- **Simulation** d'un ajout ou d'un retrait de pays dans un groupe : `GET /api/groups/analysis` avec la composition proposée, sans rien enregistrer.
-- **Suggestions** de pays à ajouter : `GET /api/groups/suggestions?members=…&from=…&to=…&theme=…&minVotes=…&includeHistorical=false`.
-- **Rapports** figés et comparaison de deux rapports : `GET /mock-api/groups/:id/reports`, `POST /mock-api/groups/:id/reports`, `GET /mock-api/groups/:id/reports/:reportId`.
 - **Révisions** : chaque groupe a un numéro de révision. Modifier, supprimer ou enregistrer un rapport depuis une version périmée renvoie **409**. Avant chaque calcul, l'application relit aussi la révision : un groupe modifié dans un autre onglet affiche un conflit, sans écraser le brouillon.
 - Catalogues : `GET /api/metadata` (version et couverture, lu au démarrage), `GET /api/themes` (thèmes et effectifs), `GET /api/health`.
 
